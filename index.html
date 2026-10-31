@@ -943,7 +943,13 @@ function closeDetail(){
   };
 }
 $('#dClose').addEventListener('click', closeDetail);
-$('#dRead').addEventListener('click', () => openReader(books[activeIdx]));
+// Open the page-flip reader. Uploads are read from IndexedDB by id; samples travel via localStorage.
+$('#dRead').addEventListener('click', () => {
+  const b = books[activeIdx];
+  store.set('tsn-last', b.id);
+  if (b.kind === 'sample') store.set('tsn-handoff', { id:b.id, title:b.title, vi:b.vi, author:b.author, year:b.year, gid:b.gid, text:b.text });
+  location.href = 'reader/?book=' + encodeURIComponent(b.id);
+});
 let armT = 0;
 $('#dDel').addEventListener('click', async e => {
   const bt = e.currentTarget, b = books[activeIdx];
@@ -1189,13 +1195,14 @@ async function boot(){
   SAMPLES.forEach(b => { b.cover = genCover(b); b.spine = genSpine(b); });
   books = SAMPLES.slice();
   buildTabs();
-  buildShelf('holmes');
+  const want = store.get('tsn-last') || 'holmes';
+  buildShelf(books.some(b => b.id === want) ? want : 'holmes');
   requestAnimationFrame(t => { last = t; frame(t); });
   await DB.open();
   const ups = (await DB.all()).sort((a, b) => a.added - b.added);
   if (ups.length){
     ups.forEach(r => { try { books.push(prepUpload(r)); } catch(e){} });
-    buildShelf(books[activeIdx] ? books[activeIdx].id : 'holmes');
+    buildShelf(books.some(b => b.id === want) ? want : books[activeIdx].id);
   }
 }
 boot();

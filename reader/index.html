@@ -18,6 +18,7 @@
   color-scheme:light;
 }
 html,body{height:100%}
+[hidden]{display:none !important}
 body{margin:0;background:var(--bg);color:var(--ink);overflow:hidden;user-select:none;-webkit-user-select:none;font-family:var(--sans);
   -webkit-font-smoothing:antialiased;transition:background-color .4s var(--ease);
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
@@ -132,6 +133,7 @@ body.immersive .foot{transform:translateY(calc(100% + 4px))}
 
 <header class="bar">
   <div class="l">
+    <a class="box" id="backBtn" href="../" hidden aria-label="Về kệ sách" style="text-decoration:none"><svg width="14" height="10" viewBox="0 0 14 10" aria-hidden="true"><path d="M5 1 L1 5 L5 9 M1 5 H13" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></a>
     <button class="box" id="tocBtn" type="button" aria-label="Mục lục, đánh dấu và tô sáng"><svg width="16" height="12" viewBox="0 0 16 12" aria-hidden="true"><path d="M0 1h16M0 6h16M0 11h10" stroke="currentColor" stroke-width="1.4"/></svg></button>
     <label class="box lbl" for="fileIn" title="Mở PDF hoặc EPUB"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 0v12M0 6h12" stroke="currentColor" stroke-width="1.4"/></svg><span class="hide-s">Mở sách</span></label>
     <input type="file" id="fileIn" accept=".pdf,.epub,application/pdf,application/epub+zip" hidden>
@@ -1157,8 +1159,50 @@ async function boot(){
   }
   applyTheme();
   try { await Promise.race([Promise.all([document.fonts.load('400 18px "Newsreader"'), document.fonts.load('italic 400 18px "Newsreader"'), document.fonts.load('600 12px "Inter Tight"'), document.fonts.load('400 16px "Inter Tight"')]), wait(2500)]); } catch(e){}
-  setBook(SAMPLE);
+  if (!(await openFromShelf())) setBook(SAMPLE);
   requestAnimationFrame(loop);
+}
+
+/* ---------------- opened from the shelf: reader/?book=<id> ---------------- */
+function shelfRecord(id){
+  return new Promise(res => {
+    try {
+      const q = indexedDB.open('tu-sach-nho', 1);
+      q.onupgradeneeded = () => q.result.createObjectStore('books', { keyPath:'id' });
+      q.onerror = () => res(null);
+      q.onsuccess = () => {
+        try { const g = q.result.transaction('books', 'readonly').objectStore('books').get(id); g.onsuccess = () => res(g.result || null); g.onerror = () => res(null); }
+        catch(e){ res(null); }
+      };
+    } catch(e){ res(null); }
+  });
+}
+async function openFromShelf(){
+  let id = null;
+  try { id = new URLSearchParams(location.search).get('book'); } catch(e){}
+  if (!id) return false;
+  $('#backBtn').hidden = false;
+  const rec = await shelfRecord(id);
+  if (rec && rec.file){
+    toast('Đang mở “' + rec.title + '”…', 60000);
+    try {
+      const b = rec.kind === 'pdf' ? await openPdf(rec.file) : await openEpub(rec.file);
+      if (rec.title) b.title = rec.title;
+      if (rec.author && !b.author) b.author = rec.author;
+      setBook(b); toast('Đã mở “' + b.title + '”.');
+      return true;
+    } catch(e){ toast('Không mở được sách này. File có thể bị hỏng hoặc có DRM.', 4200); return false; }
+  }
+  const h = store.get('tsn-handoff');
+  if (h && h.id === id && Array.isArray(h.text)){
+    const blocks = [{ t:'h', level:1, kicker:h.vi && h.vi !== h.title ? h.vi : 'Đoạn mở đầu', text:h.title }];
+    h.text.forEach(p => blocks.push({ t:'p', text:p }));
+    blocks.push({ t:'p', text:'Bản demo chỉ có đoạn mở đầu. Bản đầy đủ miễn phí có trên Project Gutenberg (gutenberg.org/ebooks/' + h.gid + '): tải file EPUB về rồi thả vào kệ để đọc cả cuốn.' });
+    setBook({ kind:'text', id:'s-' + h.id, title:h.title, author:h.author + (h.year ? ' · ' + h.year : ''), blocks });
+    return true;
+  }
+  toast('Không tìm thấy sách này trong trình duyệt.', 4200);
+  return false;
 }
 boot();
 })();
