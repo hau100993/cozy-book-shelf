@@ -1,0 +1,1205 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tủ Sách Nhỏ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap">
+<style>
+/* Layout: one fixed screen composed from the viewport centre; every shelf size derives from --H. Single paper theme by choice. */
+:root{
+  --paper:#EDEBE6; --sheet:#F4F2ED; --ink:#141414; --muted:#6D6A63;
+  --cobalt:#1F3FB0; --verm:#C8452B; --rule:rgba(20,20,20,.9);
+  --ease:cubic-bezier(.2,.8,.2,1);
+  --H:min(46vh,31vw);
+  --serif:"Newsreader",Georgia,"Times New Roman",serif;
+  --sans:"Inter Tight",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{margin:0;background:var(--paper);color:var(--ink);overflow:hidden;user-select:none;-webkit-user-select:none;
+  -webkit-font-smoothing:antialiased;font-family:var(--sans);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+@media (pointer:fine){html,body,button,a,select,label,.tape{cursor:none}}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0}
+button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(--cobalt);outline-offset:3px}
+
+.lbl{font:600 10.5px/1 var(--sans);letter-spacing:.09em;text-transform:uppercase}
+.box{display:inline-flex;align-items:center;justify-content:center;height:21px;padding:0 8px;border:1px solid var(--rule);color:var(--ink);text-decoration:none;white-space:nowrap}
+
+.grain{position:fixed;inset:0;z-index:40;pointer-events:none;mix-blend-mode:multiply;opacity:.55;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .42 0 0 0 0 .38 0 0 0 .22 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+/* top bar */
+.top{position:fixed;top:0;left:0;right:0;z-index:20;height:84px;box-sizing:content-box;
+  padding:env(safe-area-inset-top,0px) max(32px,env(safe-area-inset-right,0px)) 0 max(32px,env(safe-area-inset-left,0px));
+  display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
+.top>:first-child{justify-self:start}
+.top-r{justify-self:end;color:var(--ink)}
+.logo{display:grid;justify-items:center;gap:5px;color:var(--cobalt);text-align:center}
+.logo .l1{font:600 23px/1 var(--serif);letter-spacing:.01em}
+.logo .l2{font:600 9px/1 var(--sans);letter-spacing:.34em;padding-left:.34em}
+
+/* tabs */
+.tabs{position:fixed;left:50%;top:calc(50% - var(--H)/2 - 86px);transform:translateX(-50%);z-index:20;display:flex;
+  max-width:calc(100vw - 24px);overflow-x:auto;scrollbar-width:none;padding-left:1px}
+.tabs::-webkit-scrollbar{display:none}
+.tabs .ind{position:absolute;left:0;top:0;height:23px;width:0;background:var(--cobalt);
+  transition:width .6s var(--ease),transform .6s var(--ease);pointer-events:none}
+.tabs button{position:relative;z-index:1;height:23px;padding:0 11px;margin-left:-1px;border:1px solid var(--rule);
+  white-space:nowrap;transition:color .45s var(--ease)}
+.tabs button.on{color:#fff}
+
+/* shelf */
+.shelf{position:fixed;left:0;right:0;top:calc(50% - var(--H)/2 - 40px);height:calc(var(--H) + 80px);
+  perspective:2200px;perspective-origin:50% 50%;touch-action:pan-y;z-index:10}
+.stage{position:absolute;left:50%;top:50%;width:0;height:0;transform-style:preserve-3d}
+.tape{position:absolute;left:0;top:0;width:0;height:0;transform-style:preserve-3d;will-change:transform}
+.face{position:absolute;height:var(--hp);top:calc(var(--hp) / -2);backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  border-radius:2px;background-size:100% 100%;background-repeat:no-repeat}
+.face::after{content:"";position:absolute;inset:0;border-radius:inherit;background:#000;opacity:var(--shade,0)}
+.sp{width:var(--ws);left:calc(var(--ws) / -2);transform:translateZ(calc(var(--d) / 2));
+  box-shadow:inset 1px 0 rgba(255,255,255,.18),inset -1px 0 rgba(0,0,0,.28)}
+.cv{width:var(--d);left:calc(var(--d) / -2);transform:rotateY(90deg) translateZ(calc(var(--ws) / 2));
+  box-shadow:0 30px 60px -28px rgba(20,16,10,.55)}
+.plank{position:fixed;left:0;right:0;top:calc(50% + var(--H)/2 + 1px);height:14px;z-index:5;pointer-events:none;
+  border-top:1px solid rgba(20,20,20,.55);background:linear-gradient(rgba(20,16,10,.09),rgba(20,16,10,0))}
+
+/* play ring */
+.play{position:fixed;left:0;top:0;z-index:30;width:42px;height:42px;border-radius:50%;border:1px solid var(--cobalt);
+  color:var(--cobalt);background:rgba(237,235,230,.78);display:grid;place-items:center;transform:translate(-50%,-50%) scale(0)}
+
+/* caption */
+.caption{position:fixed;left:50%;top:calc(50% + var(--H)/2 + 30px);transform:translateX(-50%);z-index:15;
+  display:grid;gap:9px;justify-items:center;pointer-events:none}
+.m{display:grid;overflow:hidden;width:min(92vw,760px);text-align:center}
+.m>span{grid-area:1/1;display:block}
+.cap-t{font:400 31px/1.12 var(--serif);letter-spacing:-.01em}
+.cap-t>span{padding-bottom:.1em}
+.cap-s{color:var(--cobalt);font-weight:500}
+.cap-y{font:500 11px/1.3 var(--sans);letter-spacing:.08em}
+
+/* arrows */
+.arrow{position:fixed;top:calc(50% + var(--H)/2 + 40px);z-index:20;width:44px;height:44px;display:grid;place-items:center;color:var(--ink)}
+.arrow.l{left:max(20px,calc(env(safe-area-inset-left,0px) + 20px))}
+.arrow.r{right:max(20px,calc(env(safe-area-inset-right,0px) + 20px))}
+
+/* footer */
+.foot{position:fixed;left:max(32px,env(safe-area-inset-left,0px));right:max(32px,env(safe-area-inset-right,0px));
+  bottom:calc(26px + env(safe-area-inset-bottom,0px));z-index:20;display:flex;justify-content:space-between;gap:16px}
+.foot .hint{color:var(--muted)}
+
+/* cursor */
+.cursor{position:fixed;left:0;top:0;width:58px;height:58px;margin:-29px 0 0 -29px;z-index:100;pointer-events:none;display:none}
+@media (pointer:fine){.cursor{display:block}}
+.cursor .ring{position:absolute;inset:0;border:1.5px solid var(--ink);border-radius:50%;
+  transition:transform .5s var(--ease),background-color .4s var(--ease),border-color .4s var(--ease)}
+.cursor .dot{position:absolute;left:26px;top:26px;width:6px;height:6px;border-radius:50%;background:var(--ink);transition:transform .4s var(--ease)}
+.cursor .clabel{position:absolute;inset:0;display:grid;place-content:center;text-align:center;font:600 10px/1.25 var(--sans);
+  letter-spacing:.1em;color:#fff;transform:scale(0);transition:transform .45s var(--ease)}
+.cursor.spine .ring{transform:scale(.72)}
+.cursor.btn .ring{transform:scale(.55)}
+.cursor.btn .dot,.cursor.open .dot{transform:scale(0)}
+.cursor.open .ring{transform:scale(1.75);background:var(--cobalt);border-color:var(--cobalt)}
+.cursor.open .clabel{transform:scale(1)}
+
+/* drop + toast */
+.drop{position:fixed;inset:0;z-index:90;visibility:hidden;background:rgba(237,235,230,.86);display:grid;place-items:center;pointer-events:none}
+.drop.on{visibility:visible}
+.drop .frame{position:absolute;inset:16px;border:1.5px dashed var(--cobalt)}
+.drop p{margin:0;text-align:center;color:var(--cobalt);display:grid;gap:12px}
+.drop .big{font:400 40px/1.1 var(--serif);text-transform:none;letter-spacing:-.01em}
+.toast{position:fixed;left:50%;bottom:calc(70px + env(safe-area-inset-bottom,0px));z-index:95;background:var(--ink);color:var(--paper);
+  padding:10px 14px;transform:translate(-50%,calc(100% + 120px));transition:transform .55s var(--ease);max-width:calc(100vw - 32px);line-height:1.4}
+.toast.on{transform:translate(-50%,0)}
+
+/* detail sheet */
+.detail{position:fixed;inset:0;z-index:60;background:var(--sheet);visibility:hidden;display:grid;grid-template-columns:1fr 1fr;
+  grid-template-rows:minmax(0,1fr);gap:4vw;padding:110px 6vw 56px 7vw;align-items:center;overflow:hidden}
+.detail .close{position:absolute;top:calc(31px + env(safe-area-inset-top,0px));left:max(32px,env(safe-area-inset-left,0px));z-index:2}
+.detail .dlogo{position:absolute;top:env(safe-area-inset-top,0px);left:0;right:0;height:84px;display:grid;place-items:center;pointer-events:none}
+.dtext{display:grid;gap:18px;max-width:520px;justify-self:end;width:100%}
+.dm{overflow:hidden}
+.dm>.in{display:block}
+.dsub{color:var(--cobalt);font-weight:500}
+.dtitle{font:400 clamp(44px,5.4vw,84px)/1 var(--serif);letter-spacing:-.025em;text-wrap:balance;padding-bottom:.08em}
+.dmeta{color:var(--muted)}
+.dsyn{font:400 17px/1.5 var(--serif);max-width:42ch;user-select:text;-webkit-user-select:text}
+.dcred{font:italic 400 15px/1.4 var(--serif);color:var(--muted)}
+.dact{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.btn-read{height:44px;padding:0 20px;border:1px solid var(--cobalt);color:var(--cobalt);transition:background-color .35s var(--ease),color .35s var(--ease)}
+.btn-read:hover{background:var(--cobalt);color:var(--sheet)}
+.btn-del{height:44px;padding:0 16px;border:1px solid var(--rule)}
+.btn-del.arm{border-color:var(--verm);color:var(--verm)}
+.dposter{height:min(100%,78vh);aspect-ratio:600/900;max-width:100%;justify-self:start}
+.dposter svg{display:block;width:100%;height:100%;overflow:visible}
+
+/* reader */
+.reader{position:fixed;inset:0;z-index:70;background:var(--sheet);visibility:hidden;display:grid;grid-template-rows:auto minmax(0,1fr)}
+.rbar{display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(20,20,20,.14);
+  padding:calc(14px + env(safe-area-inset-top,0px)) max(24px,env(safe-area-inset-right,0px)) 14px max(24px,env(safe-area-inset-left,0px))}
+.rtitle{flex:1;min-width:0;display:grid;gap:4px;text-align:center}
+.rtitle b{font:400 18px/1.2 var(--serif);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rtitle span{color:var(--muted);font-variant-numeric:tabular-nums}
+.rctl{display:flex;align-items:center;gap:6px}
+.rctl .box{height:28px;min-width:28px;padding:0 8px}
+.rctl output{min-width:44px;text-align:center;font-variant-numeric:tabular-nums}
+.rsel{max-width:240px;height:28px;border:1px solid var(--rule);background:var(--sheet);color:var(--ink);font:500 12px var(--sans);padding:0 6px;border-radius:0}
+.rbody{overflow:auto;-webkit-overflow-scrolling:touch;user-select:text;-webkit-user-select:text;padding:40px 0 90px;outline:none}
+.rtext{max-width:36em;margin:0 auto;padding:0 max(20px,env(safe-area-inset-left,0px));font:400 var(--fs,19px)/1.65 var(--serif);color:var(--ink)}
+.rtext p{margin:0 0 1em}
+.rtext h1,.rtext h2,.rtext h3,.rtext h4{font-weight:400;line-height:1.15;letter-spacing:-.01em;text-wrap:balance}
+.rtext img,.rtext svg{max-width:100%;height:auto}
+.rtext a{color:var(--cobalt)}
+.rtext table{display:block;overflow-x:auto}
+.rtext pre{overflow-x:auto;white-space:pre-wrap}
+.rnote{margin-top:2.4em;padding:16px 18px;border:1px solid var(--rule);font:500 13px/1.55 var(--sans);letter-spacing:.01em}
+.rnote a{color:var(--cobalt)}
+.rnav{display:flex;justify-content:space-between;gap:12px;margin-top:2.6em}
+.rnav .box{height:36px;padding:0 14px}
+.pages{display:grid;gap:18px;justify-items:center;padding:0 16px}
+.pg{position:relative;background:#fff;max-width:100%;box-shadow:0 1px 0 rgba(0,0,0,.06),0 14px 30px -20px rgba(20,16,10,.45)}
+.pg canvas{position:absolute;inset:0;width:100%;height:100%}
+.pg i{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:600 10px var(--sans);letter-spacing:.1em;color:var(--muted);font-style:normal}
+.rmsg{max-width:30em;margin:12vh auto;padding:0 20px;text-align:center;font:400 20px/1.5 var(--serif)}
+
+@media (max-width:767px){
+  :root{--H:min(60vw,40svh)}
+  .top{height:64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .logo .l1{font-size:17px}.logo .l2{font-size:7.5px}
+  .lbl{font-size:9px}
+  .top-r{display:none}
+  .tabs{top:calc(50% - var(--H)/2 - 70px)}
+  .tabs button{padding:0 7px}
+  .cap-t{font-size:24px}
+  .arrow.l{left:max(6px,env(safe-area-inset-left,0px))}.arrow.r{right:max(6px,env(safe-area-inset-right,0px))}
+  .foot{left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px))}
+  .foot .hint{display:none}
+  .detail{grid-template-columns:1fr;grid-template-rows:auto auto;padding:84px 22px 40px;gap:24px;overflow-y:auto;align-items:start;align-content:start}
+  .detail .close{top:calc(21px + env(safe-area-inset-top,0px));left:max(16px,env(safe-area-inset-left,0px))}
+  .detail .dlogo{height:64px}
+  .dposter{order:-1;height:46svh;justify-self:center}
+  .dtext{justify-self:stretch}
+  .dtitle{font-size:42px}.dsyn{font-size:16px}
+  .rbar{gap:8px;padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));flex-wrap:wrap}
+  .rtitle{order:-1;flex-basis:100%}
+  .rctl{flex:1;justify-content:flex-end}
+  .rsel{max-width:150px}
+}
+</style>
+</head>
+<body>
+
+<div class="grain" aria-hidden="true"></div>
+
+<header class="top">
+  <button class="box lbl" id="addBtn" type="button">+ Thêm sách</button>
+  <div class="logo"><span class="l1">Tủ Sách Nhỏ</span><span class="l2">A Small Library</span></div>
+  <div class="lbl top-r" id="count">PDF · EPUB</div>
+</header>
+<input type="file" id="fileIn" accept=".pdf,.epub,application/pdf,application/epub+zip" multiple hidden>
+
+<nav class="tabs" id="tabs" aria-label="Thể loại"><div class="ind" id="ind"></div></nav>
+
+<section class="shelf" id="shelf" aria-label="Kệ sách"><div class="stage" id="stage"></div></section>
+<div class="plank" aria-hidden="true"></div>
+
+<button class="play" id="play" type="button" aria-label="Mở sách">
+  <svg width="16" height="14" viewBox="0 0 16 14" aria-hidden="true"><path d="M8 2.5C6.5 1.3 4 .8 1 1v10.5c3-.2 5.5.3 7 1.5 1.5-1.2 4-1.7 7-1.5V1c-3-.2-5.5.3-7 1.5Zm0 0V13" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+</button>
+
+<div class="caption" aria-live="polite">
+  <div class="m cap-t" id="capT"></div>
+  <div class="m cap-s lbl" id="capS"></div>
+  <div class="m cap-y" id="capY"></div>
+</div>
+
+<button class="arrow l" id="prev" type="button" aria-label="Sách trước"><svg width="18" height="10" viewBox="0 0 18 10" aria-hidden="true"><path d="M5 1 L1 5 L5 9 M1 5 H17" fill="none" stroke="currentColor" stroke-width="1.2"/></svg></button>
+<button class="arrow r" id="next" type="button" aria-label="Sách sau"><svg width="18" height="10" viewBox="0 0 18 10" aria-hidden="true"><path d="M13 1 L17 5 L13 9 M17 5 H1" fill="none" stroke="currentColor" stroke-width="1.2"/></svg></button>
+
+<footer class="foot lbl">
+  <span>Kéo thả PDF / EPUB vào trang để thêm vào kệ</span>
+  <span class="hint">← → lật · Enter mở · Esc đóng · <a href="reader/" style="color:var(--cobalt);text-decoration:none">Trình đọc lật trang →</a></span>
+</footer>
+
+<div class="cursor" id="cursor" aria-hidden="true"><i class="ring"></i><i class="dot"></i><b class="clabel">MỞ<br>SÁCH</b></div>
+<div class="drop" id="drop"><div class="frame"></div><p class="lbl"><span class="big">Thả để đặt lên kệ</span>PDF hoặc EPUB</p></div>
+<div class="toast lbl" id="toast" role="status"></div>
+
+<div class="detail" id="detail" role="dialog" aria-modal="true" aria-label="Chi tiết sách">
+  <button class="box lbl close" id="dClose" type="button">← Về kệ</button>
+  <div class="dlogo"><div class="logo"><span class="l1">Tủ Sách Nhỏ</span><span class="l2">A Small Library</span></div></div>
+  <div class="dtext">
+    <div class="dm"><span class="in lbl dsub" id="dSub"></span></div>
+    <div class="dm"><span class="in dtitle" id="dTitle"></span></div>
+    <div class="dm"><span class="in lbl dmeta" id="dMeta"></span></div>
+    <div class="dm"><span class="in dsyn" id="dSyn"></span></div>
+    <div class="dm"><span class="in dcred" id="dCred"></span></div>
+    <div class="dm"><span class="in dact"><button class="lbl btn-read" id="dRead" type="button">Đọc sách →</button><button class="lbl btn-del" id="dDel" type="button" hidden>Xoá khỏi kệ</button></span></div>
+  </div>
+  <div class="dposter" aria-hidden="true">
+    <svg viewBox="0 0 600 900" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="inkf" filterUnits="userSpaceOnUse" x="-200" y="-200" width="1000" height="1300">
+          <feTurbulence type="fractalNoise" baseFrequency=".011" numOctaves="3" seed="7" result="t"/>
+          <feDisplacementMap in="SourceGraphic" in2="t" scale="120" xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+        <mask id="inkm" maskUnits="userSpaceOnUse" x="-200" y="-200" width="1000" height="1300">
+          <g filter="url(#inkf)" fill="#fff" id="blobs">
+            <circle cx="190" cy="330" r="0"/><circle cx="430" cy="600" r="0"/><circle cx="315" cy="120" r="0"/>
+            <circle cx="115" cy="760" r="0"/><circle cx="505" cy="250" r="0"/><circle cx="330" cy="860" r="0"/><circle cx="290" cy="470" r="0"/>
+          </g>
+        </mask>
+        <clipPath id="pclip"><rect width="600" height="900" rx="3"/></clipPath>
+      </defs>
+      <g clip-path="url(#pclip)"><g mask="url(#inkm)"><image id="pImg" width="600" height="900" preserveAspectRatio="xMidYMid slice"/></g></g>
+    </svg>
+  </div>
+</div>
+
+<div class="reader" id="reader" role="dialog" aria-modal="true" aria-label="Đọc sách">
+  <div class="rbar">
+    <button class="box lbl" id="rClose" type="button">← Đóng</button>
+    <div class="rtitle"><b id="rTitle"></b><span class="lbl" id="rProg"></span></div>
+    <div class="rctl">
+      <select class="rsel" id="rSel" aria-label="Chương"></select>
+      <button class="box lbl" id="rMinus" type="button" aria-label="Nhỏ hơn">−</button>
+      <output class="lbl" id="rSize"></output>
+      <button class="box lbl" id="rPlus" type="button" aria-label="Lớn hơn">+</button>
+    </div>
+  </div>
+  <div class="rbody" id="rBody" tabindex="-1"></div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const EASE = 'cubic-bezier(.2,.8,.2,1)', SHEET_EASE = 'cubic-bezier(.76,0,.18,1)';
+const INK = '#161514', CREAM = '#EFE6D2', COBALT = '#1F3FB0', VERM = '#C8452B', OCHRE = '#D49A2A', TEAL = '#2E6A5E', WINE = '#7A2333';
+const mod = (a, n) => ((a % n) + n) % n;
+const ss = x => x * x * (3 - 2 * x);
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const store = {
+  get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } },
+  set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} },
+  del(k){ try { localStorage.removeItem(k); } catch(e){} }
+};
+
+/* ---------- data ---------- */
+const GROUPS = [
+  { id:'all', label:'Tất cả' }, { id:'romance', label:'Lãng mạn' }, { id:'adv', label:'Phiêu lưu' },
+  { id:'myst', label:'Bí ẩn' }, { id:'sf', label:'Viễn tưởng' }, { id:'mine', label:'Của bạn' }
+];
+const GLABEL = { romance:'Lãng mạn', adv:'Phiêu lưu', myst:'Bí ẩn', sf:'Viễn tưởng', mine:'Của bạn' };
+
+const SAMPLES = [
+ { id:'pride', title:'Pride and Prejudice', vi:'Kiêu hãnh và định kiến', author:'Jane Austen', year:1813, group:'romance', motif:'rings', gid:1342,
+   pal:{ bg:'#F0E5CF', a:VERM, b:COBALT, spine:'#B4402B' },
+   syn:'Ở vùng quê nước Anh, cô Elizabeth Bennet sắc sảo và anh Darcy kiêu kỳ hiểu lầm nhau từ buổi khiêu vũ đầu tiên, rồi mất cả một cuốn sách để nhận ra mình đã sai.',
+   text:['It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.',
+   'However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families, that he is considered the rightful property of some one or other of their daughters.',
+   '“My dear Mr. Bennet,” said his lady to him one day, “have you heard that Netherfield Park is let at last?”',
+   'Mr. Bennet replied that he had not.',
+   '“But it is,” returned she; “for Mrs. Long has just been here, and she told me all about it.”',
+   'Mr. Bennet made no answer.',
+   '“Do you not want to know who has taken it?” cried his wife impatiently.',
+   '“You want to tell me, and I have no objection to hearing it.”',
+   'This was invitation enough.'] },
+ { id:'jane', title:'Jane Eyre', vi:'Jane Eyre', author:'Charlotte Brontë', year:1847, group:'romance', motif:'window', gid:1260,
+   pal:{ bg:'#E7DFCC', a:COBALT, b:INK, spine:'#2B2A33' },
+   syn:'Cô bé mồ côi Jane lớn lên trong ghẻ lạnh, trở thành gia sư ở dinh thự Thornfield và phải chọn giữa tình yêu với ông Rochester và lòng tự trọng của chính mình.',
+   text:['There was no possibility of taking a walk that day. We had been wandering, indeed, in the leafless shrubbery an hour in the morning; but since dinner (Mrs. Reed, when there was no company, dined early) the cold winter wind had brought with it clouds so sombre, and a rain so penetrating, that further out-door exercise was now out of the question.',
+   'I was glad of it: I never liked long walks, especially on chilly afternoons: dreadful to me was the coming home in the raw twilight, with nipped fingers and toes, and a heart saddened by the chidings of Bessie, the nurse, and humbled by the consciousness of my physical inferiority to Eliza, John, and Georgiana Reed.'] },
+ { id:'moby', title:'Moby-Dick', vi:'Cá voi trắng', author:'Herman Melville', year:1851, group:'adv', motif:'waves', gid:2701,
+   pal:{ bg:'#EDE4D0', a:COBALT, b:VERM, spine:COBALT },
+   syn:'Thuỷ thủ Ishmael theo tàu săn cá voi Pequod, nơi thuyền trưởng Ahab cụt một chân đã thề đuổi theo con cá voi trắng khổng lồ đến tận cùng đại dương.',
+   text:['Call me Ishmael. Some years ago—never mind how long precisely—having little or no money in my purse, and nothing particular to interest me on shore, I thought I would sail about a little and see the watery part of the world. It is a way I have of driving off the spleen and regulating the circulation.',
+   'Whenever I find myself growing grim about the mouth; whenever it is a damp, drizzly November in my soul; whenever I find myself involuntarily pausing before coffin warehouses, and bringing up the rear of every funeral I meet; and especially whenever my hypos get such an upper hand of me, that it requires a strong moral principle to prevent me from deliberately stepping into the street, and methodically knocking people’s hats off—then, I account it high time to get to sea as soon as I can.'] },
+ { id:'alice', title:'Alice’s Adventures in Wonderland', vi:'Alice ở xứ sở thần tiên', author:'Lewis Carroll', year:1865, group:'adv', motif:'hole', gid:11,
+   pal:{ bg:'#F2E8D3', a:VERM, b:TEAL, spine:OCHRE },
+   syn:'Một buổi chiều buồn ngủ, Alice đuổi theo chú thỏ trắng mang đồng hồ, rơi xuống hang và lạc vào một thế giới nơi mọi quy tắc đều bị lộn ngược.',
+   text:['Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, “and what is the use of a book,” thought Alice “without pictures or conversations?”',
+   'So she was considering in her own mind (as well as she could, for the hot day made her feel very sleepy and stupid), whether the pleasure of making a daisy-chain would be worth the trouble of getting up and picking the daisies, when suddenly a White Rabbit with pink eyes ran close by her.'] },
+ { id:'frank', title:'Frankenstein', vi:'Frankenstein', author:'Mary Shelley', year:1818, group:'myst', motif:'bolt', gid:84,
+   pal:{ bg:'#E5DDC8', a:TEAL, b:VERM, spine:'#2E5E52' },
+   syn:'Nhà khoa học trẻ Victor Frankenstein tạo ra sự sống từ những gì đã chết, rồi bỏ chạy khỏi chính tạo vật của mình. Tạo vật ấy không quên.',
+   text:['You will rejoice to hear that no disaster has accompanied the commencement of an enterprise which you have regarded with such evil forebodings. I arrived here yesterday, and my first task is to assure my dear sister of my welfare and increasing confidence in the success of my undertaking.'] },
+ { id:'holmes', title:'The Adventures of Sherlock Holmes', vi:'Những cuộc phiêu lưu của Sherlock Holmes', author:'Arthur Conan Doyle', year:1892, group:'myst', motif:'eye', gid:1661,
+   pal:{ bg:'#EDE3CC', a:COBALT, b:VERM, spine:'#1A1918' },
+   syn:'Mười hai vụ án ở London cuối thế kỷ XIX do bác sĩ Watson kể lại, nơi Sherlock Holmes đọc ra cả cuộc đời một người từ chiếc mũ hay đôi giày.',
+   text:['To Sherlock Holmes she is always the woman. I have seldom heard him mention her under any other name. In his eyes she eclipses and predominates the whole of her sex. It was not that he felt any emotion akin to love for Irene Adler. All emotions, and that one particularly, were abhorrent to his cold, precise but admirably balanced mind.'] },
+ { id:'dracula', title:'Dracula', vi:'Bá tước Dracula', author:'Bram Stoker', year:1897, group:'myst', motif:'moon', gid:345,
+   pal:{ bg:'#E9DFCB', a:WINE, b:INK, spine:WINE },
+   syn:'Luật sư trẻ Jonathan Harker tới Transylvania để lo giấy tờ mua nhà cho một bá tước, và dần nhận ra mình đã thành tù nhân trong toà lâu đài.',
+   text:['3 May. Bistritz.—Left Munich at 8:35 P. M., on 1st May, arriving at Vienna early next morning; should have arrived at 6:46, but train was an hour late. Buda-Pesth seems a wonderful place, from the glimpse which I got of it from the train and the little I could walk through the streets.'] },
+ { id:'time', title:'The Time Machine', vi:'Cỗ máy thời gian', author:'H. G. Wells', year:1895, group:'sf', motif:'clock', gid:35,
+   pal:{ bg:'#E9E1CF', a:OCHRE, b:COBALT, spine:'#E6DCC4' },
+   syn:'Một nhà phát minh kể cho bạn bè nghe chuyến đi tới năm 802.701, nơi loài người đã tách thành hai giống loài sống trên và dưới mặt đất.',
+   text:['The Time Traveller (for so it will be convenient to speak of him) was expounding a recondite matter to us. His grey eyes shone and twinkled, and his usually pale face was flushed and animated. The fire burned brightly, and the soft radiance of the incandescent lights in the lilies of silver caught the bubbles that flashed and passed in our glasses.'] },
+ { id:'war', title:'The War of the Worlds', vi:'Chiến tranh giữa các thế giới', author:'H. G. Wells', year:1898, group:'sf', motif:'planet', gid:36,
+   pal:{ bg:'#EFE5CF', a:VERM, b:INK, spine:VERM },
+   syn:'Những trụ kim loại rơi xuống vùng Surrey và cỗ máy ba chân từ sao Hoả trỗi dậy. Một người kể chuyện vô danh tìm đường về với vợ giữa nước Anh hoang tàn.',
+   text:['No one would have believed in the last years of the nineteenth century that this world was being watched keenly and closely by intelligences greater than man’s and yet as mortal as his own; that as men busied themselves about their various concerns they were scrutinised and studied, perhaps almost as narrowly as a man with a microscope might scrutinise the transient creatures that swarm and multiply in a drop of water.'] }
+];
+SAMPLES.forEach(b => { b.kind = 'sample'; });
+
+/* ---------- canvas art ---------- */
+function mkCanvas(w, h){ const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+function lum(hex){ const n = parseInt(hex.slice(1), 16); const r = n >> 16, g = (n >> 8) & 255, b = n & 255; return (0.299*r + 0.587*g + 0.114*b) / 255; }
+function hashStr(s){ let h = 2166136261; for (let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+function rng(seed){ let a = seed || 1; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function setSpacing(x, v){ try { x.letterSpacing = v; } catch(e){} }
+
+function wear(x, w, h, seed, strength){
+  const R = rng(seed);
+  x.save();
+  for (let i = 0; i < w*h/90; i++){
+    x.fillStyle = R() < .5 ? 'rgba(20,16,10,' + (R()*.09*strength) + ')' : 'rgba(255,250,240,' + (R()*.12*strength) + ')';
+    const s = R()*2.2 + .4; x.fillRect(R()*w, R()*h, s, s);
+  }
+  for (let i = 0; i < 14; i++){
+    x.strokeStyle = 'rgba(255,250,240,' + (R()*.18*strength) + ')'; x.lineWidth = R()*1.6 + .4;
+    const y = R()*h, X = R()*w; x.beginPath(); x.moveTo(X, y); x.lineTo(X + (R()-.5)*60, y + (R()-.5)*14); x.stroke();
+  }
+  const g = x.createLinearGradient(0, 0, w, 0);
+  g.addColorStop(0, 'rgba(20,16,10,' + .22*strength + ')'); g.addColorStop(.08, 'rgba(20,16,10,0)');
+  g.addColorStop(.92, 'rgba(20,16,10,0)'); g.addColorStop(1, 'rgba(20,16,10,' + .22*strength + ')');
+  x.fillStyle = g; x.fillRect(0, 0, w, h);
+  const gv = x.createLinearGradient(0, 0, 0, h);
+  gv.addColorStop(0, 'rgba(20,16,10,' + .16*strength + ')'); gv.addColorStop(.04, 'rgba(20,16,10,0)');
+  gv.addColorStop(.96, 'rgba(20,16,10,0)'); gv.addColorStop(1, 'rgba(20,16,10,' + .2*strength + ')');
+  x.fillStyle = gv; x.fillRect(0, 0, w, h);
+  x.restore();
+}
+
+function motif(x, m, R, p){
+  const { a, b, bg } = p; const cx = R.x + R.w/2, cy = R.y + R.h/2, s = Math.min(R.w, R.h);
+  const C = (X, Y, r, col) => { x.fillStyle = col; x.beginPath(); x.arc(X, Y, Math.max(0, r), 0, Math.PI*2); x.fill(); };
+  x.save(); x.beginPath(); x.rect(R.x, R.y, R.w, R.h); x.clip();
+  if (m === 'rings'){
+    x.globalCompositeOperation = 'multiply';
+    C(cx - s*.17, cy - s*.02, s*.33, a); C(cx + s*.17, cy - s*.02, s*.33, b);
+    x.globalCompositeOperation = 'source-over';
+    x.strokeStyle = INK; x.lineWidth = 2.5;
+    for (let i = 1; i < 6; i++){ x.beginPath(); x.arc(cx, cy - s*.02, s*.055*i, 0, Math.PI*2); x.stroke(); }
+    x.fillStyle = INK; x.fillRect(R.x, cy + s*.37, R.w, 3);
+  } else if (m === 'window'){
+    const w = s*.6, h = R.h*.86, lx = cx - w/2, ty = R.y + R.h*.07;
+    x.fillStyle = a; x.beginPath(); x.moveTo(lx, ty + h); x.lineTo(lx, ty + w/2); x.arc(cx, ty + w/2, w/2, Math.PI, 0); x.lineTo(lx + w, ty + h); x.closePath(); x.fill();
+    x.globalCompositeOperation = 'multiply'; x.strokeStyle = b; x.lineWidth = 3;
+    for (let i = -14; i < 22; i++){ x.beginPath(); x.moveTo(R.x + i*26, R.y); x.lineTo(R.x + i*26 + R.h*.32, R.y + R.h); x.stroke(); }
+    x.globalCompositeOperation = 'source-over'; x.fillStyle = bg;
+    x.fillRect(cx - 4, ty + 6, 8, h); x.fillRect(lx, ty + h*.52, w, 8);
+    C(cx, ty + h*.8, s*.06, INK); x.fillStyle = INK; x.fillRect(cx - s*.05, ty + h*.84, s*.1, h*.16);
+  } else if (m === 'waves'){
+    C(cx + s*.2, R.y + s*.26, s*.22, a);
+    const base = R.y + R.h*.5; const cols = [b, bg, a, bg, b, bg, a, bg];
+    x.fillStyle = INK; const tx = cx - s*.14, ty = base + 4; x.beginPath(); x.moveTo(tx - s*.02, ty);
+    x.quadraticCurveTo(tx - s*.02, ty - s*.12, tx - s*.17, ty - s*.2); x.quadraticCurveTo(tx - s*.04, ty - s*.15, tx + s*.01, ty - s*.09);
+    x.quadraticCurveTo(tx + s*.06, ty - s*.15, tx + s*.19, ty - s*.2); x.quadraticCurveTo(tx + s*.04, ty - s*.12, tx + s*.04, ty); x.fill();
+    cols.forEach((col, k) => {
+      const y0 = base + k*R.h*.065; x.fillStyle = col; x.beginPath(); x.moveTo(R.x, R.y + R.h); x.lineTo(R.x, y0);
+      for (let X = R.x; X <= R.x + R.w + 20; X += 16) x.lineTo(X, y0 + Math.sin(X/34 + k*1.3)*9);
+      x.lineTo(R.x + R.w, R.y + R.h); x.closePath(); x.fill();
+    });
+  } else if (m === 'hole'){
+    for (let i = 0; i < 10; i++){ const r = s*.47*(1 - i/10); C(cx + Math.sin(i*.9)*s*.04, cy + i*s*.014, r, i % 2 ? bg : (i % 4 === 0 ? a : b)); }
+    C(cx + Math.sin(9)*s*.04, cy + s*.13, s*.05, INK);
+    x.strokeStyle = INK; x.lineWidth = 4; x.beginPath(); x.arc(R.x + R.w*.84, R.y + s*.12, s*.07, 0, Math.PI*2); x.stroke();
+    x.beginPath(); x.moveTo(R.x + R.w*.84, R.y + s*.12); x.lineTo(R.x + R.w*.84, R.y + s*.075); x.moveTo(R.x + R.w*.84, R.y + s*.12); x.lineTo(R.x + R.w*.87, R.y + s*.13); x.stroke();
+  } else if (m === 'bolt'){
+    x.globalCompositeOperation = 'multiply';
+    const tri = (pts, col) => { x.fillStyle = col; x.beginPath(); x.moveTo(pts[0], pts[1]); x.lineTo(pts[2], pts[3]); x.lineTo(pts[4], pts[5]); x.closePath(); x.fill(); };
+    tri([R.x - 20, R.y + R.h, cx - s*.12, R.y + R.h*.42, cx + s*.25, R.y + R.h], b);
+    tri([cx - s*.08, R.y + R.h, cx + s*.26, R.y + R.h*.28, R.x + R.w + 20, R.y + R.h], a);
+    x.globalCompositeOperation = 'source-over';
+    const pts = [[.06,-.46],[-.13,.03],[.02,.03],[-.09,.46],[.17,-.09],[.02,-.09],[.14,-.46]];
+    x.fillStyle = INK; x.beginPath(); pts.forEach((p2, i) => { const X = cx - s*.2 + p2[0]*s*.8, Y = cy + p2[1]*R.h*.9; i ? x.lineTo(X, Y) : x.moveTo(X, Y); }); x.closePath(); x.fill();
+  } else if (m === 'eye'){
+    x.fillStyle = a; x.beginPath(); x.moveTo(cx - s*.44, cy); x.quadraticCurveTo(cx, cy - s*.44, cx + s*.44, cy); x.quadraticCurveTo(cx, cy + s*.44, cx - s*.44, cy); x.fill();
+    C(cx, cy, s*.17, bg); C(cx, cy, s*.12, b); C(cx, cy, s*.055, INK);
+    x.strokeStyle = INK; x.lineWidth = 10; x.beginPath(); x.arc(cx + s*.2, cy + s*.18, s*.16, 0, Math.PI*2); x.stroke();
+    x.lineWidth = 16; x.lineCap = 'round'; x.beginPath(); x.moveTo(cx + s*.31, cy + s*.29); x.lineTo(cx + s*.44, cy + s*.42); x.stroke();
+  } else if (m === 'moon'){
+    C(cx + s*.08, cy - s*.12, s*.3, a); C(cx + s*.2, cy - s*.2, s*.26, bg);
+    const base = R.y + R.h; x.fillStyle = INK;
+    x.fillRect(cx - s*.36, base - s*.17, s*.72, s*.17);
+    x.fillRect(cx - s*.33, base - s*.36, s*.11, s*.36); x.fillRect(cx + s*.2, base - s*.44, s*.12, s*.44); x.fillRect(cx - s*.06, base - s*.27, s*.1, s*.27);
+    const roof = (l, w, t, hh) => { x.beginPath(); x.moveTo(l, t); x.lineTo(l + w/2, t - hh); x.lineTo(l + w, t); x.closePath(); x.fill(); };
+    roof(cx - s*.35, s*.15, base - s*.36, s*.12); roof(cx + s*.18, s*.16, base - s*.44, s*.14);
+    x.strokeStyle = INK; x.lineWidth = 3;
+    [[.32,.18],[.4,.24],[.22,.3]].forEach(([u, v]) => { const X = R.x + R.w*u, Y = R.y + R.h*v; x.beginPath(); x.moveTo(X - 12, Y - 5); x.quadraticCurveTo(X - 6, Y - 1, X, Y + 4); x.quadraticCurveTo(X + 6, Y - 1, X + 12, Y - 5); x.stroke(); });
+  } else if (m === 'clock'){
+    x.strokeStyle = b; x.lineWidth = 3;
+    for (let i = 1; i < 9; i++){ x.beginPath(); x.arc(cx, cy, s*.058*i, 0, Math.PI*2); x.stroke(); }
+    C(cx, cy, s*.25, a); x.strokeStyle = INK; x.lineWidth = 4;
+    for (let i = 0; i < 12; i++){ const t = i/12*Math.PI*2; x.beginPath(); x.moveTo(cx + Math.cos(t)*s*.2, cy + Math.sin(t)*s*.2); x.lineTo(cx + Math.cos(t)*s*.24, cy + Math.sin(t)*s*.24); x.stroke(); }
+    x.lineWidth = 7; x.lineCap = 'round'; x.beginPath(); x.moveTo(cx, cy); x.lineTo(cx + s*.1, cy - s*.12); x.moveTo(cx, cy); x.lineTo(cx - s*.04, cy + s*.17); x.stroke();
+    C(cx, cy, 8, INK);
+  } else if (m === 'planet'){
+    C(cx, cy - s*.08, s*.26, a);
+    x.strokeStyle = b; x.lineWidth = 12; x.beginPath(); x.ellipse(cx, cy - s*.08, s*.45, s*.1, -.32, 0, Math.PI*2); x.stroke();
+    x.fillStyle = a; x.beginPath(); x.arc(cx, cy - s*.08, s*.26, Math.PI*1.1, Math.PI*1.9); x.fill();
+    x.strokeStyle = INK; x.lineWidth = 5; const hx = R.x + R.w*.24, hy = R.y + R.h*.7;
+    x.beginPath(); x.moveTo(hx, hy); x.lineTo(hx - s*.13, R.y + R.h); x.moveTo(hx, hy); x.lineTo(hx + s*.03, R.y + R.h); x.moveTo(hx, hy); x.lineTo(hx + s*.15, R.y + R.h); x.stroke();
+    x.fillStyle = INK; x.beginPath(); x.ellipse(hx, hy, s*.09, s*.045, 0, 0, Math.PI*2); x.fill();
+  }
+  x.restore();
+}
+
+function wrapLines(x, text, maxW){
+  const words = text.split(/\s+/); const lines = []; let cur = '';
+  for (const w of words){ const t = cur ? cur + ' ' + w : w; if (x.measureText(t).width > maxW && cur){ lines.push(cur); cur = w; } else cur = t; }
+  if (cur) lines.push(cur); return lines;
+}
+function kindBadge(b){ return b.kind === 'pdf' ? 'PDF' : b.kind === 'epub' ? 'EPUB' : 'MẪU'; }
+
+function genCover(b){
+  const W = 600, H = 900, c = mkCanvas(W, H), x = c.getContext('2d'), p = b.pal;
+  x.fillStyle = p.bg; x.fillRect(0, 0, W, H);
+  x.fillStyle = INK; x.textAlign = 'center'; x.textBaseline = 'alphabetic';
+  x.font = '600 19px "Inter Tight", system-ui, sans-serif'; setSpacing(x, '4px');
+  x.fillText(b.author.toUpperCase().slice(0, 34), W/2, 66); setSpacing(x, '0px');
+  x.fillRect(250, 84, 100, 2);
+  let fs = 100, lines;
+  do { x.font = '600 ' + fs + 'px Newsreader, Georgia, serif'; lines = wrapLines(x, b.title, 510); fs -= 4; }
+  while ((lines.length > 3 || lines.some(l => x.measureText(l).width > 520)) && fs > 34);
+  fs += 4; let y = 120 + fs*.82;
+  lines.slice(0, 4).forEach(l => { x.fillText(l, W/2, y); y += fs*.94; });
+  let top = y - fs*.94 + 44; if (790 - top < 230) top = 790 - 230;
+  motif(x, b.motif, { x:48, y:top, w:504, h:790 - top }, p);
+  x.fillStyle = INK; x.fillRect(48, 812, 504, 2);
+  x.font = '600 20px "Inter Tight", system-ui, sans-serif'; x.textAlign = 'left'; setSpacing(x, '3px');
+  x.fillText(String(b.year || ''), 48, 856);
+  const tag = kindBadge(b); x.textAlign = 'center'; const tw = x.measureText(tag).width + 26;
+  x.lineWidth = 2; x.strokeStyle = INK; x.strokeRect(552 - tw, 832, tw, 34); x.fillText(tag, 552 - tw/2 + 1.5, 856);
+  setSpacing(x, '0px');
+  wear(x, W, H, hashStr(b.id), 1);
+  return c.toDataURL('image/jpeg', .88);
+}
+
+function genSpine(b){
+  const W = 150, H = 1000, c = mkCanvas(W, H), x = c.getContext('2d'), p = b.pal;
+  x.fillStyle = p.spine; x.fillRect(0, 0, W, H);
+  const fg = lum(p.spine) > .55 ? INK : CREAM;
+  x.fillStyle = p.a === p.spine ? CREAM : p.a; x.beginPath(); x.arc(W/2, 92, 40, 0, Math.PI*2); x.fill();
+  x.fillStyle = p.b === p.spine ? CREAM : p.b; x.beginPath(); x.arc(W/2 + 10, 84, 18, 0, Math.PI*2); x.fill();
+  x.fillStyle = fg; x.fillRect(24, 160, W - 48, 2); x.fillRect(24, 166, W - 48, 1);
+  x.save(); x.translate(W/2, 192); x.rotate(Math.PI/2); x.textAlign = 'left'; x.textBaseline = 'middle';
+  let fs = 66, t = b.title;
+  do { x.font = '600 ' + fs + 'px Newsreader, Georgia, serif'; fs -= 2; } while (x.measureText(t).width > 560 && fs > 28);
+  while (x.measureText(t).width > 560 && t.length > 4) t = t.slice(0, -2).trimEnd() + '…';
+  x.fillText(t, 0, 3);
+  x.font = '600 21px "Inter Tight", system-ui, sans-serif'; setSpacing(x, '4px');
+  let au = (b.author.split(/\s+/).pop() || '').toUpperCase();
+  while (x.measureText(au).width > 150 && au.length > 3) au = au.slice(0, -1);
+  x.fillText(au, 600, 1); setSpacing(x, '0px');
+  x.restore();
+  x.fillStyle = fg; x.fillRect(24, 820, W - 48, 1); x.fillRect(24, 826, W - 48, 2);
+  x.font = '600 22px "Inter Tight", system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; setSpacing(x, '2px');
+  const tag = kindBadge(b); const tw = Math.min(W - 36, x.measureText(tag).width + 20);
+  x.strokeStyle = fg; x.lineWidth = 2; x.strokeRect(W/2 - tw/2, 878, tw, 42); x.fillText(tag, W/2 + 1, 900);
+  setSpacing(x, '0px');
+  wear(x, W, H, hashStr(b.id) + 9, 1.2);
+  return c.toDataURL('image/jpeg', .88);
+}
+
+async function loadImg(src){ const im = new Image(); im.src = src; await im.decode(); return im; }
+function coverFit(im){
+  const c = mkCanvas(600, 900), x = c.getContext('2d');
+  x.fillStyle = '#fff'; x.fillRect(0, 0, 600, 900);
+  const sc = Math.max(600/im.width, 900/im.height); const w = im.width*sc, h = im.height*sc;
+  x.drawImage(im, (600 - w)/2, 0, w, h);
+  return c;
+}
+function avgColor(canvas){
+  const t = mkCanvas(6, 6), x = t.getContext('2d'); x.drawImage(canvas, 0, 0, 6, 6);
+  const d = x.getImageData(0, 0, 6, 6).data; let r = 0, g = 0, bl = 0;
+  for (let i = 0; i < d.length; i += 4){ r += d[i]; g += d[i+1]; bl += d[i+2]; }
+  const n = d.length/4; r /= n; g /= n; bl /= n;
+  const m = (r + g + bl)/3; const k = 1.5; r = m + (r - m)*k; g = m + (g - m)*k; bl = m + (bl - m)*k;
+  const f = m > 150 ? .62 : .9; const h2 = v => clamp(Math.round(v*f), 18, 235).toString(16).padStart(2, '0');
+  return '#' + h2(r) + h2(g) + h2(bl);
+}
+const MOTIFS = ['rings','window','waves','hole','bolt','eye','moon','clock','planet'];
+const UPAL = [[COBALT, VERM], [VERM, INK], [TEAL, OCHRE], [WINE, COBALT], [OCHRE, INK]];
+
+/* ---------- storage (IndexedDB) ---------- */
+const DB = {
+  db: null,
+  async open(){
+    try {
+      this.db = await new Promise((res, rej) => {
+        const q = indexedDB.open('tu-sach-nho', 1);
+        q.onupgradeneeded = () => q.result.createObjectStore('books', { keyPath:'id' });
+        q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error);
+      });
+    } catch(e){ this.db = null; }
+  },
+  tx(mode, fn){
+    return new Promise(res => {
+      if (!this.db) return res(null);
+      try { const os = this.db.transaction('books', mode).objectStore('books'); const q = fn(os); q.onsuccess = () => res(q.result); q.onerror = () => res(null); }
+      catch(e){ res(null); }
+    });
+  },
+  all(){ return this.tx('readonly', os => os.getAll()).then(r => r || []); },
+  put(rec){ return this.tx('readwrite', os => os.put(rec)); },
+  del(id){ return this.tx('readwrite', os => os.delete(id)); }
+};
+
+/* ---------- lazy libraries ---------- */
+const libs = {};
+function loadScript(src){
+  if (libs[src]) return libs[src];
+  return libs[src] = new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => { delete libs[src]; rej(new Error('Không tải được thư viện')); }; document.head.appendChild(s); });
+}
+const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+async function ensurePdf(){
+  await loadScript(PDFJS + 'pdf.min.js'); await loadScript(PDFJS + 'pdf.worker.min.js');
+  const lib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
+  lib.GlobalWorkerOptions.workerSrc = PDFJS + 'pdf.worker.min.js';
+  return lib;
+}
+async function ensureZip(){ await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'); return window.JSZip; }
+
+/* ---------- uploads ---------- */
+function stripExt(n){ return n.replace(/\.(pdf|epub)$/i, '').replace(/[_]+/g, ' ').trim(); }
+function pdfYear(d){ const m = /D:(\d{4})/.exec(d || ''); return m ? +m[1] : null; }
+
+function resolvePath(base, rel){
+  if (/^[a-z]+:/i.test(rel)) return rel;
+  rel = rel.split('#')[0];
+  try { rel = decodeURIComponent(rel); } catch(e){}
+  const parts = (rel.startsWith('/') ? [] : base.split('/').slice(0, -1));
+  for (const seg of rel.replace(/^\//, '').split('/')){ if (seg === '..') parts.pop(); else if (seg && seg !== '.') parts.push(seg); }
+  return parts.join('/');
+}
+const byTag = (doc, name) => doc.getElementsByTagNameNS('*', name);
+
+async function parseEpub(file){
+  const JSZip = await ensureZip();
+  const zip = await JSZip.loadAsync(file);
+  const cont = await zip.file('META-INF/container.xml').async('text');
+  const cdoc = new DOMParser().parseFromString(cont, 'application/xml');
+  const opfPath = byTag(cdoc, 'rootfile')[0].getAttribute('full-path');
+  const odoc = new DOMParser().parseFromString(await zip.file(opfPath).async('text'), 'application/xml');
+  const manifest = {};
+  for (const it of byTag(odoc, 'item')) manifest[it.getAttribute('id')] = { href: resolvePath(opfPath, it.getAttribute('href') || ''), type: it.getAttribute('media-type') || '', props: it.getAttribute('properties') || '' };
+  const spine = [...byTag(odoc, 'itemref')].map(r => manifest[r.getAttribute('idref')]).filter(Boolean).map(m => m.href);
+  const meta = n => (byTag(odoc, n)[0] || {}).textContent;
+  let coverId = Object.keys(manifest).find(k => /cover-image/.test(manifest[k].props));
+  if (!coverId){ const mc = [...byTag(odoc, 'meta')].find(m => m.getAttribute('name') === 'cover'); if (mc) coverId = mc.getAttribute('content'); }
+  let navHref = Object.values(manifest).find(m => /\bnav\b/.test(m.props));
+  let ncx = Object.values(manifest).find(m => /ncx/.test(m.type));
+  return { zip, opfPath, manifest, spine, coverId, navHref: navHref && navHref.href, ncxHref: ncx && ncx.href,
+    title: (meta('title') || '').trim(), author: (meta('creator') || '').trim(), date: meta('date') || '' };
+}
+
+async function importFile(file){
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  const kind = ext === 'pdf' || file.type === 'application/pdf' ? 'pdf' : ext === 'epub' || file.type === 'application/epub+zip' ? 'epub' : null;
+  if (!kind) throw new Error('“' + file.name + '” không phải PDF hoặc EPUB.');
+  const id = 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const rec = { id, kind, file, added: Date.now(), title: stripExt(file.name), author: '', year: null, count: 0, cover: null };
+  const seed = hashStr(file.name);
+  let coverCanvas = null;
+  if (kind === 'pdf'){
+    const lib = await ensurePdf();
+    const doc = await lib.getDocument({ data: await file.arrayBuffer() }).promise;
+    try {
+      const md = await doc.getMetadata().catch(() => null);
+      const info = md && md.info || {};
+      if (info.Title && String(info.Title).trim().length > 1) rec.title = String(info.Title).trim();
+      rec.author = String(info.Author || '').trim(); rec.year = pdfYear(info.CreationDate);
+      rec.count = doc.numPages;
+      const page = await doc.getPage(1); const v1 = page.getViewport({ scale: 1 });
+      const vp = page.getViewport({ scale: 600 / v1.width });
+      const c = mkCanvas(Math.ceil(vp.width), Math.ceil(vp.height));
+      const cx = c.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, c.width, c.height);
+      await page.render({ canvasContext: cx, viewport: vp }).promise;
+      coverCanvas = coverFit(c);
+    } finally { doc.destroy(); }
+  } else {
+    const ep = await parseEpub(file);
+    if (ep.title) rec.title = ep.title; rec.author = ep.author; rec.year = pdfYear('D:' + ep.date.slice(0, 4)); rec.count = ep.spine.length;
+    if (ep.coverId && ep.manifest[ep.coverId]){
+      const f = ep.zip.file(ep.manifest[ep.coverId].href);
+      if (f){ try { const url = URL.createObjectURL(await f.async('blob')); const im = await loadImg(url); coverCanvas = coverFit(im); URL.revokeObjectURL(url); } catch(e){} }
+    }
+  }
+  const pal = UPAL[seed % UPAL.length];
+  rec.pal = { bg:'#EFE6D2', a: pal[0], b: pal[1], spine: coverCanvas ? avgColor(coverCanvas) : pal[0] };
+  rec.motif = MOTIFS[seed % MOTIFS.length];
+  if (coverCanvas){ const x = coverCanvas.getContext('2d'); wear(x, 600, 900, seed, .6); rec.cover = coverCanvas.toDataURL('image/jpeg', .86); }
+  return rec;
+}
+
+function prepUpload(rec){
+  const b = Object.assign({}, rec);
+  b.group = 'mine'; b.vi = ''; b.author = b.author || 'Không rõ tác giả';
+  const when = new Date(b.added).toLocaleDateString('vi-VN');
+  b.syn = b.kind === 'pdf'
+    ? 'Tệp PDF ' + b.count + ' trang, bạn đặt lên kệ ngày ' + when + '. Sách chỉ nằm trong trình duyệt này.'
+    : 'Sách EPUB gồm ' + b.count + ' phần, bạn đặt lên kệ ngày ' + when + '. Sách chỉ nằm trong trình duyệt này.';
+  b.cover = rec.cover || genCover(b);
+  b.spine = genSpine(b);
+  return b;
+}
+
+/* ---------- state ---------- */
+const stage = $('#stage'), shelf = $('#shelf'), playBtn = $('#play'), cursor = $('#cursor');
+let books = [], tapes = [], N = 0, C = 3, M = 0;
+let H = 400, ws = 60, d = 260, gap = 12;
+let s = 0, T = 0, activeIdx = -1, hoverV = -1, activeTape = null;
+let mx = innerWidth/2, my = innerHeight/2, cx = mx, cy = my, curSeen = false, overEl = null;
+let tiltX = 0, tiltY = 0, onCover = false, isOpen = false, readerOpen = false;
+let dragging = false, down = false, moved = false, x0 = 0, T0 = 0, wheelTimer = 0;
+
+const probe = document.createElement('div');
+probe.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:var(--H);visibility:hidden';
+document.body.appendChild(probe);
+
+function measure(){
+  H = probe.getBoundingClientRect().height || 400;
+  ws = H * .15; d = H * 600/900; gap = H * .03;
+  stage.style.setProperty('--hp', H + 'px'); stage.style.setProperty('--ws', ws + 'px'); stage.style.setProperty('--d', d + 'px');
+}
+
+function buildShelf(keepId){
+  const keep = keepId || (books[activeIdx] && books[activeIdx].id);
+  N = books.length;
+  C = Math.max(3, Math.ceil((innerWidth + 4*d) / (N * (ws + gap))) + 2);
+  M = N * C;
+  stage.textContent = ''; tapes = [];
+  const frag = document.createDocumentFragment();
+  for (let v = 0; v < M; v++){
+    const b = books[v % N];
+    const el = document.createElement('div'); el.className = 'tape';
+    const sp = document.createElement('div'); sp.className = 'face sp'; sp.style.backgroundImage = 'url(' + b.spine + ')';
+    const cv = document.createElement('div'); cv.className = 'face cv'; cv.style.backgroundImage = 'url(' + b.cover + ')';
+    el.append(sp, cv);
+    const t = { el, sp, cv, v, i: v % N, lift: 0, r: 0, hidden: false };
+    el.addEventListener('pointerenter', () => { hoverV = v; });
+    el.addEventListener('pointerleave', () => { if (hoverV === v) hoverV = -1; });
+    el.addEventListener('click', () => {
+      if (moved || isOpen) return;
+      if (Math.abs(t.r) < .5) openDetail(); else T = Math.round(T + t.r);
+    });
+    el._t = t; tapes.push(t); frag.appendChild(el);
+  }
+  stage.appendChild(frag);
+  let idx = Math.max(0, books.findIndex(b => b.id === keep));
+  s = T = idx + N * Math.floor(C/2);
+  activeIdx = -1;
+  $('#count').textContent = N + ' cuốn · PDF · EPUB';
+  updateMineTab();
+}
+
+/* ---------- tabs ---------- */
+const tabsEl = $('#tabs'), ind = $('#ind');
+function buildTabs(){
+  GROUPS.forEach(g => {
+    const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'lbl'; bt.textContent = g.label; bt.dataset.g = g.id;
+    bt.addEventListener('click', () => {
+      if (isOpen) return;
+      let i = g.id === 'all' ? 0 : books.findIndex(b => b.group === g.id);
+      if (i < 0){ if (g.id === 'mine') $('#fileIn').click(); return; }
+      goTo(i);
+    });
+    tabsEl.appendChild(bt);
+  });
+}
+function updateMineTab(){ const bt = tabsEl.querySelector('[data-g="mine"]'); if (bt) bt.textContent = books.some(b => b.group === 'mine') ? 'Của bạn' : '+ Của bạn'; }
+function goTo(i){ const base = Math.round(T); let dlt = mod(i - mod(base, N), N); if (dlt > N/2) dlt -= N; T = base + dlt; }
+function updateTabs(){
+  const g = books[activeIdx] && books[activeIdx].group;
+  let on = null;
+  tabsEl.querySelectorAll('button').forEach(bt => { const hit = bt.dataset.g === g; bt.classList.toggle('on', hit); if (hit) on = bt; });
+  if (on){ ind.style.width = on.offsetWidth + 'px'; ind.style.transform = 'translateX(' + on.offsetLeft + 'px)'; }
+  else ind.style.width = '0px';
+}
+
+/* ---------- caption ---------- */
+function swap(mask, text, dir){
+  const span = document.createElement('span'); span.textContent = text;
+  const olds = [...mask.children].filter(c => !c.dataset.leaving);
+  mask.appendChild(span);
+  if (!dir || REDUCE){ olds.forEach(o => o.remove()); [...mask.children].forEach(c => { if (c !== span) c.remove(); }); return; }
+  span.animate([{ transform:'translateY(' + dir*105 + '%)' }, { transform:'translateY(0)' }], { duration:650, easing:EASE, fill:'both' });
+  olds.forEach(o => {
+    o.dataset.leaving = '1';
+    const cur = getComputedStyle(o).transform;
+    o.getAnimations().forEach(a => a.cancel());
+    o.animate([{ transform: cur === 'none' ? 'translateY(0)' : cur }, { transform:'translateY(' + (-dir*105) + '%)' }], { duration:650, easing:EASE, fill:'both' }).onfinish = () => o.remove();
+  });
+}
+function bookSub(b){ return b.vi ? b.vi : (b.kind === 'pdf' ? 'PDF · ' + b.count + ' trang' : 'EPUB · ' + b.count + ' phần'); }
+function setActive(i, dir){
+  activeIdx = i; const b = books[i];
+  swap($('#capT'), b.title, dir);
+  swap($('#capS'), bookSub(b), dir);
+  swap($('#capY'), b.author + (b.year ? ' · ' + b.year : ''), dir);
+  updateTabs();
+}
+
+/* ---------- geometry ---------- */
+function B(r){ return Math.abs(r) < 1 ? (r + Math.sin(Math.PI*r)/Math.PI)/2 : Math.sign(r)*.5; }
+function F(r){ return r*(ws + gap) + (d - ws + 1.6*gap)*B(r); }
+
+/* ---------- loop ---------- */
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(.05, (now - last)/1000); last = now;
+  const W = innerWidth, CY = innerHeight/2;
+  if (N){
+    const k = REDUCE ? 1e4 : dragging ? 18 : 5.2;
+    if (Math.abs(T - s) < 1e-4) s = T; else s += (T - s)*(1 - Math.exp(-k*dt));
+    while (s >= 2*M){ s -= M; T -= M; } while (s < -M){ s += M; T += M; }
+    const a = mod(Math.round(s), N);
+    if (a !== activeIdx) setActive(a, activeIdx < 0 ? 0 : (Math.sign(T - s) || 1));
+
+    onCover = !isOpen && !readerOpen && Math.abs(mx - W/2) < .55*d && Math.abs(my - CY) < .55*H && Math.abs(T - s) < .3 && curSeen;
+    const tyT = onCover ? (mx - W/2)/(.55*d)*9 : (mx - W/2)/W*5;
+    const txT = onCover ? -(my - CY)/(H/2)*6 : 0;
+    const te = 1 - Math.exp(-7*dt); tiltY += (tyT - tiltY)*te; tiltX += (txT - tiltX)*te;
+
+    let best = 1e9; activeTape = null;
+    const le = REDUCE ? 1 : 1 - Math.exp(-12*dt);
+    for (const t of tapes){
+      const r = mod(t.v - s + M/2, M) - M/2; t.r = r;
+      const x = F(r);
+      if (Math.abs(x) > W/2 + 1.5*d){ if (!t.hidden){ t.el.style.visibility = 'hidden'; t.hidden = true; } continue; }
+      if (t.hidden){ t.el.style.visibility = ''; t.hidden = false; }
+      const lt = (hoverV === t.v && Math.abs(r) > .5 && !isOpen) ? 1 : 0; t.lift += (lt - t.lift)*le;
+      const o = ss(Math.max(0, 1 - Math.abs(r)));
+      const ry = -90*o + tiltY*o, rx = tiltX*o, rz = -4.5*o, tz = o*.2*H, ty = -o*.025*H - t.lift*.045*H;
+      t.el.style.transform = 'translate3d(' + x.toFixed(2) + 'px,' + ty.toFixed(2) + 'px,' + tz.toFixed(2) + 'px) rotateZ(' + rz.toFixed(3) + 'deg) rotateX(' + rx.toFixed(3) + 'deg) rotateY(' + ry.toFixed(3) + 'deg)';
+      t.el.style.zIndex = Math.round(100 - Math.abs(r)*4);
+      t.sp.style.setProperty('--shade', (o*.55).toFixed(3));
+      t.cv.style.setProperty('--shade', ((1 - o)*.5).toFixed(3));
+      if (Math.abs(r) < best){ best = Math.abs(r); activeTape = t; }
+    }
+    const pscale = (isOpen || readerOpen) ? 0 : ss(Math.max(0, 1 - Math.abs(T - s)*3));
+    playBtn.style.left = (W/2 - .5*d - 6) + 'px'; playBtn.style.top = (CY + .36*H) + 'px';
+    playBtn.style.transform = 'translate(-50%,-50%) scale(' + pscale.toFixed(3) + ')';
+  }
+  const ce = 1 - Math.exp(-16*dt); cx += (mx - cx)*ce; cy += (my - cy)*ce;
+  cursor.style.transform = 'translate3d(' + cx.toFixed(1) + 'px,' + cy.toFixed(1) + 'px,0)';
+  let mode = '';
+  const tEl = overEl && overEl.closest ? overEl.closest('.tape') : null;
+  if (onCover) mode = 'open';
+  else if (!isOpen && !readerOpen && tEl && tEl._t && Math.abs(tEl._t.r) > .5) mode = 'spine';
+  else if (overEl && overEl.closest && overEl.closest('button,a,select,label,input')) mode = 'btn';
+  if (cursor.dataset.m !== mode){ cursor.className = 'cursor' + (mode ? ' ' + mode : ''); cursor.dataset.m = mode; }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- inputs ---------- */
+addEventListener('pointermove', e => {
+  mx = e.clientX; my = e.clientY; overEl = e.target;
+  if (!curSeen && e.pointerType === 'mouse'){ cx = mx; cy = my; curSeen = true; }
+  if (e.pointerType !== 'mouse') curSeen = false;
+  if (down){
+    const dx = e.clientX - x0;
+    if (!moved && Math.abs(dx) > 5){ moved = true; dragging = true; }
+    if (dragging) T = T0 - dx/(ws + gap);
+  }
+}, { passive:true });
+shelf.addEventListener('pointerdown', e => {
+  if (isOpen || e.button > 0) return;
+  down = true; moved = false; x0 = e.clientX; T0 = T;
+});
+addEventListener('pointerup', () => {
+  if (!down) return; down = false;
+  if (dragging){ dragging = false; T = Math.round(T); }
+  setTimeout(() => { moved = false; }, 0);
+});
+addEventListener('pointercancel', () => { if (dragging) T = Math.round(T); down = dragging = false; moved = false; });
+addEventListener('wheel', e => {
+  if (isOpen || readerOpen || !N) return;
+  e.preventDefault();
+  const mul = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? innerHeight : 1;
+  const dl = (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) * mul;
+  T += dl/(ws + gap)*.5;
+  clearTimeout(wheelTimer); wheelTimer = setTimeout(() => { T = Math.round(T); }, 160);
+}, { passive:false });
+$('#prev').addEventListener('click', () => { if (!isOpen) T = Math.round(T) - 1; });
+$('#next').addEventListener('click', () => { if (!isOpen) T = Math.round(T) + 1; });
+playBtn.addEventListener('click', () => openDetail());
+addEventListener('keydown', e => {
+  if (e.key === 'Escape'){ if (readerOpen) closeReader(); else if (isOpen) closeDetail(); return; }
+  if (readerOpen || isOpen) return;
+  if (e.key === 'ArrowLeft'){ T = Math.round(T) - 1; e.preventDefault(); }
+  else if (e.key === 'ArrowRight'){ T = Math.round(T) + 1; e.preventDefault(); }
+  else if (e.key === 'Enter' && (document.activeElement === document.body || !document.activeElement)){ openDetail(); }
+});
+let resizeT = 0;
+addEventListener('resize', () => {
+  clearTimeout(resizeT);
+  resizeT = setTimeout(() => {
+    const oldC = C; measure();
+    const need = Math.max(3, Math.ceil((innerWidth + 4*d) / (N * (ws + gap))) + 2);
+    if (need !== oldC && N){ const id = books[mod(Math.round(s), N)].id; buildShelf(id); }
+    updateTabs();
+    if (readerOpen && R.kind === 'pdf') sizePages(true);
+  }, 120);
+});
+
+/* ---------- toast ---------- */
+let toastT = 0;
+function toast(msg, ms){ const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), ms || 3200); }
+
+/* ---------- adding books ---------- */
+async function addFiles(list){
+  const files = [...list]; if (!files.length) return;
+  let lastId = null;
+  for (const f of files){
+    toast('Đang đọc “' + f.name + '”…', 60000);
+    try {
+      const rec = await importFile(f);
+      const saved = await DB.put(rec);
+      const b = prepUpload(rec);
+      const cur = books[activeIdx] && books[activeIdx].id;
+      books.push(b); buildShelf(cur); lastId = b.id;
+      toast(saved === null ? 'Đã thêm “' + b.title + '” (chỉ trong phiên này).' : 'Đã thêm “' + b.title + '” lên kệ.');
+    } catch(err){
+      toast(err && err.message && /PDF hoặc EPUB/.test(err.message) ? err.message : 'Không đọc được “' + f.name + '”. File có thể bị hỏng hoặc có DRM.', 4800);
+    }
+  }
+  if (lastId){ const i = books.findIndex(b => b.id === lastId); setTimeout(() => goTo(i), 60); }
+}
+$('#addBtn').addEventListener('click', () => $('#fileIn').click());
+$('#fileIn').addEventListener('change', e => { addFiles(e.target.files); e.target.value = ''; });
+let dragDepth = 0;
+const hasFiles = e => e.dataTransfer && [...(e.dataTransfer.types || [])].includes('Files');
+addEventListener('dragenter', e => { if (!hasFiles(e)) return; e.preventDefault(); dragDepth++; $('#drop').classList.add('on'); });
+addEventListener('dragover', e => { if (hasFiles(e)) e.preventDefault(); });
+addEventListener('dragleave', e => { if (!hasFiles(e)) return; dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) $('#drop').classList.remove('on'); });
+addEventListener('drop', e => { if (!hasFiles(e)) return; e.preventDefault(); dragDepth = 0; $('#drop').classList.remove('on'); if (!readerOpen) addFiles(e.dataTransfer.files); });
+
+/* ---------- detail ---------- */
+const detail = $('#detail'), blobs = [...document.querySelectorAll('#blobs circle')];
+const BLOB_DELAY = [0, 120, 220, 300, 360, 420, 180];
+let inkRaf = 0, closing = false;
+function coverRect(){
+  const r = activeTape ? activeTape.cv.getBoundingClientRect() : { left: innerWidth/2 - d/2, top: innerHeight/2 - H/2, width: d, height: H };
+  return { l: r.left, t: r.top, r: innerWidth - r.left - r.width, b: innerHeight - r.top - r.height, cx: r.left + r.width/2, cy: r.top + r.height/2 };
+}
+function openDetail(){
+  if (isOpen || !N) return;
+  T = Math.round(T); s = T;
+  const b = books[activeIdx]; isOpen = true; closing = false;
+  $('#dSub').textContent = b.vi || b.author;
+  $('#dTitle').textContent = b.title;
+  $('#dMeta').textContent = [b.year || 'Không rõ năm', GLABEL[b.group], b.kind === 'sample' ? 'Trích đoạn' : b.kind === 'pdf' ? 'PDF · ' + b.count + ' trang' : 'EPUB · ' + b.count + ' phần'].join(' / ');
+  $('#dSyn').textContent = b.syn;
+  $('#dCred').textContent = b.kind === 'sample' ? b.author + '. Văn bản thuộc phạm vi công cộng.' : b.author + '. Sách bạn tải lên.';
+  const del = $('#dDel'); del.hidden = b.kind === 'sample'; del.classList.remove('arm'); del.textContent = 'Xoá khỏi kệ';
+  $('#pImg').setAttribute('href', b.cover);
+  blobs.forEach(c => c.setAttribute('r', 0));
+  const cr = coverRect();
+  detail.getAnimations().forEach(a => a.cancel());
+  detail.style.visibility = 'visible'; detail.style.transformOrigin = cr.cx + 'px ' + cr.cy + 'px';
+  const dur = REDUCE ? 1 : 1050;
+  detail.animate([
+    { clipPath: 'inset(' + cr.t + 'px ' + cr.r + 'px ' + cr.b + 'px ' + cr.l + 'px round 3px)', transform: 'rotate(-4.5deg)' },
+    { clipPath: 'inset(0px 0px 0px 0px round 0px)', transform: 'rotate(0deg)' }
+  ], { duration: dur, easing: SHEET_EASE, fill: 'both' });
+  detail.querySelectorAll('.dm > .in').forEach((el, i) => {
+    el.getAnimations().forEach(a => a.cancel());
+    el.animate([{ transform:'translateY(110%)' }, { transform:'translateY(0)' }], { duration: REDUCE ? 1 : 900, delay: REDUCE ? 0 : 620 + i*75, easing: EASE, fill:'both' });
+  });
+  cancelAnimationFrame(inkRaf);
+  const t0 = performance.now() + (REDUCE ? -5000 : 520);
+  const ink = now => {
+    const el = now - t0;
+    blobs.forEach((c, i) => { const p = clamp((el - BLOB_DELAY[i]) / 1250, 0, 1); c.setAttribute('r', (900 * (1 - Math.pow(1 - p, 3))).toFixed(1)); });
+    if (el < 2400) inkRaf = requestAnimationFrame(ink);
+  };
+  inkRaf = requestAnimationFrame(ink);
+  setTimeout(() => { if (isOpen) $('#dRead').focus({ preventScroll:true }); }, REDUCE ? 0 : 900);
+}
+function closeDetail(){
+  if (!isOpen || closing) return; closing = true;
+  const cr = coverRect();
+  detail.style.transformOrigin = cr.cx + 'px ' + cr.cy + 'px';
+  detail.getAnimations().forEach(a => a.cancel());
+  const an = detail.animate([
+    { clipPath: 'inset(0px 0px 0px 0px round 0px)', transform: 'rotate(0deg)' },
+    { clipPath: 'inset(' + cr.t + 'px ' + cr.r + 'px ' + cr.b + 'px ' + cr.l + 'px round 3px)', transform: 'rotate(-4.5deg)' }
+  ], { duration: REDUCE ? 1 : 850, easing: SHEET_EASE, fill: 'both' });
+  an.onfinish = () => {
+    detail.style.visibility = 'hidden';
+    detail.getAnimations({ subtree:true }).forEach(a => a.cancel());
+    isOpen = false; closing = false; detail.scrollTop = 0;
+    if (document.activeElement && detail.contains(document.activeElement)) document.activeElement.blur();
+  };
+}
+$('#dClose').addEventListener('click', closeDetail);
+$('#dRead').addEventListener('click', () => openReader(books[activeIdx]));
+let armT = 0;
+$('#dDel').addEventListener('click', async e => {
+  const bt = e.currentTarget, b = books[activeIdx];
+  if (!bt.classList.contains('arm')){ bt.classList.add('arm'); bt.textContent = 'Bấm lần nữa để xoá'; clearTimeout(armT); armT = setTimeout(() => { bt.classList.remove('arm'); bt.textContent = 'Xoá khỏi kệ'; }, 3000); return; }
+  await DB.del(b.id); store.del('tsn-pos-' + b.id);
+  closeDetail();
+  setTimeout(() => {
+    const i = books.indexOf(b); books.splice(i, 1);
+    buildShelf(books[Math.max(0, i - 1)].id); toast('Đã xoá “' + b.title + '” khỏi kệ.');
+  }, REDUCE ? 10 : 880);
+});
+
+/* ---------- reader ---------- */
+const reader = $('#reader'), rBody = $('#rBody'), rSel = $('#rSel'), rProg = $('#rProg'), rSize = $('#rSize');
+const R = { book:null, kind:null, token:0, pdf:null, zoom:1, ratio:1.414, pages:[], rendered:new Map(), io:null, ep:null, chapters:[], chi:0, urls:[], fs:19 };
+R.fs = store.get('tsn-fs') || 19;
+
+function openReader(b){
+  if (readerOpen) return;
+  readerOpen = true; R.book = b; R.kind = b.kind === 'pdf' ? 'pdf' : 'text'; R.token++;
+  $('#rTitle').textContent = b.title; rProg.textContent = 'Đang mở…';
+  rBody.textContent = ''; rSel.textContent = ''; rSel.hidden = true;
+  reader.getAnimations().forEach(a => a.cancel());
+  reader.style.visibility = 'visible';
+  reader.animate([{ clipPath:'inset(100% 0px 0px 0px)' }, { clipPath:'inset(0% 0px 0px 0px)' }], { duration: REDUCE ? 1 : 750, easing: SHEET_EASE, fill:'both' });
+  const tok = R.token;
+  const run = b.kind === 'pdf' ? openPdf(b, tok) : b.kind === 'epub' ? openEpub(b, tok) : openSample(b, tok);
+  run.catch(err => { if (tok !== R.token) return; rBody.innerHTML = ''; const m = document.createElement('p'); m.className = 'rmsg'; m.textContent = 'Không mở được sách này. ' + (err && err.message ? err.message : ''); rBody.appendChild(m); rProg.textContent = 'Lỗi'; });
+  updateSizeLabel();
+  setTimeout(() => rBody.focus({ preventScroll:true }), 50);
+}
+function closeReader(){
+  if (!readerOpen) return;
+  savePos();
+  R.token++;
+  const an = reader.animate([{ clipPath:'inset(0% 0px 0px 0px)' }, { clipPath:'inset(100% 0px 0px 0px)' }], { duration: REDUCE ? 1 : 600, easing: SHEET_EASE, fill:'both' });
+  an.onfinish = () => {
+    reader.style.visibility = 'hidden'; reader.getAnimations().forEach(a => a.cancel());
+    rBody.textContent = ''; cleanupReader(); readerOpen = false;
+  };
+}
+function cleanupReader(){
+  if (R.io){ R.io.disconnect(); R.io = null; }
+  if (R.pdf){ try { R.pdf.destroy(); } catch(e){} R.pdf = null; }
+  R.urls.forEach(u => URL.revokeObjectURL(u)); R.urls = []; R.rendered.clear(); R.pages = []; R.ep = null;
+}
+$('#rClose').addEventListener('click', closeReader);
+
+function updateSizeLabel(){ rSize.textContent = R.kind === 'pdf' ? Math.round(R.zoom*100) + '%' : R.fs + 'px'; }
+$('#rMinus').addEventListener('click', () => adjust(-1));
+$('#rPlus').addEventListener('click', () => adjust(1));
+function adjust(dir){
+  if (R.kind === 'pdf'){
+    const cur = currentPage(); R.zoom = clamp(Math.round((R.zoom + dir*.2)*10)/10, .6, 2.4); sizePages(true);
+    requestAnimationFrame(() => scrollToPage(cur));
+  } else {
+    const ratio = rBody.scrollTop / Math.max(1, rBody.scrollHeight - rBody.clientHeight);
+    R.fs = clamp(R.fs + dir, 14, 28); store.set('tsn-fs', R.fs);
+    const txt = rBody.querySelector('.rtext'); if (txt) txt.style.setProperty('--fs', R.fs + 'px');
+    rBody.scrollTop = ratio * (rBody.scrollHeight - rBody.clientHeight);
+  }
+  updateSizeLabel();
+}
+
+let saveT = 0;
+rBody.addEventListener('scroll', () => {
+  if (!readerOpen) return;
+  if (R.kind === 'pdf') rProg.textContent = 'Trang ' + currentPage() + ' / ' + R.pages.length;
+  else updateTextProg();
+  clearTimeout(saveT); saveT = setTimeout(savePos, 400);
+}, { passive:true });
+function savePos(){
+  if (!R.book || !readerOpen) return;
+  const pos = R.kind === 'pdf' ? { page: currentPage() } : { chi: R.chi, ratio: rBody.scrollTop / Math.max(1, rBody.scrollHeight - rBody.clientHeight) };
+  store.set('tsn-pos-' + R.book.id, pos);
+}
+
+/* PDF */
+async function openPdf(b, tok){
+  const lib = await ensurePdf(); if (tok !== R.token) return;
+  const doc = await lib.getDocument({ data: await b.file.arrayBuffer() }).promise;
+  if (tok !== R.token){ doc.destroy(); return; }
+  R.pdf = doc;
+  const p1 = await doc.getPage(1); const v = p1.getViewport({ scale:1 }); R.ratio = v.height / v.width;
+  const wrap = document.createElement('div'); wrap.className = 'pages';
+  R.pages = [];
+  for (let i = 1; i <= doc.numPages; i++){ const pg = document.createElement('div'); pg.className = 'pg'; pg.dataset.i = i; pg.innerHTML = '<i>' + i + '</i>'; wrap.appendChild(pg); R.pages.push(pg); }
+  rBody.textContent = ''; rBody.appendChild(wrap);
+  sizePages(false);
+  R.io = new IntersectionObserver(ents => ents.forEach(en => { if (en.isIntersecting) renderPage(+en.target.dataset.i); }), { root: rBody, rootMargin: '1400px 0px' });
+  R.pages.forEach(p => R.io.observe(p));
+  const pos = store.get('tsn-pos-' + b.id);
+  if (pos && pos.page > 1) requestAnimationFrame(() => scrollToPage(pos.page));
+  rProg.textContent = 'Trang ' + (pos && pos.page || 1) + ' / ' + doc.numPages;
+  updateSizeLabel();
+}
+function sizePages(rerender){
+  if (!R.pages.length) return;
+  const base = Math.min(rBody.clientWidth - 32, 860); const w = Math.floor(base * R.zoom);
+  R.pages.forEach(pg => { pg.style.width = w + 'px'; pg.style.height = Math.round(w * (pg._ratio || R.ratio)) + 'px'; });
+  if (rerender){
+    R.rendered.forEach((c) => c.remove()); R.rendered.clear();
+    R.pages.forEach(pg => { if (R.io){ R.io.unobserve(pg); R.io.observe(pg); } });
+  }
+}
+async function renderPage(i){
+  if (!R.pdf || R.rendered.has(i)) return;
+  const pg = R.pages[i - 1]; const doc = R.pdf;
+  R.rendered.set(i, document.createElement('canvas'));
+  try {
+    const page = await doc.getPage(i); if (doc !== R.pdf) return;
+    const v1 = page.getViewport({ scale:1 }); pg._ratio = v1.height / v1.width;
+    const w = pg.clientWidth; pg.style.height = Math.round(w * pg._ratio) + 'px';
+    const dpr = Math.min(2, devicePixelRatio || 1);
+    const vp = page.getViewport({ scale: w / v1.width * dpr });
+    const c = R.rendered.get(i); if (!c) return;
+    c.width = Math.ceil(vp.width); c.height = Math.ceil(vp.height);
+    await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+    if (R.rendered.get(i) !== c) return;
+    pg.appendChild(c);
+    if (R.rendered.size > 16){
+      const cur = currentPage();
+      [...R.rendered.keys()].sort((a, b) => Math.abs(b - cur) - Math.abs(a - cur)).slice(0, R.rendered.size - 12).forEach(k => {
+        if (Math.abs(k - cur) > 5){ const cc = R.rendered.get(k); cc.remove(); cc.width = cc.height = 0; R.rendered.delete(k); }
+      });
+    }
+  } catch(e){ R.rendered.delete(i); }
+}
+function currentPage(){
+  if (!R.pages.length) return 1;
+  const mid = rBody.scrollTop + rBody.clientHeight * .35;
+  let lo = 0, hi = R.pages.length - 1;
+  while (lo < hi){ const m = (lo + hi + 1) >> 1; if (R.pages[m].offsetTop <= mid) lo = m; else hi = m - 1; }
+  return lo + 1;
+}
+function scrollToPage(n){ const pg = R.pages[clamp(n, 1, R.pages.length) - 1]; if (pg) rBody.scrollTop = pg.offsetTop - 24; }
+
+/* text (sample + EPUB) */
+function textShell(){
+  const t = document.createElement('article'); t.className = 'rtext'; t.style.setProperty('--fs', R.fs + 'px');
+  rBody.textContent = ''; rBody.appendChild(t); return t;
+}
+function updateTextProg(){
+  const pct = Math.round(100 * rBody.scrollTop / Math.max(1, rBody.scrollHeight - rBody.clientHeight));
+  rProg.textContent = (R.chapters.length > 1 ? 'Phần ' + (R.chi + 1) + ' / ' + R.chapters.length + ' · ' : '') + clamp(pct, 0, 100) + '%';
+}
+async function openSample(b, tok){
+  R.chapters = [{ label:'Đoạn mở đầu' }]; R.chi = 0;
+  const t = textShell();
+  const h = document.createElement('h2'); h.textContent = b.title; t.appendChild(h);
+  const by = document.createElement('p'); by.className = 'lbl'; by.style.color = 'var(--muted)'; by.style.margin = '0 0 2.2em'; by.textContent = b.author + ' · ' + b.year; t.appendChild(by);
+  b.text.forEach(p => { const el = document.createElement('p'); el.textContent = p; t.appendChild(el); });
+  const note = document.createElement('div'); note.className = 'rnote';
+  note.innerHTML = 'Bản demo chỉ có đoạn mở đầu. Bản đầy đủ miễn phí có trên <a target="_blank" rel="noopener">Project Gutenberg</a>: tải file EPUB về rồi thả vào kệ là đọc được cả cuốn.';
+  note.querySelector('a').href = 'https://www.gutenberg.org/ebooks/' + b.gid;
+  t.appendChild(note);
+  const pos = store.get('tsn-pos-' + b.id);
+  requestAnimationFrame(() => { if (pos && pos.ratio) rBody.scrollTop = pos.ratio * (rBody.scrollHeight - rBody.clientHeight); updateTextProg(); });
+}
+
+async function openEpub(b, tok){
+  const ep = await parseEpub(b.file); if (tok !== R.token) return;
+  R.ep = ep;
+  const labels = {};
+  try {
+    if (ep.navHref && ep.zip.file(ep.navHref)){
+      const nd = new DOMParser().parseFromString(await ep.zip.file(ep.navHref).async('text'), 'application/xhtml+xml');
+      for (const a of byTag(nd, 'a')){ const h = a.getAttribute('href'); if (!h) continue; const p = resolvePath(ep.navHref, h); if (!labels[p]) labels[p] = a.textContent.trim().replace(/\s+/g, ' '); }
+    } else if (ep.ncxHref && ep.zip.file(ep.ncxHref)){
+      const nd = new DOMParser().parseFromString(await ep.zip.file(ep.ncxHref).async('text'), 'application/xml');
+      for (const np of byTag(nd, 'navPoint')){
+        const lab = byTag(np, 'text')[0], ct = byTag(np, 'content')[0];
+        if (lab && ct){ const p = resolvePath(ep.ncxHref, ct.getAttribute('src') || ''); if (!labels[p]) labels[p] = lab.textContent.trim(); }
+      }
+    }
+  } catch(e){}
+  R.chapters = ep.spine.map((href, i) => ({ href, label: labels[href] || 'Phần ' + (i + 1) }));
+  rSel.textContent = '';
+  R.chapters.forEach((c, i) => { const o = document.createElement('option'); o.value = i; o.textContent = (i + 1) + '. ' + c.label.slice(0, 60); rSel.appendChild(o); });
+  rSel.hidden = R.chapters.length < 2;
+  const pos = store.get('tsn-pos-' + b.id);
+  await showChapter(pos ? clamp(pos.chi || 0, 0, R.chapters.length - 1) : 0, pos ? pos.ratio : 0, null, tok);
+}
+rSel.addEventListener('change', () => showChapter(+rSel.value, 0));
+
+async function showChapter(i, ratio, frag, tok){
+  tok = tok || R.token; const ep = R.ep; if (!ep) return;
+  R.chi = i; rSel.value = i;
+  const ch = R.chapters[i]; const f = ep.zip.file(ch.href);
+  const t = textShell();
+  if (!f){ t.innerHTML = '<p>Không tìm thấy nội dung phần này.</p>'; return; }
+  const raw = await f.async('text'); if (tok !== R.token) return;
+  let doc = new DOMParser().parseFromString(raw, 'application/xhtml+xml');
+  if (doc.getElementsByTagName('parsererror').length) doc = new DOMParser().parseFromString(raw, 'text/html');
+  const body = doc.body || byTag(doc, 'body')[0] || doc.documentElement;
+  body.querySelectorAll('script,style,link,meta,iframe,object,embed,form,input,button,textarea,select,audio,video,base').forEach(n => n.remove());
+  body.querySelectorAll('*').forEach(el => {
+    [...el.attributes].forEach(a => { const n = a.name.toLowerCase(); if (n.startsWith('on') || n === 'style' || n === 'class') el.removeAttribute(a.name); });
+  });
+  R.urls.forEach(u => URL.revokeObjectURL(u)); R.urls = [];
+  const imgJobs = [];
+  body.querySelectorAll('img, image').forEach(el => {
+    const attr = el.hasAttribute('src') ? 'src' : el.hasAttribute('href') ? 'href' : 'xlink:href';
+    const src = el.getAttribute(attr) || el.getAttributeNS('http://www.w3.org/1999/xlink', 'href');
+    if (!src || /^(https?:|data:)/i.test(src)){ if (src && /^https?:/i.test(src)) el.remove(); return; }
+    const zf = ep.zip.file(resolvePath(ch.href, src));
+    if (!zf){ el.remove(); return; }
+    imgJobs.push(zf.async('blob').then(bl => { const u = URL.createObjectURL(bl); R.urls.push(u);
+      if (el.localName === 'image'){ el.setAttribute('href', u); el.setAttributeNS('http://www.w3.org/1999/xlink', 'href', u); } else el.setAttribute('src', u); }));
+  });
+  body.querySelectorAll('a[href]').forEach(a => {
+    const h = a.getAttribute('href');
+    if (/^https?:/i.test(h)){ a.target = '_blank'; a.rel = 'noopener'; }
+    else if (/^(javascript|data):/i.test(h)) a.removeAttribute('href');
+    else { a.dataset.inner = resolvePath(ch.href, h) + (h.includes('#') ? '#' + h.split('#')[1] : ''); a.setAttribute('href', '#'); }
+  });
+  await Promise.all(imgJobs); if (tok !== R.token) return;
+  [...body.childNodes].forEach(n => t.appendChild(document.importNode(n, true)));
+  const nav = document.createElement('div'); nav.className = 'rnav';
+  const pv = document.createElement('button'); pv.type = 'button'; pv.className = 'box lbl'; pv.textContent = '← Phần trước'; pv.disabled = i === 0; pv.style.visibility = i === 0 ? 'hidden' : '';
+  const nx = document.createElement('button'); nx.type = 'button'; nx.className = 'box lbl'; nx.textContent = i === R.chapters.length - 1 ? 'Hết sách' : 'Phần sau →'; nx.disabled = i === R.chapters.length - 1;
+  pv.onclick = () => showChapter(i - 1, 0); nx.onclick = () => showChapter(i + 1, 0);
+  nav.append(pv, nx); t.appendChild(nav);
+  requestAnimationFrame(() => {
+    if (frag){ const target = t.querySelector('[id="' + CSS.escape(frag) + '"]'); rBody.scrollTop = target ? target.offsetTop - 30 : 0; }
+    else rBody.scrollTop = (ratio || 0) * (rBody.scrollHeight - rBody.clientHeight);
+    updateTextProg(); savePos();
+  });
+}
+rBody.addEventListener('click', e => {
+  const a = e.target.closest && e.target.closest('a[data-inner]'); if (!a) return;
+  e.preventDefault();
+  const [path, frag] = a.dataset.inner.split('#');
+  const i = R.chapters.findIndex(c => c.href === path);
+  if (i === R.chi && frag){ const tg = rBody.querySelector('[id="' + CSS.escape(frag) + '"]'); if (tg) rBody.scrollTop = tg.offsetTop - 30; }
+  else if (i >= 0) showChapter(i, 0, frag);
+});
+
+/* ---------- boot ---------- */
+async function boot(){
+  measure();
+  try { await Promise.race([Promise.all([document.fonts.load('600 60px "Newsreader"'), document.fonts.load('600 20px "Inter Tight"'), document.fonts.load('400 20px "Newsreader"')]), wait(2500)]); } catch(e){}
+  SAMPLES.forEach(b => { b.cover = genCover(b); b.spine = genSpine(b); });
+  books = SAMPLES.slice();
+  buildTabs();
+  buildShelf('holmes');
+  requestAnimationFrame(t => { last = t; frame(t); });
+  await DB.open();
+  const ups = (await DB.all()).sort((a, b) => a.added - b.added);
+  if (ups.length){
+    ups.forEach(r => { try { books.push(prepUpload(r)); } catch(e){} });
+    buildShelf(books[activeIdx] ? books[activeIdx].id : 'holmes');
+  }
+}
+boot();
+})();
+</script>
+</body>
+</html>
