@@ -683,7 +683,9 @@ function layout(restore){
   const top = $('.bar').offsetHeight + 12, bot = $('.foot').offsetHeight + 10;
   const aspect = book.kind === 'pdf' ? book.ratio : 1.5;
   const availW = vw - 2 * (vw < 640 ? 10 : 36), availH = vh - top - bot;
-  spread = settings.layout === 'spread' || (settings.layout === 'auto' && vw >= 900 && vw / vh > 1.15);
+  // Portrait screens always show one page, even when "2 trang" is chosen.
+  const portrait = vh > vw;
+  spread = !portrait && (settings.layout === 'spread' || (settings.layout === 'auto' && vw >= 900 && vw / vh > 1.15));
   if (spread) W = Math.floor(Math.min(availW / 2, availH / aspect, book.kind === 'pdf' ? 900 : 540));
   else W = Math.floor(Math.min(availW, availH / aspect, book.kind === 'pdf' ? 1000 : 600));
   H = Math.floor(W * aspect);
@@ -1136,7 +1138,7 @@ async function openFile(f){
     else if (ext === 'epub'){ b = await openEpub(f); if (!b.blocks.length) throw new Error('empty'); }
     else { toast('Chỉ mở được PDF hoặc EPUB.'); return; }
     setBook(b); toast('Đã mở “' + b.title + '”.');
-  } catch(err){ console.error(err); toast('Không mở được file này. Có thể file bị hỏng hoặc có DRM.', 4200); }
+  } catch(err){ toast('Không mở được file này. Có thể file bị hỏng hoặc có DRM.', 4200); }
 }
 $('#fileIn').addEventListener('change', e => { openFile(e.target.files[0]); e.target.value = ''; });
 $('#sampleBtn').addEventListener('click', () => setBook(SAMPLE));
@@ -1149,14 +1151,13 @@ addEventListener('drop', e => { if (!hasFiles(e)) return; e.preventDefault(); dd
 async function boot(){
   try { if (!initGL()) throw new Error('no-webgl'); }
   catch(e){
-    console.error(e); const m = $('#msg');
+    const m = $('#msg');
     m.textContent = gl ? 'Không khởi tạo được hiệu ứng lật trang: ' + (e && e.message ? e.message : e) : 'Trình duyệt này chưa bật WebGL nên không chạy được hiệu ứng lật trang.';
     m.classList.add('on'); return;
   }
   applyTheme();
   try { await Promise.race([Promise.all([document.fonts.load('400 18px "Newsreader"'), document.fonts.load('italic 400 18px "Newsreader"'), document.fonts.load('600 12px "Inter Tight"'), document.fonts.load('400 16px "Inter Tight"')]), wait(2500)]); } catch(e){}
   setBook(SAMPLE);
-  window.__reader = { pages: () => pages.map((p,i)=>i+":"+p.lines.length+":"+(p.lines[0]&&p.lines[0].words[0]?p.lines[0].words[0].t:"")).join(" "), state: () => ({ cur, nPages, spread, W, H, PX, PY, SPINE, hls: data.hls.length, bms: data.bms.length, sel, pop: !!pop }) };
   requestAnimationFrame(loop);
 }
 boot();

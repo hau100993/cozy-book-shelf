@@ -8,10 +8,9 @@ Người dùng viết tiếng Việt; trả lời bằng tiếng Việt.
 - `reader/index.html`: trình đọc WebGL lật trang cong kiểu Google Play Sách.
   - Mô hình hình trụ trong vertex shader; chỉ tờ đang lật (`uMode = 1`) bị uốn, trang dưới (`uMode = 0`) giữ phẳng và nhận bóng.
   - Uniform dùng chung giữa 2 shader phải cùng precision (`uR`, `uCurl`, `uFlip`, `uMode` khai báo `mediump` trong VS), nếu không WebGL không link được.
-  - Chế độ 1 trang / 2 trang (`spread`); spread k: trang trái `2k-1`, phải `2k`.
+  - Chế độ 1 trang / 2 trang (`spread`); spread k: trang trái `2k-1`, phải `2k`. Màn hình dọc luôn 1 trang, kể cả khi chọn "2 trang" (không hiện gợi ý xoay ngang).
   - Tự dàn trang EPUB/sách mẫu ra canvas (`paginate`); vị trí chữ = key `blockIndex * 100000 + wordIndex`, nên tô sáng/đánh dấu bám theo chữ khi đổi cỡ chữ.
   - Tô sáng (nhấn giữ 460ms rồi kéo), ghi chú, đánh dấu, mục lục, nền giấy/sepia/tối; dữ liệu lưu localStorage (`lt-settings`, `lt-b-<bookId>`).
-  - `window.__reader.state()` để kiểm tra trạng thái khi test.
 - Thư viện tải khi cần từ cdnjs: pdf.js 3.11.174 (cả `pdf.worker.min.js` dưới dạng script để chạy không cần worker), JSZip 3.10.1.
 
 ## Chạy thử
