@@ -91,6 +91,7 @@ body.immersive .foot{transform:translateY(calc(100% + 4px))}
 .settings.on{transform:scale(1)}
 .settings .row{display:grid;gap:8px}
 .settings .row>span{color:var(--muted)}
+.settings .hint{font:400 12.5px/1.45 var(--sans);letter-spacing:0;text-transform:none}
 .seg{display:flex}
 .seg button{flex:1;height:34px;border:1px solid var(--line);margin-left:-1px;font:500 13px var(--sans)}
 .seg button:first-child{margin-left:0}
@@ -178,13 +179,16 @@ body.immersive .foot{transform:translateY(calc(100% + 4px))}
 </aside>
 
 <div class="settings" id="settings" role="dialog" aria-label="Tuỳ chỉnh hiển thị">
-  <div class="row"><span class="lbl">Cỡ chữ</span>
+  <div class="row" id="zoomRow" hidden><span class="lbl">Thu phóng</span>
+    <div class="size"><button class="box" id="zMinus" type="button" aria-label="Thu nhỏ">−</button><output id="zVal">100%</output><button class="box" id="zPlus" type="button" aria-label="Phóng to">+</button></div>
+    <span class="hint">Chạm hai lần vào trang để phóng to, kéo để xem phần khác, chạm hai lần nữa để về như cũ. Có thể chụm hai ngón tay để thu phóng.</span></div>
+  <div class="row trow"><span class="lbl">Cỡ chữ</span>
     <div class="size"><button class="box" id="fsMinus" type="button" aria-label="Chữ nhỏ hơn" style="font:400 13px var(--serif)">A−</button><output id="fsVal"></output><button class="box" id="fsPlus" type="button" aria-label="Chữ lớn hơn" style="font:400 19px var(--serif)">A+</button></div></div>
-  <div class="row"><span class="lbl">Giãn dòng</span><div class="seg" data-k="lh"><button type="button" data-v="1.4">Hẹp</button><button type="button" data-v="1.6">Vừa</button><button type="button" data-v="1.85">Rộng</button></div></div>
-  <div class="row"><span class="lbl">Lề trang</span><div class="seg" data-k="margin"><button type="button" data-v="s">Hẹp</button><button type="button" data-v="m">Vừa</button><button type="button" data-v="l">Rộng</button></div></div>
-  <div class="row"><span class="lbl">Kiểu chữ</span><div class="seg" data-k="font"><button type="button" data-v="serif" style="font-family:var(--serif);font-size:15px">Có chân</button><button type="button" data-v="sans">Không chân</button></div></div>
+  <div class="row trow"><span class="lbl">Giãn dòng</span><div class="seg" data-k="lh"><button type="button" data-v="1.4">Hẹp</button><button type="button" data-v="1.6">Vừa</button><button type="button" data-v="1.85">Rộng</button></div></div>
+  <div class="row trow"><span class="lbl">Lề trang</span><div class="seg" data-k="margin"><button type="button" data-v="s">Hẹp</button><button type="button" data-v="m">Vừa</button><button type="button" data-v="l">Rộng</button></div></div>
+  <div class="row trow"><span class="lbl">Kiểu chữ</span><div class="seg" data-k="font"><button type="button" data-v="serif" style="font-family:var(--serif);font-size:15px">Có chân</button><button type="button" data-v="sans">Không chân</button></div></div>
   <div class="row"><span class="lbl">Nền</span><div class="seg themes" data-k="theme"><button type="button" data-v="paper"><i style="background:#FBF8F1"></i>Giấy</button><button type="button" data-v="sepia"><i style="background:#F2E6CC"></i>Sepia</button><button type="button" data-v="dark"><i style="background:#1F1E1B"></i>Tối</button></div></div>
-  <div class="row"><span class="lbl">Bố cục</span><div class="seg" data-k="layout"><button type="button" data-v="auto">Tự động</button><button type="button" data-v="single">1 trang</button><button type="button" data-v="spread">2 trang</button></div></div>
+  <div class="row"><span class="lbl">Bố cục</span><div class="seg" data-k="layout"><button type="button" data-v="auto">Tự động</button><button type="button" data-v="single">1 trang</button><button type="button" data-v="spread">2 trang</button></div><span class="hint" id="layoutHint" hidden>Khi cầm dọc luôn hiện 1 trang. 2 trang hiện khi xoay ngang.</span></div>
 </div>
 
 <div class="note" id="note" role="dialog" aria-label="Ghi chú">
@@ -295,12 +299,15 @@ uniform mediump float uCurl;
 uniform mediump float uFlip;
 uniform mediump float uMode;
 uniform float uLayer;
-varying vec2 vUV; varying float vCos; varying float vDist;
+uniform vec3 uZ; // zoom: screen = book * uZ.x + uZ.yz
+varying vec2 vUV; varying float vCos; varying float vDist; varying vec2 vMir; varying vec2 vSz;
 const float PI = 3.14159265;
 void main(){
   vec2 p = aUV * uSize; vUV = aUV;
   vec3 q = vec3(p, 0.0); float c = 1.0;
   float dist = dot(p - uP, uN); vDist = dist;
+  // Sheet point whose folded-back flap would land on p. Linear in p, so it interpolates exactly.
+  vMir = p + uN * (PI * uR - 2.0 * dist); vSz = uSize;
   if (uCurl > 0.5 && uMode > 0.5 && dist > 0.0){
     vec2 base = p - uN * dist;
     float th = dist / uR;
@@ -308,15 +315,15 @@ void main(){
     else { q.xy = base - uN * (dist - PI * uR); q.z = 2.0 * uR; c = -1.0; }
   }
   vCos = c;
-  vec2 sc = vec2(uOrigin.x + uFlip * q.x, uOrigin.y + q.y);
+  vec2 sc = vec2(uOrigin.x + uFlip * q.x, uOrigin.y + q.y) * uZ.x + uZ.yz;
   float z = uLayer - q.z / (uSize.x * 6.0);
   gl_Position = vec4(sc.x / uView.x * 2.0 - 1.0, 1.0 - sc.y / uView.y * 2.0, z, 1.0);
 }`;
 const FS = `
 precision mediump float;
 uniform sampler2D uTex; uniform sampler2D uBack; uniform vec3 uPaper;
-uniform float uR, uCurl, uMode, uFlap, uFlip, uBackMode, uDark;
-varying vec2 vUV; varying float vCos; varying float vDist;
+uniform float uR, uCurl, uMode, uFlip, uBackMode, uDark;
+varying vec2 vUV; varying float vCos; varying float vDist; varying vec2 vMir; varying vec2 vSz;
 void main(){
   vec2 fuv = vec2(uFlip > 0.0 ? vUV.x : 1.0 - vUV.x, vUV.y);
   vec3 col;
@@ -330,9 +337,11 @@ void main(){
     }
   } else if (vCos >= 0.0){
     col = texture2D(uTex, fuv).rgb * (0.78 + 0.22 * vCos);
-    if (uCurl > 0.5 && vDist < uFlap){
-      float e = uFlap - vDist;
-      col *= 1.0 - 0.24 * exp(-e / (8.0 + 0.25 * uR));
+    if (uCurl > 0.5 && vDist < 0.0){
+      // Shadow of the folded-back flap on the flat part of its own sheet:
+      // fades with the real distance from this point to the flap's outline (any fold angle).
+      vec2 o = max(max(-vMir, vMir - vSz), 0.0);
+      col *= 1.0 - 0.26 * exp(-length(o) / (6.0 + 0.2 * uR));
     }
     if (uCurl > 0.5 && vDist > 0.0) col += vec3(uDark > 0.5 ? 0.02 : 0.05) * smoothstep(0.2, 0.9, vCos) * (1.0 - smoothstep(0.0, uR, vDist));
   } else {
@@ -352,7 +361,7 @@ function initGL(){
   prog = gl.createProgram(); gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(prog);
   if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
   gl.useProgram(prog);
-  ['uView','uOrigin','uSize','uP','uN','uR','uCurl','uLayer','uFlip','uTex','uBack','uPaper','uMode','uFlap','uBackMode','uDark'].forEach(n => U[n] = gl.getUniformLocation(prog, n));
+  ['uView','uOrigin','uSize','uP','uN','uR','uCurl','uLayer','uFlip','uTex','uBack','uPaper','uMode','uBackMode','uDark','uZ'].forEach(n => U[n] = gl.getUniformLocation(prog, n));
   const NX = 56, NY = 72, uv = [], ind = [];
   for (let j = 0; j <= NY; j++) for (let i = 0; i <= NX; i++) uv.push(i/NX, j/NY);
   for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++){ const a = j*(NX+1) + i, b = a + 1, c = a + NX + 1, d = c + 1; ind.push(a, c, b, b, c, d); }
@@ -568,24 +577,26 @@ function resolvePath(base, rel){
   return parts.join('/');
 }
 let pdfQueue = Promise.resolve();
-function renderPdfInto(i, v){
+// res > 1 renders a sharper texture while zoomed in.
+function renderPdfInto(i, v, res = 1){
   const doc = book.doc, myBook = book, w = W, h = H, left = isLeft(i), k = texKey(i);
+  v.want = res;
   pdfQueue = pdfQueue.then(async () => {
-    if (book !== myBook || tex.get(k) !== v) return;
+    if (book !== myBook || tex.get(k) !== v || v.want !== res) return;
     try {
       const page = await doc.getPage(i + 1); const v1 = page.getViewport({ scale:1 });
-      const sc = Math.min(w / v1.width, h / v1.height) * dpr;
+      const sc = Math.min(w / v1.width, h / v1.height) * dpr * res;
       const vp = page.getViewport({ scale: sc });
-      const c = document.createElement('canvas'); c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
+      const c = document.createElement('canvas'); c.width = Math.round(w * dpr * res); c.height = Math.round(h * dpr * res);
       const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
       x.save(); x.translate((c.width - vp.width)/2, (c.height - vp.height)/2);
       await page.render({ canvasContext: x, viewport: vp }).promise; x.restore();
       const sw = c.width * .06;
       const g = left ? x.createLinearGradient(c.width, 0, c.width - sw, 0) : x.createLinearGradient(0, 0, sw, 0);
       g.addColorStop(0, 'rgba(70,50,25,.12)'); g.addColorStop(1, 'rgba(70,50,25,0)'); x.fillStyle = g; if (left) x.fillRect(c.width - sw, 0, sw, c.height); else x.fillRect(0, 0, sw, c.height);
-      if (isBookmarked(i)){ x.save(); x.scale(dpr, dpr); drawRibbon(x, i); x.restore(); }
-      if (book !== myBook || tex.get(k) !== v || W !== w) return;
-      gl.bindTexture(gl.TEXTURE_2D, v.t); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c); dirty = true;
+      if (isBookmarked(i)){ x.save(); x.scale(dpr * res, dpr * res); drawRibbon(x, i); x.restore(); }
+      if (book !== myBook || tex.get(k) !== v || W !== w || v.want !== res) return;
+      gl.bindTexture(gl.TEXTURE_2D, v.t); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c); v.res = res; dirty = true;
     } catch(e){}
   });
 }
@@ -698,9 +709,10 @@ function layout(restore){
   else { paginate(); nPages = pages.length; }
   cur = key != null ? pageOfKey(key) : oldCur;
   normCur();
+  zoomAnim = null; applyZoom({ z:1, sx:0, sy:0 });
   clearTex(); turn = null; sel = null; closePop(); dirty = true;
   $('#seek').max = Math.max(0, nPages - 1);
-  updateUI();
+  updateUI(); syncSettings();
 }
 function applyTheme(){
   const t = TH(), r = document.documentElement.style;
@@ -720,9 +732,7 @@ function curlParams(){
   const r = Math.min(Math.max(W * .022, W * .1 * (1 - .75 * pr)), L * .3);
   const D = (L + Math.PI * r) / 2;
   const P = { x: cr.x - n.x * D, y: cr.y - n.y * D };
-  let Dmax = -1e9; for (const c of [[0,0],[W,0],[0,H],[W,H]]) Dmax = Math.max(Dmax, (c[0] - P.x)*n.x + (c[1] - P.y)*n.y);
-  const flap = Dmax > Math.PI * r ? -(Dmax - Math.PI * r) : 0;
-  return { n, P, r, flap };
+  return { n, P, r };
 }
 function clampF(F, cr){
   F.y = clamp(F.y, -H * .25, H * 1.25);
@@ -740,7 +750,7 @@ function drawSheet(o){
   gl.uniform2f(U.uOrigin, o.origin, PY); gl.uniform1f(U.uFlip, o.flip);
   gl.uniform1f(U.uMode, o.mode); gl.uniform1f(U.uLayer, o.layer); gl.uniform1f(U.uBackMode, o.back != null ? 1 : 0);
   const cp = o.cp;
-  if (cp){ gl.uniform1f(U.uCurl, 1); gl.uniform2f(U.uP, cp.P.x, cp.P.y); gl.uniform2f(U.uN, cp.n.x, cp.n.y); gl.uniform1f(U.uR, cp.r); gl.uniform1f(U.uFlap, cp.flap); }
+  if (cp){ gl.uniform1f(U.uCurl, 1); gl.uniform2f(U.uP, cp.P.x, cp.P.y); gl.uniform2f(U.uN, cp.n.x, cp.n.y); gl.uniform1f(U.uR, cp.r); }
   else gl.uniform1f(U.uCurl, 0);
   gl.drawElements(gl.TRIANGLES, idxCount, gl.UNSIGNED_SHORT, 0);
 }
@@ -748,9 +758,11 @@ function render(){
   gl.viewport(0, 0, canvas.width, canvas.height);
   gl.disable(gl.SCISSOR_TEST); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   gl.enable(gl.SCISSOR_TEST);
-  const bookW = spread ? 2 * W : W;
-  gl.scissor(Math.round(PX * dpr), Math.round((vh - PY - H) * dpr), Math.round(bookW * dpr), Math.round(H * dpr));
-  gl.uniform2f(U.uView, vw, vh); gl.uniform2f(U.uSize, W, H);
+  const bookW = spread ? 2 * W : W, z = zoom.z;
+  const sx0 = Math.max(0, PX * z + zoom.sx), sy0 = Math.max(0, PY * z + zoom.sy);
+  const sx1 = Math.min(vw, (PX + bookW) * z + zoom.sx), sy1 = Math.min(vh, (PY + H) * z + zoom.sy);
+  gl.scissor(Math.round(sx0 * dpr), Math.round((vh - sy1) * dpr), Math.max(0, Math.round((sx1 - sx0) * dpr)), Math.max(0, Math.round((sy1 - sy0) * dpr)));
+  gl.uniform2f(U.uView, vw, vh); gl.uniform2f(U.uSize, W, H); gl.uniform3f(U.uZ, z, zoom.sx, zoom.sy);
   const cp = turn ? curlParams() : null;
   if (!spread){
     if (turn){ drawSheet({ front: turn.under, origin: PX, flip: 1, mode: 0, layer: .6, cp }); drawSheet({ front: turn.sheet, origin: PX, flip: 1, mode: 1, layer: .4, cp }); }
@@ -791,13 +803,13 @@ function animTo(toTurned, dur, arc){
 function finishTurn(){ const a = turn.anim; cur = a.toTurned ? turn.turnedCur : turn.flatCur; turn = null; dirty = true; updateUI(); savePos(); }
 function flushTurn(){ if (turn && turn.anim){ turn.F = { ...turn.anim.to }; finishTurn(); } else if (turn){ turn = null; dirty = true; } }
 function tapTurn(dir, yHint){
-  flushTurn(); clearSel(); closePop();
+  resetZoom(); flushTurn(); clearSel(); closePop();
   const low = yHint == null ? true : yHint > H * .35;
   const t = makeTurn(dir, low ? H * .97 : H * .03);
   if (!t) return toast(dir === 'fwd' ? 'Hết sách rồi.' : 'Đây là trang đầu.');
   turn = t; animTo(!t.startTurned, 640, low ? -H * .1 : H * .1); dirty = true;
 }
-function jumpTo(i){ flushTurn(); clearSel(); closePop(); cur = i; normCur(); dirty = true; updateUI(); savePos(); }
+function jumpTo(i){ resetZoom(); flushTurn(); clearSel(); closePop(); cur = i; normCur(); dirty = true; updateUI(); savePos(); }
 
 /* ---------------- hit testing ---------------- */
 function pointToPage(cx, cy){
@@ -836,13 +848,97 @@ function textOf(a, b){
   return out.join('\n');
 }
 
+/* ---------------- zoom (PDF only) ---------------- */
+// Screen position = book position * zoom.z + (zoom.sx, zoom.sy). Page turning is off while zoomed.
+const ZMAX = 4, ZRES = 2.5;
+let zoom = { z:1, sx:0, sy:0 }, zoomAnim = null, hiResT = 0;
+function zoomable(){ return !!book && book.kind === 'pdf'; }
+function zoomArea(){
+  const imm = document.body.classList.contains('immersive');
+  return { t: imm ? 0 : $('.bar').getBoundingClientRect().bottom, b: imm ? vh : $('.foot').getBoundingClientRect().top };
+}
+function clampZoom(z, sx, sy){
+  z = clamp(z, 1, ZMAX);
+  if (z <= 1.001) return { z:1, sx:0, sy:0 };
+  const bookW = spread ? 2 * W : W, a = zoomArea();
+  // Centre the page if it fits on that axis, otherwise keep its edges outside the visible area.
+  const fit = (lo, hi, a0, a1, s) => hi - lo <= a1 - a0 ? (a0 + a1) / 2 - (lo + hi) / 2 : clamp(s, a1 - hi, a0 - lo);
+  return { z, sx: fit(PX * z, (PX + bookW) * z, 0, vw, sx), sy: fit(PY * z, (PY + H) * z, a.t, a.b, sy) };
+}
+function applyZoom(zz){
+  zoom = zz;
+  if (zoom.z === 1) shadowEl.style.transform = '';
+  else { shadowEl.style.transformOrigin = (-PX) + 'px ' + (-PY) + 'px'; shadowEl.style.transform = 'translate(' + zoom.sx + 'px,' + zoom.sy + 'px) scale(' + zoom.z + ')'; }
+  $('#zVal').textContent = Math.round(zoom.z * 100) + '%';
+  dirty = true;
+}
+function setZoom(z, sx, sy){ zoomAnim = null; applyZoom(clampZoom(z, sx, sy)); }
+function zoomAt(cx, cy, z, animate){
+  const bx = (cx - zoom.sx) / zoom.z, by = (cy - zoom.sy) / zoom.z;
+  if (animate) animZoom(z, cx - bx * z, cy - by * z);
+  else { setZoom(z, cx - bx * z, cy - by * z); scheduleHiRes(); }
+}
+function animZoom(z, sx, sy){
+  const to = clampZoom(z, sx, sy);
+  if (REDUCE){ applyZoom(to); zoomSettled(); return; }
+  zoomAnim = { from: { ...zoom }, to, t0: performance.now(), dur: 260 };
+}
+function zoomSettled(){ if (zoom.z === 1) dropHiRes(); else scheduleHiRes(); }
+function resetZoom(){ if (zoom.z !== 1 || zoomAnim){ zoomAnim = null; applyZoom({ z:1, sx:0, sy:0 }); dropHiRes(); } }
+function scheduleHiRes(){ clearTimeout(hiResT); hiResT = setTimeout(hiRes, 220); }
+function hiRes(){
+  if (!zoomable() || zoom.z <= 1.01) return;
+  const maxT = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+  const res = Math.min(zoom.z, ZRES, maxT / (W * dpr), maxT / (H * dpr));
+  visiblePages().forEach(i => { const v = tex.get(texKey(i)); if (v && (v.res || 1) < res - .05) renderPdfInto(i, v, res); });
+}
+function dropHiRes(){
+  clearTimeout(hiResT);
+  [...tex.keys()].forEach(k => { const v = tex.get(k); if (v.res > 1 || v.want > 1){ gl.deleteTexture(v.t); tex.delete(k); } });
+  dirty = true;
+}
+canvas.addEventListener('wheel', e => {
+  if (!zoomable()) return;
+  if (e.ctrlKey){ e.preventDefault(); zoomAt(e.clientX, e.clientY, zoom.z * Math.exp(-e.deltaY * .01)); }
+  else if (zoom.z > 1){ e.preventDefault(); setZoom(zoom.z, zoom.sx - e.deltaX, zoom.sy - e.deltaY); scheduleHiRes(); }
+}, { passive:false });
+
 /* ---------------- gestures ---------------- */
-let ptr = null;
+let ptr = null, pinch = null, lockUntilUp = false, lastTap = null, tapTimer = 0;
+const touches = new Map();
+// Taps on a PDF wait briefly so a second tap can become a double-tap zoom.
+function handleTap(x, y, single){
+  const now = performance.now();
+  if (lastTap && now - lastTap.t < 300 && Math.hypot(x - lastTap.x, y - lastTap.y) < 40){
+    clearTimeout(tapTimer); lastTap = null;
+    if (zoom.z > 1.01) animZoom(1, 0, 0); else zoomAt(x, y, 2.5, true);
+    return;
+  }
+  lastTap = { t: now, x, y };
+  clearTimeout(tapTimer); tapTimer = setTimeout(() => { lastTap = null; single(); }, 280);
+}
+function startPinch(){
+  const p = ptr; ptr = null;
+  if (p){ clearTimeout(p.timer); if (p.state === 'turn' && turn) animTo(false, 200); }
+  zoomAnim = null; clearTimeout(tapTimer); lastTap = null;
+  const [a, b] = [...touches.values()];
+  pinch = { d0: Math.max(10, Math.hypot(a.x - b.x, a.y - b.y)), z0: zoom.z, sx0: zoom.sx, sy0: zoom.sy, mx0: (a.x + b.x) / 2, my0: (a.y + b.y) / 2 };
+  lockUntilUp = true;
+}
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('pointerdown', e => {
-  if (ptr || e.button > 0) return;
+  if (e.button > 0) return;
+  touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (zoomable() && touches.size === 2){ startPinch(); return; }
+  if (ptr || pinch || lockUntilUp || touches.size > 1) return;
   requestWake();
   if (pop || sel){ clearSel(); closePop(); ptr = { id:e.pointerId, state:'consumed' }; return; }
+  if (zoom.z > 1.01){
+    zoomAnim = null;
+    ptr = { id:e.pointerId, state:'pan', x0:e.clientX, y0:e.clientY, t0:performance.now(), sx0:zoom.sx, sy0:zoom.sy, moved:0 };
+    try { canvas.setPointerCapture(e.pointerId); } catch(err){}
+    return;
+  }
   const bookW = spread ? 2 * W : W;
   if (e.clientX < PX - 20 || e.clientX > PX + bookW + 20 || e.clientY < PY - 20 || e.clientY > PY + H + 20) return;
   flushTurn();
@@ -871,7 +967,21 @@ function beginDrag(p){
   p.gain = t.startTurned ? clamp(2*W / Math.max(W - p.lx0, 1), 1, 2.6) : clamp(2*W / Math.max(p.lx0, 1), 1, 2.6);
 }
 canvas.addEventListener('pointermove', e => {
+  if (touches.has(e.pointerId)) touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pinch){
+    if (touches.size < 2) return;
+    const [a, b] = [...touches.values()];
+    const z = clamp(pinch.z0 * Math.hypot(a.x - b.x, a.y - b.y) / pinch.d0, 1, ZMAX);
+    const bx = (pinch.mx0 - pinch.sx0) / pinch.z0, by = (pinch.my0 - pinch.sy0) / pinch.z0;
+    setZoom(z, (a.x + b.x) / 2 - bx * z, (a.y + b.y) / 2 - by * z);
+    return;
+  }
   const p = ptr; if (!p || p.id !== e.pointerId) return;
+  if (p.state === 'pan'){
+    p.moved = Math.max(p.moved, Math.hypot(e.clientX - p.x0, e.clientY - p.y0));
+    setZoom(zoom.z, p.sx0 + e.clientX - p.x0, p.sy0 + e.clientY - p.y0);
+    return;
+  }
   const now = performance.now(), dt = Math.max(1, now - p.lt);
   p.vx = p.vx * .6 + ((e.clientX - p.lx) / dt) * .4; p.lx = e.clientX; p.lt = now;
   if (p.state === 'pending' && Math.hypot(e.clientX - p.x0, e.clientY - p.y0) > 8){ clearTimeout(p.timer); beginDrag(p); }
@@ -885,9 +995,21 @@ canvas.addEventListener('pointermove', e => {
   }
 });
 function endPtr(e){
+  touches.delete(e.pointerId);
+  if (pinch){
+    if (touches.size < 2){ pinch = null; if (zoom.z < 1.06) animZoom(1, 0, 0); else scheduleHiRes(); }
+    if (!touches.size) lockUntilUp = false;
+    return;
+  }
+  if (lockUntilUp){ if (!touches.size) lockUntilUp = false; return; }
   const p = ptr; if (!p || p.id !== e.pointerId) return;
   ptr = null; clearTimeout(p.timer);
   if (p.state === 'consumed' || p.state === 'none') return;
+  if (p.state === 'pan'){
+    if (p.moved < 8 && performance.now() - p.t0 < 350) handleTap(p.x0, p.y0, () => document.body.classList.toggle('immersive'));
+    else scheduleHiRes();
+    return;
+  }
   if (p.state === 'select'){ if (sel) openPop({ kind:'sel' }); return; }
   if (p.state === 'pending'){
     const hp = pointToPage(p.x0, p.y0);
@@ -896,8 +1018,9 @@ function endPtr(e){
       if (w){ const h = data.hls.find(h => w.key >= h.a && w.key <= h.b); if (h){ openPop({ kind:'hl', hl:h, page:hp.i }); return; } }
     }
     const bookW = spread ? 2 * W : W, rx = (p.x0 - PX) / bookW;
-    if (rx > .36 && rx < .64){ document.body.classList.toggle('immersive'); return; }
-    tapTurn(rx >= .5 ? 'fwd' : 'back', p.y0 - PY); return;
+    const single = () => { if (rx > .36 && rx < .64) document.body.classList.toggle('immersive'); else tapTurn(rx >= .5 ? 'fwd' : 'back', p.y0 - PY); };
+    if (zoomable()) handleTap(p.x0, p.y0, single); else single();
+    return;
   }
   if (p.state === 'turn' && turn){
     const pr = (W - turn.F.x) / (2*W), v = p.flip * p.vx;
@@ -1048,12 +1171,17 @@ function closeSettings(){ setEl.classList.remove('on'); }
 $('#setBtn').addEventListener('click', () => { setEl.classList.contains('on') ? closeSettings() : openSettings(); });
 document.addEventListener('pointerdown', e => { if (setEl.classList.contains('on') && !setEl.contains(e.target) && !$('#setBtn').contains(e.target)) closeSettings(); }, true);
 function syncSettings(){
+  if (!book) return;
   const pdf = book.kind === 'pdf';
-  $('#fsVal').textContent = pdf ? '—' : (settings.fs || autoFs()) + ' px';
-  $('#fsMinus').disabled = $('#fsPlus').disabled = pdf;
+  // PDF pages are fixed images: show zoom instead of the text-only rows.
+  setEl.querySelectorAll('.trow').forEach(r => { r.hidden = pdf; });
+  $('#zoomRow').hidden = !pdf;
+  $('#zVal').textContent = Math.round(zoom.z * 100) + '%';
+  $('#layoutHint').hidden = !(innerHeight > innerWidth && settings.layout !== 'single');
+  $('#fsVal').textContent = (settings.fs || autoFs()) + ' px';
   setEl.querySelectorAll('.seg').forEach(seg => {
-    const k = seg.dataset.k; const textOnly = k === 'lh' || k === 'margin' || k === 'font';
-    seg.querySelectorAll('button').forEach(b => { b.classList.toggle('on', String(settings[k]) === b.dataset.v); b.disabled = pdf && textOnly; });
+    const k = seg.dataset.k;
+    seg.querySelectorAll('button').forEach(b => b.classList.toggle('on', String(settings[k]) === b.dataset.v));
   });
 }
 setEl.querySelectorAll('.seg').forEach(seg => seg.addEventListener('click', e => {
@@ -1065,6 +1193,9 @@ setEl.querySelectorAll('.seg').forEach(seg => seg.addEventListener('click', e =>
 function bumpFs(d){ if (book.kind === 'pdf') return; settings.fs = clamp((settings.fs || autoFs()) + d, 12, 30); saveSettings(); layout('key'); syncSettings(); }
 $('#fsMinus').addEventListener('click', () => bumpFs(-1));
 $('#fsPlus').addEventListener('click', () => bumpFs(1));
+function zoomStep(f){ const a = zoomArea(), z = zoom.z * f; if (z < 1.05) animZoom(1, 0, 0); else zoomAt(vw / 2, (a.t + a.b) / 2, z, true); }
+$('#zMinus').addEventListener('click', () => zoomStep(1 / 1.25));
+$('#zPlus').addEventListener('click', () => zoomStep(1.25));
 
 /* ---------------- UI text ---------------- */
 function updateUI(){
@@ -1101,6 +1232,11 @@ function loop(now){
     turn.F = { x: a.from.x + (a.to.x - a.from.x) * e, y: a.from.y + (a.to.y - a.from.y) * e + a.arc * Math.sin(Math.PI * t) };
     dirty = true;
     if (t >= 1) finishTurn();
+  }
+  if (zoomAnim){
+    const a = zoomAnim, t = clamp((now - a.t0) / a.dur, 0, 1), e = easeOut(t);
+    applyZoom({ z: a.from.z + (a.to.z - a.from.z) * e, sx: a.from.sx + (a.to.sx - a.from.sx) * e, sy: a.from.sy + (a.to.sy - a.from.sy) * e });
+    if (t >= 1){ zoomAnim = null; applyZoom(a.to); zoomSettled(); }
   }
   if (dirty && gl){ dirty = false; render(); }
   requestAnimationFrame(loop);
@@ -1164,6 +1300,9 @@ async function boot(){
 }
 
 /* ---------------- opened from the shelf: reader/?book=<id> ---------------- */
+// PDF "Author" fields often hold the program that made the file, not a person.
+const TOOL_AUTHOR = /\b(pdf\s*candy|microsoft|word|excel|powerpoint|adobe|acrobat|indesign|photoshop|illustrator|libreoffice|openoffice|ilovepdf|smallpdf|sejda|nitro|foxit|calibre|ghostscript|quartz|pdf\s*creator|cutepdf|canva|google|wps|abbyy|camscanner|scanner|pdf24|pdfsam|itext|pdfium|skia|wkhtmltopdf|latex|pdftex|xetex|unknown|admin|administrator|user|owner)\b/i;
+function realAuthor(a){ a = String(a || '').trim(); return a && !TOOL_AUTHOR.test(a) ? a : ''; }
 function shelfRecord(id){
   return new Promise(res => {
     try {
@@ -1188,7 +1327,7 @@ async function openFromShelf(){
     try {
       const b = rec.kind === 'pdf' ? await openPdf(rec.file) : await openEpub(rec.file);
       if (rec.title) b.title = rec.title;
-      if (rec.author && !b.author) b.author = rec.author;
+      if (!b.author) b.author = realAuthor(rec.author);
       setBook(b); toast('Đã mở “' + b.title + '”.');
       return true;
     } catch(e){ toast('Không mở được sách này. File có thể bị hỏng hoặc có DRM.', 4200); return false; }

@@ -641,9 +641,12 @@ async function importFile(file){
   return rec;
 }
 
+// PDF "Author" fields often hold the program that made the file, not a person.
+const TOOL_AUTHOR = /\b(pdf\s*candy|microsoft|word|excel|powerpoint|adobe|acrobat|indesign|photoshop|illustrator|libreoffice|openoffice|ilovepdf|smallpdf|sejda|nitro|foxit|calibre|ghostscript|quartz|pdf\s*creator|cutepdf|canva|google|wps|abbyy|camscanner|scanner|pdf24|pdfsam|itext|pdfium|skia|wkhtmltopdf|latex|pdftex|xetex|unknown|admin|administrator|user|owner)\b/i;
+function realAuthor(a){ a = String(a || '').trim(); return a && !TOOL_AUTHOR.test(a) ? a : ''; }
 function prepUpload(rec){
   const b = Object.assign({}, rec);
-  b.group = 'mine'; b.vi = ''; b.author = b.author || 'Không rõ tác giả';
+  b.group = 'mine'; b.vi = ''; b.author = realAuthor(b.author) || 'Không rõ tác giả';
   const when = new Date(b.added).toLocaleDateString('vi-VN');
   b.syn = b.kind === 'pdf'
     ? 'Tệp PDF ' + b.count + ' trang, bạn đặt lên kệ ngày ' + when + '. Sách chỉ nằm trong trình duyệt này.'
