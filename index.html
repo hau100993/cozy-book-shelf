@@ -38,7 +38,9 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
   padding:env(safe-area-inset-top,0px) max(32px,env(safe-area-inset-right,0px)) 0 max(32px,env(safe-area-inset-left,0px));
   display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
 .top>:first-child{justify-self:start}
-.top-r{justify-self:end;color:var(--ink)}
+.top-r{justify-self:end;color:var(--ink);display:flex;align-items:center;gap:14px}
+.box[hidden]{display:none}
+.box.on{background:var(--cobalt);border-color:var(--cobalt);color:#fff}
 .logo{display:grid;justify-items:center;gap:5px;color:var(--cobalt);text-align:center}
 .logo .l1{font:600 23px/1 var(--serif);letter-spacing:.01em}
 .logo .l2{font:600 9px/1 var(--sans);letter-spacing:.34em;padding-left:.34em}
@@ -52,6 +54,7 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 .tabs button{position:relative;z-index:1;height:23px;padding:0 11px;margin-left:-1px;border:1px solid var(--rule);
   white-space:nowrap;transition:color .45s var(--ease)}
 .tabs button.on{color:#fff}
+.tabs.off{display:none}
 
 /* shelf */
 .shelf{position:fixed;left:0;right:0;top:calc(50% - var(--H)/2 - 40px);height:calc(var(--H) + 80px);
@@ -68,6 +71,122 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 .plank{position:fixed;left:0;right:0;top:calc(50% + var(--H)/2 + 1px);height:14px;z-index:5;pointer-events:none;
   border-top:1px solid rgba(20,20,20,.55);background:linear-gradient(rgba(20,16,10,.09),rgba(20,16,10,0))}
 
+/* layout toggle */
+.lay{gap:6px}
+.lay svg{display:none}
+.lay:not(.g) .i-grid,.lay.g .i-3d{display:block}
+
+/* wall: covers face-out on a wooden bookcase */
+.wall{position:fixed;left:0;right:0;bottom:0;top:calc(84px + env(safe-area-inset-top,0px));z-index:12;display:none;overflow-y:auto;
+  overscroll-behavior:contain;padding:0 max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px))}
+body.grid-on .wall{display:block}
+body.grid-on.has-tabs .wall{top:calc(124px + env(safe-area-inset-top,0px))}
+body.grid-on .tabs{top:calc(86px + env(safe-area-inset-top,0px))}
+body.grid-on :is(.shelf,.plank,.play,.caption,.arrow,.foot){display:none}
+.wcab{--wood:#A06A37;max-width:1180px;min-height:100%;margin:0 auto;box-sizing:border-box;padding:0 0 env(safe-area-inset-bottom,0px);
+  border:solid #6A3E1C;border-width:0 14px;background-color:var(--wood);
+  background-image:
+    linear-gradient(90deg,rgba(40,18,4,.38),rgba(40,18,4,0) 5%,rgba(40,18,4,0) 95%,rgba(40,18,4,.38)),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='480'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7 .008' numOctaves='3' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 .25 0 0 0 0 .12 0 0 0 0 .03 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23w)'/%3E%3C/svg%3E");
+  box-shadow:0 0 0 1px rgba(40,18,4,.5)}
+.wshelf{position:relative;padding-top:28px;background:linear-gradient(rgba(40,18,4,.42),rgba(40,18,4,0) 38px)}
+.wshelf::after{content:"";position:relative;z-index:1;display:block;height:16px;
+  background:linear-gradient(#E3AB6B,#C1834A 22%,#9C6232 70%,#7C4A22);box-shadow:0 7px 10px -3px rgba(30,12,2,.55)}
+.wrow{display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:0 clamp(12px,2.6vw,32px);align-items:end;padding:0 clamp(10px,2.2vw,28px)}
+.wbook{position:relative;display:block;width:100%;aspect-ratio:2/3;border-radius:1px 3px 3px 1px;overflow:hidden;
+  box-shadow:3px 4px 7px rgba(30,12,2,.5),0 0 0 1px rgba(30,12,2,.18);transition:transform .35s var(--ease),box-shadow .35s var(--ease)}
+.wbook img{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none;-webkit-touch-callout:none}
+.wbook::before{content:"";position:absolute;inset:0 auto 0 0;width:7%;background:linear-gradient(90deg,rgba(255,255,255,.28),rgba(0,0,0,.18) 45%,rgba(0,0,0,0))}
+@media (hover:hover){.wbook:hover{transform:translateY(-6px);box-shadow:5px 10px 14px rgba(30,12,2,.5),0 0 0 1px rgba(30,12,2,.18)}}
+.wslot{display:block;aspect-ratio:2/3;visibility:hidden}
+.wrow{justify-items:center}
+.wbook,.wslot,.wadd{width:var(--bw,100%)}
+.wtag{position:absolute;left:clamp(10px,2.2vw,28px);top:7px;z-index:2;padding:3px 7px;font:600 9px/1 var(--sans);letter-spacing:.12em;
+  text-transform:uppercase;color:#3B200A;background:linear-gradient(#F1D9A8,#D2AA68);border-radius:1px;
+  box-shadow:0 1px 2px rgba(30,12,2,.5),inset 0 0 0 1px rgba(90,50,10,.35)}
+.wadd{display:grid;place-content:center;gap:6px;aspect-ratio:2/3;border:1.5px dashed rgba(255,236,200,.6);color:rgba(255,240,215,.9);
+  font:600 9.5px/1.3 var(--sans);letter-spacing:.1em;text-transform:uppercase;text-align:center;transition:background-color .3s var(--ease)}
+.wadd b{font:400 30px/1 var(--serif)}
+@media (hover:hover){.wadd:hover{background:rgba(255,236,200,.08)}}
+.wprog{position:absolute;left:8%;right:8%;bottom:7px;height:3px;background:rgba(255,255,255,.6);box-shadow:0 0 0 1px rgba(0,0,0,.12)}
+.wprog i{display:block;height:100%;background:var(--cobalt)}
+
+/* metadata editor */
+.editor{position:fixed;inset:0;z-index:80;display:flex;justify-content:flex-end;background:rgba(20,16,10,.38)}
+.editor[hidden]{display:none}
+body.editing .cursor{display:none}
+.editor,.editor *{cursor:auto}
+.editor button{cursor:pointer}
+.ed-panel{width:min(560px,100%);height:100%;display:grid;grid-template-rows:auto minmax(0,1fr);background:var(--sheet);box-shadow:-24px 0 48px rgba(20,16,10,.18)}
+.ed-top{display:flex;align-items:center;gap:12px;padding:calc(14px + env(safe-area-inset-top,0px)) 20px 14px;border-bottom:1px solid rgba(20,20,20,.12)}
+.ed-top b{flex:1;text-align:center}
+.ed-top .box{height:34px;padding:0 14px}
+.ed-top .btn-read{flex:none;height:34px;padding:0 20px}
+.ed-grid>.ed-note{grid-column:1/-1}
+.ed-body{overflow-y:auto;overscroll-behavior:contain;padding:22px 20px calc(32px + env(safe-area-inset-bottom,0px));display:grid;gap:20px;align-content:start}
+.ed-cover{display:grid;grid-template-columns:132px minmax(0,1fr);gap:18px;align-items:start}
+.ed-cover img{display:block;width:132px;aspect-ratio:2/3;object-fit:cover;background:#fff;box-shadow:0 10px 24px -10px rgba(20,16,10,.5),0 0 0 1px rgba(20,16,10,.1)}
+.ed-src{display:flex;flex-wrap:wrap;gap:6px;align-content:start}
+.ed-src .box{height:30px;padding:0 10px}
+.ed-note{margin:0;color:var(--muted);font:400 14px/1.45 var(--serif)}
+.ed-note.err{color:var(--verm)}
+.ed-pane{display:grid;gap:10px;padding:14px;background:rgba(20,20,20,.04)}
+.ed-pane:empty{display:none}
+.ed-row{display:flex;gap:8px}
+.ed-row input{flex:1;min-width:0}
+.ed-row .box{height:auto;min-height:34px;padding:0 12px}
+.ed-f{display:grid;gap:7px}
+.ed-f>.lbl{color:var(--muted)}
+.editor input,.editor textarea{box-sizing:border-box;width:100%;border:1px solid rgba(20,20,20,.28);border-radius:0;background:#FBFAF7;color:var(--ink);
+  font:400 17px/1.4 var(--serif);padding:9px 11px;user-select:text;-webkit-user-select:text}
+.editor input:focus,.editor textarea:focus{outline:2px solid var(--cobalt);outline-offset:-1px}
+.editor textarea{resize:vertical;min-height:96px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{height:28px;padding:0 10px}
+.ed-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:12px 10px}
+.ed-grid button{display:grid;gap:5px;align-content:start;justify-items:center;font:600 9px/1.25 var(--sans);letter-spacing:.06em;color:var(--muted);text-align:center}
+.ed-grid canvas{width:100%;height:auto;background:#fff;box-shadow:0 0 0 1px rgba(20,20,20,.15)}
+.ed-grid img{width:100%;aspect-ratio:2/3;object-fit:cover;background:#E4E0D8;box-shadow:0 0 0 1px rgba(20,20,20,.15)}
+.ed-grid button.on :is(canvas,img){box-shadow:0 0 0 3px var(--cobalt)}
+.ed-grid button.busy img{opacity:.45}
+.ed-reset{justify-self:start;color:var(--muted);text-decoration:underline;text-underline-offset:3px;font:400 14px var(--serif)}
+@media (pointer:coarse){.hide-touch{display:none}}
+.btn-edit:hover{border-color:var(--cobalt);color:var(--cobalt)}
+
+/* add menu + import from link */
+.addwrap{position:relative;justify-self:start}
+.addmenu{position:fixed;left:0;top:0;z-index:85;display:grid;min-width:230px;background:var(--sheet);
+  border:1px solid var(--rule);box-shadow:0 14px 30px -12px rgba(20,16,10,.35)}
+.addmenu[hidden]{display:none}
+.addmenu button{display:grid;gap:4px;text-align:left;padding:12px 14px;border-top:1px solid rgba(20,20,20,.12)}
+.addmenu button:first-child{border-top:0}
+.addmenu button:hover{background:rgba(31,63,176,.07)}
+.addmenu small{font:400 13px/1.3 var(--serif);color:var(--muted);text-transform:none;letter-spacing:0}
+.lk-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.lk-list:empty{display:none}
+.lk-item{display:grid;gap:6px;padding:12px 14px;background:rgba(20,20,20,.04)}
+.lk-item b{font:400 16px/1.3 var(--serif);overflow-wrap:anywhere}
+.lk-item .lk-st{font:400 14px/1.4 var(--serif);color:var(--muted)}
+.lk-item.err .lk-st{color:var(--verm)}
+.lk-item.ok .lk-st{color:var(--cobalt)}
+.lk-item .bar{height:3px;background:rgba(20,20,20,.12)}
+.lk-item .bar i{display:block;height:100%;width:0;background:var(--cobalt);transition:width .2s linear}
+.lk-item:not(.run) .bar{display:none}
+.lk-act{display:flex;flex-wrap:wrap;gap:6px}
+.lk-act .box{height:30px;padding:0 10px}
+.dcred a{color:var(--cobalt);text-underline-offset:3px}
+
+/* empty shelf */
+.empty{position:fixed;left:50%;top:calc(50% + var(--H)/2 - 20px);transform:translate(-50%,-100%);z-index:12;
+  display:none;width:min(420px,calc(100vw - 32px));text-align:center;color:var(--ink)}
+.empty .e-t{margin:0 0 12px;font:400 31px/1.12 var(--serif);letter-spacing:-.01em}
+.empty .e-s{margin:0 0 22px;color:var(--muted);line-height:1.6}
+.empty .e-a{display:flex;justify-content:center;gap:8px}
+.empty .box{height:28px;padding:0 12px}
+body.is-empty .empty{display:block}
+body.seeding .empty{display:none}
+body.is-empty :is(.play,.caption,.arrow){visibility:hidden}
+
 /* play ring */
 .play{position:fixed;left:0;top:0;z-index:30;width:42px;height:42px;border-radius:50%;border:1px solid var(--cobalt);
   color:var(--cobalt);background:rgba(237,235,230,.78);display:grid;place-items:center;transform:translate(-50%,-50%) scale(0)}
@@ -79,7 +198,7 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 .m>span{grid-area:1/1;display:block}
 .cap-t{font:400 31px/1.12 var(--serif);letter-spacing:-.01em}
 .cap-t>span{padding-bottom:.1em}
-.cap-s{color:var(--cobalt);font-weight:500}
+.cap-s{color:var(--cobalt);font-weight:500;line-height:1.6}
 .cap-y{font:500 11px/1.3 var(--sans);letter-spacing:.08em}
 
 /* arrows */
@@ -117,24 +236,37 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 .toast.on{transform:translate(-50%,0)}
 
 /* detail sheet */
-.detail{position:fixed;inset:0;z-index:60;background:var(--sheet);visibility:hidden;display:grid;grid-template-columns:1fr 1fr;
-  grid-template-rows:minmax(0,1fr);gap:4vw;padding:110px 6vw 56px 7vw;align-items:center;overflow:hidden}
+.detail{position:fixed;inset:0;z-index:60;background:var(--sheet);visibility:hidden;display:grid;
+  grid-template-columns:auto minmax(0,540px);grid-template-rows:1fr auto auto auto 1fr;
+  grid-template-areas:"poster ." "poster head" "poster bar" "poster body" "poster .";
+  align-content:safe center;justify-content:center;column-gap:clamp(40px,6vw,96px);padding:110px 48px 56px;overflow-y:auto}
 .detail .close{position:absolute;top:calc(31px + env(safe-area-inset-top,0px));left:max(32px,env(safe-area-inset-left,0px));z-index:2}
 .detail .dlogo{position:absolute;top:env(safe-area-inset-top,0px);left:0;right:0;height:84px;display:grid;place-items:center;pointer-events:none}
-.dtext{display:grid;gap:18px;max-width:520px;justify-self:end;width:100%}
 .dm{overflow:hidden}
 .dm>.in{display:block}
-.dsub{color:var(--cobalt);font-weight:500}
-.dtitle{font:400 clamp(44px,5.4vw,84px)/1 var(--serif);letter-spacing:-.025em;text-wrap:balance;padding-bottom:.08em}
-.dmeta{color:var(--muted)}
-.dsyn{font:400 17px/1.5 var(--serif);max-width:42ch;user-select:text;-webkit-user-select:text}
+.dhead{grid-area:head;display:grid;gap:12px}
+.dsub{color:var(--cobalt);font-weight:500;line-height:1.6}
+.dtitle{font:400 clamp(34px,3.4vw,54px)/1.06 var(--serif);letter-spacing:-.02em;text-wrap:balance;
+  display:-webkit-box!important;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+.dmt{padding-bottom:5px}
+.dvi{font:italic 400 19px/1.3 var(--serif);color:var(--muted)}
+.dmeta{color:var(--muted);line-height:1.6}
+.dprog{display:grid!important;gap:8px;margin-top:6px;max-width:320px}
+.dprog .bar{height:3px;background:rgba(20,20,20,.12)}
+.dprog .bar i{display:block;height:100%;width:0;background:var(--cobalt)}
+.dprog .lbl{color:var(--muted)}
+.dbar{grid-area:bar;margin-top:28px;align-self:start}
+.dact{display:flex!important;gap:10px}
+.btn-read{height:46px;padding:0 26px;background:var(--cobalt);color:var(--sheet);border:1px solid var(--cobalt);transition:background-color .35s var(--ease)}
+.btn-read:hover{background:#16308A}
+.btn-del{height:46px;padding:0 16px;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid rgba(20,20,20,.35);
+  transition:border-color .35s var(--ease),color .35s var(--ease)}
+.btn-del:hover,.btn-del.arm{border-color:var(--verm);color:var(--verm)}
+.btn-del[hidden],.dbody[hidden],.dm[hidden]{display:none}
+.dbody{grid-area:body;display:grid;gap:12px;margin-top:32px;padding-top:24px;border-top:1px solid rgba(20,20,20,.14);align-self:start}
+.dsyn{font:400 17px/1.55 var(--serif);max-width:44ch;user-select:text;-webkit-user-select:text}
 .dcred{font:italic 400 15px/1.4 var(--serif);color:var(--muted)}
-.dact{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-.btn-read{height:44px;padding:0 20px;border:1px solid var(--cobalt);color:var(--cobalt);transition:background-color .35s var(--ease),color .35s var(--ease)}
-.btn-read:hover{background:var(--cobalt);color:var(--sheet)}
-.btn-del{height:44px;padding:0 16px;border:1px solid var(--rule)}
-.btn-del.arm{border-color:var(--verm);color:var(--verm)}
-.dposter{height:min(100%,78vh);aspect-ratio:600/900;max-width:100%;justify-self:start}
+.dposter{grid-area:poster;height:min(68vh,620px);aspect-ratio:600/900;align-self:center}
 .dposter svg{display:block;width:100%;height:100%;overflow:visible}
 
 /* reader */
@@ -171,19 +303,42 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
   .top{height:64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
   .logo .l1{font-size:17px}.logo .l2{font-size:7.5px}
   .lbl{font-size:9px}
-  .top-r{display:none}
+  .top-r .cnt{display:none}
+  .top-r{gap:6px}
+  .lay{width:28px;padding:0}.lay .t{display:none}
+  .wall{top:calc(64px + env(safe-area-inset-top,0px))}
+  body.grid-on.has-tabs .wall{top:calc(100px + env(safe-area-inset-top,0px))}
+  body.grid-on .tabs{top:calc(66px + env(safe-area-inset-top,0px))}
+  .wcab{border-width:0 9px}
+  .wshelf{padding-top:22px;scroll-snap-align:start}
+  .wall{scroll-snap-type:y mandatory}
+  .wtag{top:4px;padding:3px 6px;font-size:8px}
+  .wshelf::after{height:12px}
   .tabs{top:calc(50% - var(--H)/2 - 70px)}
   .tabs button{padding:0 7px}
-  .cap-t{font-size:24px}
+  .cap-t,.empty .e-t{font-size:24px}
   .arrow.l{left:max(6px,env(safe-area-inset-left,0px))}.arrow.r{right:max(6px,env(safe-area-inset-right,0px))}
   .foot{left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px))}
   .foot .hint{display:none}
-  .detail{grid-template-columns:1fr;grid-template-rows:auto auto;padding:84px 22px 40px;gap:24px;overflow-y:auto;align-items:start;align-content:start}
+  .detail{grid-template-columns:minmax(0,1fr);grid-template-areas:"poster" "head" "body" "bar";grid-template-rows:minmax(190px,1fr) auto auto auto;
+    align-content:stretch;justify-content:stretch;padding:76px 20px 0}
   .detail .close{top:calc(21px + env(safe-area-inset-top,0px));left:max(16px,env(safe-area-inset-left,0px))}
   .detail .dlogo{height:64px}
-  .dposter{order:-1;height:46svh;justify-self:center}
-  .dtext{justify-self:stretch}
-  .dtitle{font-size:42px}.dsyn{font-size:16px}
+  .dposter{height:100%;max-height:min(58svh,520px);width:auto;max-width:100%;justify-self:center;align-self:center;min-height:0}
+  .dhead{gap:8px;margin-top:22px;justify-items:center;text-align:center}
+  .dtitle{font-size:24px;-webkit-line-clamp:3}
+  .dprog{width:min(100%,280px)}
+  .dvi{font-size:15px}
+  .dbody{margin-top:22px;padding-top:18px}
+  .dsyn{font-size:16px}
+  .dbar{position:sticky;bottom:0;z-index:3;margin:20px -20px 0;padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));
+    background:var(--sheet);border-top:1px solid rgba(20,20,20,.12)}
+  .btn-read{flex:1;padding:0 16px}
+  .btn-del{width:46px;padding:0}
+  .btn-del.arm{width:auto;padding:0 14px}
+  .btn-del:not(.arm) .t{display:none}
+  .btn-edit{order:-1}
+  .ed-cover{grid-template-columns:104px minmax(0,1fr)}.ed-cover img{width:104px}
   .rbar{gap:8px;padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));flex-wrap:wrap}
   .rtitle{order:-1;flex-basis:100%}
   .rctl{flex:1;justify-content:flex-end}
@@ -196,9 +351,14 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 <div class="grain" aria-hidden="true"></div>
 
 <header class="top">
-  <button class="box lbl" id="addBtn" type="button">+ Thêm sách</button>
+  <div class="addwrap"><button class="box lbl" id="addBtn" type="button" aria-haspopup="true" aria-expanded="false">+ Thêm sách</button>
+    <div class="addmenu" id="addMenu" hidden>
+      <button class="lbl" type="button" data-a="file">Từ máy<small>Chọn file PDF hoặc EPUB</small></button>
+      <button class="lbl" type="button" data-a="link">Từ link<small>Google Drive, Dropbox, GitHub, link .epub / .pdf</small></button>
+    </div>
+  </div>
   <div class="logo"><span class="l1">Tủ Sách Nhỏ</span><span class="l2">A Small Library</span></div>
-  <div class="lbl top-r" id="count">PDF · EPUB</div>
+  <div class="top-r"><span class="lbl cnt" id="count">PDF · EPUB</span><button class="box lbl lay" id="layBtn" type="button"><svg class="i-grid" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M.7.7h4.3v4.3H.7zM7 .7h4.3v4.3H7zM.7 7h4.3v4.3H.7zM7 7h4.3v4.3H7z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg><svg class="i-3d" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M.7 1.5h2.2v9.8H.7zM4.3 1.5h2.2v9.8H4.3zM8 2.6l2.1-.6 1.6 9.2-2.1.5z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg><span class="t"></span></button><button class="box lbl" id="viewBtn" type="button">Sách mẫu</button></div>
 </header>
 <input type="file" id="fileIn" accept=".pdf,.epub,application/pdf,application/epub+zip" multiple hidden>
 
@@ -206,6 +366,12 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 
 <section class="shelf" id="shelf" aria-label="Kệ sách"><div class="stage" id="stage"></div></section>
 <div class="plank" aria-hidden="true"></div>
+<section class="wall" id="wall" aria-label="Tủ sách"><div class="wcab" id="wallIn"></div></section>
+<div class="empty" id="empty">
+  <p class="e-t">Kệ sách còn trống</p>
+  <p class="lbl e-s">Thêm PDF / EPUB để đặt sách lên kệ,<br>hoặc xem thử vài cuốn sách mẫu.</p>
+  <div class="e-a"><button class="box lbl" id="eAdd" type="button">+ Thêm sách</button><button class="box lbl" id="eSamples" type="button">Xem sách mẫu</button></div>
+</div>
 
 <button class="play" id="play" type="button" aria-label="Mở sách">
   <svg width="16" height="14" viewBox="0 0 16 14" aria-hidden="true"><path d="M8 2.5C6.5 1.3 4 .8 1 1v10.5c3-.2 5.5.3 7 1.5 1.5-1.2 4-1.7 7-1.5V1c-3-.2-5.5.3-7 1.5Zm0 0V13" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
@@ -229,16 +395,60 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 <div class="drop" id="drop"><div class="frame"></div><p class="lbl"><span class="big">Thả để đặt lên kệ</span>PDF hoặc EPUB</p></div>
 <div class="toast lbl" id="toast" role="status"></div>
 
+<div class="editor" id="editor" role="dialog" aria-modal="true" aria-labelledby="edHead" hidden>
+  <div class="ed-panel">
+    <div class="ed-top"><button class="box lbl" id="edCancel" type="button">Huỷ</button><b class="lbl" id="edHead">Sửa thông tin sách</b><button class="lbl btn-read" id="edSave" type="button">Lưu</button></div>
+    <div class="ed-body">
+      <div class="ed-cover">
+        <img id="edImg" alt="Ảnh bìa">
+        <div class="ed-src" id="edSrc">
+          <button class="box lbl" type="button" data-src="file">Tải ảnh lên</button>
+          <button class="box lbl" type="button" data-src="url">Link ảnh</button>
+          <button class="box lbl" type="button" data-src="find">Tìm trên mạng</button>
+          <button class="box lbl" type="button" data-src="pdf" id="edPdfBtn">Chọn trang PDF</button>
+          <button class="box lbl" type="button" data-src="orig">Bìa gốc từ file</button>
+          <button class="box lbl" type="button" data-src="gen">Bìa tự vẽ</button>
+          <p class="ed-note hide-touch">Hoặc dán ảnh (Ctrl+V) hay kéo thả ảnh vào đây.</p>
+        </div>
+      </div>
+      <div class="ed-pane" id="edPane"></div>
+      <label class="ed-f"><span class="lbl">Tên sách</span><input id="edTitle" type="text" autocomplete="off"></label>
+      <label class="ed-f"><span class="lbl">Tác giả</span><input id="edAuthor" type="text" autocomplete="off"></label>
+      <label class="ed-f"><span class="lbl">Năm xuất bản</span><input id="edYear" type="text" inputmode="numeric" maxlength="4" autocomplete="off"></label>
+      <div class="ed-f"><label class="lbl" for="edGenre">Thể loại</label><input id="edGenre" type="text" placeholder="Chọn bên dưới hoặc gõ thể loại mới" autocomplete="off"><div class="chips" id="edChips"></div></div>
+      <label class="ed-f"><span class="lbl">Mô tả / ghi chú</span><textarea id="edDesc" rows="4"></textarea></label>
+      <button class="ed-reset" id="edReset" type="button">Lấy lại tên, tác giả, năm từ file gốc</button>
+    </div>
+  </div>
+</div>
+<input type="file" id="imgIn" accept="image/*" hidden>
+
+<div class="editor" id="linkDlg" role="dialog" aria-modal="true" aria-labelledby="lkHead" hidden>
+  <div class="ed-panel">
+    <div class="ed-top"><button class="box lbl" id="lkClose" type="button">Đóng</button><b class="lbl" id="lkHead">Thêm sách từ link</b><button class="lbl btn-read" id="lkGo" type="button">Tải về</button></div>
+    <div class="ed-body">
+      <label class="ed-f"><span class="lbl">Link sách · mỗi dòng một link</span><textarea id="lkIn" rows="4" placeholder="https://drive.google.com/file/d/…/view" autocomplete="off" spellcheck="false"></textarea></label>
+      <div class="ed-row"><button class="box lbl" id="lkPaste" type="button">Dán từ bộ nhớ</button></div>
+      <p class="ed-note">Nhận link Google Drive, Dropbox, GitHub và link trực tiếp tới file .epub / .pdf. File trên Drive cần chia sẻ “Bất kỳ ai có đường liên kết”. Sách được tải thẳng từ trang đó về trình duyệt của bạn.</p>
+      <ol class="lk-list" id="lkList"></ol>
+    </div>
+  </div>
+</div>
+
 <div class="detail" id="detail" role="dialog" aria-modal="true" aria-label="Chi tiết sách">
   <button class="box lbl close" id="dClose" type="button">← Về kệ</button>
   <div class="dlogo"><div class="logo"><span class="l1">Tủ Sách Nhỏ</span><span class="l2">A Small Library</span></div></div>
-  <div class="dtext">
-    <div class="dm"><span class="in lbl dsub" id="dSub"></span></div>
-    <div class="dm"><span class="in dtitle" id="dTitle"></span></div>
+  <div class="dhead">
+    <div class="dm" id="dSubRow"><span class="in lbl dsub" id="dSub"></span></div>
+    <div class="dm dmt"><span class="in dtitle" id="dTitle"></span></div>
+    <div class="dm" id="dViRow"><span class="in dvi" id="dVi"></span></div>
     <div class="dm"><span class="in lbl dmeta" id="dMeta"></span></div>
+    <div class="dm" id="dProgRow"><span class="in dprog"><span class="bar"><i id="dBar"></i></span><span class="lbl" id="dProg"></span></span></div>
+  </div>
+  <div class="dm dbar"><span class="in dact"><button class="lbl btn-read" id="dRead" type="button">Đọc sách →</button><button class="lbl btn-del btn-edit" id="dEdit" type="button" aria-label="Sửa thông tin sách" hidden><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M9.5 1.5l3 3-8 8H1.5v-3z M8 3l3 3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg><span class="t">Sửa</span></button><button class="lbl btn-del" id="dDel" type="button" aria-label="Xoá khỏi kệ" hidden><svg width="14" height="15" viewBox="0 0 14 15" aria-hidden="true"><path d="M1 3.5h12M5 3.5V1.5h4v2M2.5 3.5l.8 10h7.4l.8-10M5.5 6.5v4.5M8.5 6.5v4.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg><span class="t">Xoá khỏi kệ</span></button></span></div>
+  <div class="dbody" id="dBody">
     <div class="dm"><span class="in dsyn" id="dSyn"></span></div>
     <div class="dm"><span class="in dcred" id="dCred"></span></div>
-    <div class="dm"><span class="in dact"><button class="lbl btn-read" id="dRead" type="button">Đọc sách →</button><button class="lbl btn-del" id="dDel" type="button" hidden>Xoá khỏi kệ</button></span></div>
   </div>
   <div class="dposter" aria-hidden="true">
     <svg viewBox="0 0 600 900" xmlns="http://www.w3.org/2000/svg">
@@ -294,7 +504,7 @@ const store = {
 /* ---------- data ---------- */
 const GROUPS = [
   { id:'all', label:'Tất cả' }, { id:'romance', label:'Lãng mạn' }, { id:'adv', label:'Phiêu lưu' },
-  { id:'myst', label:'Bí ẩn' }, { id:'sf', label:'Viễn tưởng' }, { id:'mine', label:'Của bạn' }
+  { id:'myst', label:'Bí ẩn' }, { id:'sf', label:'Viễn tưởng' }
 ];
 const GLABEL = { romance:'Lãng mạn', adv:'Phiêu lưu', myst:'Bí ẩn', sf:'Viễn tưởng', mine:'Của bạn' };
 
@@ -550,6 +760,7 @@ const DB = {
     });
   },
   all(){ return this.tx('readonly', os => os.getAll()).then(r => r || []); },
+  get(id){ return this.tx('readonly', os => os.get(id)); },
   put(rec){ return this.tx('readwrite', os => os.put(rec)); },
   del(id){ return this.tx('readwrite', os => os.delete(id)); }
 };
@@ -583,6 +794,14 @@ function resolvePath(base, rel){
 }
 const byTag = (doc, name) => doc.getElementsByTagNameNS('*', name);
 
+async function firstImage(zip, path){
+  if (/\.(jpe?g|png|gif|webp|svg)$/i.test(path)) return zip.file(path) ? path : null;
+  const f = zip.file(path); if (!f) return null;
+  const doc = new DOMParser().parseFromString(await f.async('text'), 'text/html');
+  const el = doc.querySelector('img[src], image');
+  const src = el && (el.getAttribute('src') || el.getAttribute('href') || el.getAttribute('xlink:href'));
+  return src ? resolvePath(path, src) : null;
+}
 async function parseEpub(file){
   const JSZip = await ensureZip();
   const zip = await JSZip.loadAsync(file);
@@ -594,11 +813,19 @@ async function parseEpub(file){
   for (const it of byTag(odoc, 'item')) manifest[it.getAttribute('id')] = { href: resolvePath(opfPath, it.getAttribute('href') || ''), type: it.getAttribute('media-type') || '', props: it.getAttribute('properties') || '' };
   const spine = [...byTag(odoc, 'itemref')].map(r => manifest[r.getAttribute('idref')]).filter(Boolean).map(m => m.href);
   const meta = n => (byTag(odoc, n)[0] || {}).textContent;
-  let coverId = Object.keys(manifest).find(k => /cover-image/.test(manifest[k].props));
-  if (!coverId){ const mc = [...byTag(odoc, 'meta')].find(m => m.getAttribute('name') === 'cover'); if (mc) coverId = mc.getAttribute('content'); }
+  // Cover: EPUB3 property, EPUB2 <meta name="cover"> (id or href), an image named "cover", else the first picture on the cover/first page.
+  const imgOf = m => m && /^image\//.test(m.type) ? m.href : null;
+  let coverHref = imgOf(Object.values(manifest).find(m => /cover-image/.test(m.props)));
+  const mc = [...byTag(odoc, 'meta')].find(m => m.getAttribute('name') === 'cover');
+  if (!coverHref && mc){ const c = mc.getAttribute('content') || ''; coverHref = imgOf(manifest[c]) || imgOf(Object.values(manifest).find(m => c && m.href.endsWith(c))); }
+  if (!coverHref){ const k = Object.keys(manifest).find(k => /cover/i.test(k + ' ' + manifest[k].href) && imgOf(manifest[k])); if (k) coverHref = manifest[k].href; }
+  if (!coverHref){
+    const ref = [...byTag(odoc, 'reference')].find(x => /cover/i.test(x.getAttribute('type') || ''));
+    for (const pg of [ref && resolvePath(opfPath, ref.getAttribute('href') || ''), spine[0]]){ if (pg && (coverHref = await firstImage(zip, pg.split('#')[0]))) break; }
+  }
   let navHref = Object.values(manifest).find(m => /\bnav\b/.test(m.props));
   let ncx = Object.values(manifest).find(m => /ncx/.test(m.type));
-  return { zip, opfPath, manifest, spine, coverId, navHref: navHref && navHref.href, ncxHref: ncx && ncx.href,
+  return { zip, opfPath, manifest, spine, coverHref, navHref: navHref && navHref.href, ncxHref: ncx && ncx.href,
     title: (meta('title') || '').trim(), author: (meta('creator') || '').trim(), date: meta('date') || '' };
 }
 
@@ -629,8 +856,8 @@ async function importFile(file){
   } else {
     const ep = await parseEpub(file);
     if (ep.title) rec.title = ep.title; rec.author = ep.author; rec.year = pdfYear('D:' + ep.date.slice(0, 4)); rec.count = ep.spine.length;
-    if (ep.coverId && ep.manifest[ep.coverId]){
-      const f = ep.zip.file(ep.manifest[ep.coverId].href);
+    if (ep.coverHref){
+      const f = ep.zip.file(ep.coverHref);
       if (f){ try { const url = URL.createObjectURL(await f.async('blob')); const im = await loadImg(url); coverCanvas = coverFit(im); URL.revokeObjectURL(url); } catch(e){} }
     }
   }
@@ -646,11 +873,8 @@ const TOOL_AUTHOR = /\b(pdf\s*candy|microsoft|word|excel|powerpoint|adobe|acroba
 function realAuthor(a){ a = String(a || '').trim(); return a && !TOOL_AUTHOR.test(a) ? a : ''; }
 function prepUpload(rec){
   const b = Object.assign({}, rec);
-  b.group = 'mine'; b.vi = ''; b.author = realAuthor(b.author) || 'Không rõ tác giả';
-  const when = new Date(b.added).toLocaleDateString('vi-VN');
-  b.syn = b.kind === 'pdf'
-    ? 'Tệp PDF ' + b.count + ' trang, bạn đặt lên kệ ngày ' + when + '. Sách chỉ nằm trong trình duyệt này.'
-    : 'Sách EPUB gồm ' + b.count + ' phần, bạn đặt lên kệ ngày ' + when + '. Sách chỉ nằm trong trình duyệt này.';
+  b.group = 'mine'; b.vi = ''; b.title = String(b.title || '').normalize('NFC'); b.author = realAuthor(b.author).normalize('NFC'); b.noAuthor = !b.author; if (b.noAuthor) b.author = 'Không rõ tác giả';
+  b.genre = rec.genre || ''; b.syn = rec.desc || '';
   b.cover = rec.cover || genCover(b);
   b.spine = genSpine(b);
   return b;
@@ -658,9 +882,10 @@ function prepUpload(rec){
 
 /* ---------- state ---------- */
 const stage = $('#stage'), shelf = $('#shelf'), playBtn = $('#play'), cursor = $('#cursor');
-let books = [], tapes = [], N = 0, C = 3, M = 0;
+// The shelf shows one view at a time: your uploads ('mine') or the samples ('samples').
+let books = [], mine = [], view = 'samples', tapes = [], N = 0, C = 3, M = 0;
 let H = 400, ws = 60, d = 260, gap = 12;
-let s = 0, T = 0, activeIdx = -1, hoverV = -1, activeTape = null;
+let s = 0, T = 0, loop = true, activeIdx = -1, hoverV = -1, activeTape = null;
 let mx = innerWidth/2, my = innerHeight/2, cx = mx, cy = my, curSeen = false, overEl = null;
 let tiltX = 0, tiltY = 0, onCover = false, isOpen = false, readerOpen = false;
 let dragging = false, down = false, moved = false, x0 = 0, T0 = 0, wheelTimer = 0;
@@ -678,7 +903,16 @@ function measure(){
 function buildShelf(keepId){
   const keep = keepId || (books[activeIdx] && books[activeIdx].id);
   N = books.length;
-  C = Math.max(3, Math.ceil((innerWidth + 4*d) / (N * (ws + gap))) + 2);
+  document.body.classList.toggle('is-empty', !N);
+  if (!N){
+    renderWall();
+    stage.textContent = ''; tapes = []; M = 0; activeIdx = -1; activeTape = null;
+    ['#capT', '#capS', '#capY'].forEach(q => { $(q).textContent = ''; });
+    $('#count').textContent = 'Kệ trống';
+    updateViewBtn();
+    return;
+  }
+  C = copies(); loop = C > 1;
   M = N * C;
   stage.textContent = ''; tapes = [];
   const frag = document.createDocumentFragment();
@@ -701,28 +935,152 @@ function buildShelf(keepId){
   let idx = Math.max(0, books.findIndex(b => b.id === keep));
   s = T = idx + N * Math.floor(C/2);
   activeIdx = -1;
-  $('#count').textContent = N + ' cuốn · PDF · EPUB';
-  updateMineTab();
+  $('#count').textContent = view === 'mine' ? N + ' cuốn · PDF · EPUB' : N + ' sách mẫu';
+  updateViewBtn();
+  renderWall(keep);
 }
+function showView(v, keepId){
+  view = v === 'samples' ? 'samples' : 'mine';
+  try { sessionStorage.setItem('tsn-view', view); } catch(e){}
+  books = view === 'mine' ? mine.slice() : SAMPLES.slice();
+  const genres = view === 'mine' ? mineGenres() : [];
+  buildTabs(view === 'mine' ? [{ id:'all', label:'Tất cả' }].concat(genres.map(g => ({ id:g, label:g }))) : GROUPS);
+  tabsEl.classList.toggle('off', view === 'mine' && !genres.length);
+  document.body.classList.toggle('has-tabs', view === 'samples' || genres.length > 0);
+  gridFilter = 'all';
+  buildShelf(keepId);
+  updateTabs();
+}
+function updateViewBtn(){
+  const bt = $('#viewBtn');
+  bt.textContent = view === 'mine' ? 'Sách mẫu' : '← Của bạn';
+  bt.classList.toggle('on', view === 'samples');
+}
+$('#viewBtn').addEventListener('click', () => { if (!isOpen) showView(view === 'mine' ? 'samples' : 'mine'); });
+$('#eSamples').addEventListener('click', () => showView('samples'));
+$('#eAdd').addEventListener('click', e => openAddMenu(e.currentTarget, e));
+
+/* ---------- wall: every cover face-out on wooden shelves (the alternative to the 3D shelf) ---------- */
+const wall = $('#wall'), wallIn = $('#wallIn');
+// Phones open on the wall by default, larger screens on the 3D shelf; an explicit choice is remembered.
+let gridMode = (store.get('tsn-layout') || (matchMedia('(max-width:767px)').matches ? 'grid' : '3d')) === 'grid', gridFilter = 'all', gridSrc = null;
+const PHONE_ROWS = 4, SHELF_PAD = 22, PLANK = 12;
+function wallCols(){ return innerWidth < 768 ? 3 : clamp(Math.floor((Math.min(wall.clientWidth, 1180) - 40) / 150), 3, 8); }
+// Your shelf: a top row of the 3 books read most recently (or newest, before anything is read), then the rest, newest first; each book appears once.
+function wallSections(){
+  const all = books.map((b, i) => ({ b, i, p: store.get('tsn-prog-' + b.id) }));
+  if (view !== 'mine' || gridFilter !== 'all'){
+    const items = all.filter(o => gridFilter === 'all' || groupOf(o.b) === gridFilter);
+    return [{ label: (gridFilter === 'all' ? 'Sách mẫu' : GLABEL[gridFilter] || gridFilter) + ' · ' + items.length, items }];
+  }
+  let top = all.filter(o => o.p && o.p.pct > 0 && o.p.pct < 100).sort((a, b) => b.p.t - a.p.t).slice(0, 3), topLabel = 'Đang đọc', direct = true;
+  if (!top.length && N > 3){ top = all.slice().sort((a, b) => b.b.added - a.b.added).slice(0, 3); topLabel = 'Mới thêm'; direct = false; }
+  const rest = all.filter(o => !top.includes(o)).sort((a, b) => b.b.added - a.b.added);
+  const out = [];
+  if (top.length) out.push({ label: topLabel, items: top, direct });
+  out.push({ label: (top.length ? 'Thư viện · ' : 'Tất cả · ') + rest.length, items: rest, add: true });
+  return out;
+}
+function openFrom(bt, i){ if (isOpen) return; activeIdx = i; gridSrc = bt; openDetail(); }
+function wallBook(o, direct){
+  const b = o.b, bt = document.createElement('button');
+  bt.type = 'button'; bt.className = 'wbook'; bt.dataset.id = b.id;
+  bt.setAttribute('aria-label', (direct ? 'Đọc tiếp: ' : '') + b.title + (b.noAuthor ? '' : ', ' + b.author));
+  const im = new Image(); im.src = b.cover; im.alt = ''; im.decoding = 'async'; im.draggable = false; bt.appendChild(im);
+  if (o.p && o.p.pct > 0){ const bar = document.createElement('span'); bar.className = 'wprog'; const f = document.createElement('i'); f.style.width = Math.min(100, o.p.pct) + '%'; bar.appendChild(f); bt.appendChild(bar); }
+  // "Đang đọc" covers open the reader on tap; a long press (or right click) shows the detail page instead.
+  let lp = 0, held = false;
+  if (direct){
+    bt.addEventListener('pointerdown', () => { held = false; clearTimeout(lp); lp = setTimeout(() => { held = true; openFrom(bt, o.i); }, 480); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(t => bt.addEventListener(t, () => clearTimeout(lp)));
+  }
+  bt.addEventListener('contextmenu', e => { e.preventDefault(); if (direct && !held){ clearTimeout(lp); openFrom(bt, o.i); } });
+  bt.addEventListener('click', () => { if (held){ held = false; return; } if (isOpen) return; if (direct) readBook(b); else openFrom(bt, o.i); });
+  return bt;
+}
+function renderWall(focusId){
+  const on = gridMode && N > 0;
+  document.body.classList.toggle('grid-on', on);
+  wallIn.textContent = '';
+  if (!on) return;
+  const cols = wallCols();
+  wallIn.style.setProperty('--cols', cols);
+  // On phones the book size comes from the height, so exactly PHONE_ROWS shelves fill the screen.
+  if (innerWidth < 768){
+    const byH = (wall.clientHeight / PHONE_ROWS - SHELF_PAD - PLANK) / 1.5, byW = (wallIn.clientWidth - 20 - 12 * (cols + 1)) / cols;
+    wallIn.style.setProperty('--bw', Math.max(48, Math.min(byH, byW)).toFixed(1) + 'px');
+  } else wallIn.style.removeProperty('--bw');
+  const addRow = label => {
+    const sh = document.createElement('div'); sh.className = 'wshelf';
+    if (label){ const t = document.createElement('span'); t.className = 'wtag'; t.textContent = label; sh.appendChild(t); }
+    const row = document.createElement('div'); row.className = 'wrow'; sh.appendChild(row); wallIn.appendChild(sh); return row;
+  };
+  const fill = row => { while (row.children.length < cols){ const e = document.createElement('i'); e.className = 'wslot'; row.appendChild(e); } };
+  let focusEl = null;
+  wallSections().forEach(sec => {
+    let row = addRow(sec.label);
+    sec.items.forEach((o, k) => {
+      if (k && k % cols === 0){ fill(row); row = addRow(); }
+      const bt = wallBook(o, sec.direct);
+      row.appendChild(bt);
+      if (o.b.id === focusId && !focusEl) focusEl = bt;
+    });
+    if (sec.add){
+      if (row.children.length >= cols) row = addRow();
+      const a = document.createElement('button'); a.type = 'button'; a.className = 'wadd';
+      a.innerHTML = '<b>+</b>Thêm sách'; a.setAttribute('aria-haspopup', 'true'); a.addEventListener('click', e => openAddMenu(a, e));
+      row.appendChild(a);
+    }
+    fill(row);
+  });
+  // Empty shelves continue down to the bottom of the screen, like a real bookcase.
+  const used = () => wallIn.lastElementChild ? wallIn.lastElementChild.getBoundingClientRect().bottom - wallIn.getBoundingClientRect().top : 0;
+  const rowH = wallIn.firstElementChild ? wallIn.firstElementChild.offsetHeight : 1e9;
+  for (let n = 0; n < 40 && used() + rowH <= wall.clientHeight + 1; n++) fill(addRow());
+  if (focusEl) focusEl.scrollIntoView({ block:'nearest' });
+}
+function updateLayBtn(){
+  const bt = $('#layBtn');
+  bt.classList.toggle('g', gridMode);
+  bt.querySelector('.t').textContent = gridMode ? 'Kệ 3D' : 'Lưới';
+  bt.setAttribute('aria-label', gridMode ? 'Xem kệ 3D' : 'Xem dạng lưới, thấy rõ bìa');
+}
+function setLayout(g){
+  const id = books[activeIdx] && books[activeIdx].id;
+  gridMode = g; store.set('tsn-layout', g ? 'grid' : '3d');
+  gridFilter = 'all';
+  updateLayBtn();
+  buildShelf(id);
+  updateTabs();
+}
+$('#layBtn').addEventListener('click', () => { if (!isOpen) setLayout(!gridMode); });
+updateLayBtn();
 
 /* ---------- tabs ---------- */
 const tabsEl = $('#tabs'), ind = $('#ind');
-function buildTabs(){
-  GROUPS.forEach(g => {
+// Samples use built-in groups; your shelf gets one tab per genre you have used.
+const groupOf = b => b ? (b.kind === 'sample' ? b.group : b.genre) : null;
+function mineGenres(){ return [...new Set(mine.map(b => b.genre).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'vi')); }
+function buildTabs(list){
+  tabsEl.querySelectorAll('button').forEach(bt => bt.remove());
+  list.forEach(g => {
     const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'lbl'; bt.textContent = g.label; bt.dataset.g = g.id;
     bt.addEventListener('click', () => {
       if (isOpen) return;
-      let i = g.id === 'all' ? 0 : books.findIndex(b => b.group === g.id);
-      if (i < 0){ if (g.id === 'mine') $('#fileIn').click(); return; }
-      goTo(i);
+      if (gridMode){ gridFilter = g.id; renderWall(); wall.scrollTop = 0; updateTabs(); return; }
+      let i = g.id === 'all' ? 0 : books.findIndex(b => groupOf(b) === g.id);
+      if (i >= 0) goTo(i);
     });
     tabsEl.appendChild(bt);
   });
 }
-function updateMineTab(){ const bt = tabsEl.querySelector('[data-g="mine"]'); if (bt) bt.textContent = books.some(b => b.group === 'mine') ? 'Của bạn' : '+ Của bạn'; }
-function goTo(i){ const base = Math.round(T); let dlt = mod(i - mod(base, N), N); if (dlt > N/2) dlt -= N; T = base + dlt; }
+// The shelf only wraps around when one pass of books is wider than the screen; a few books sit in a plain row instead of repeating.
+function copies(){ return N * (ws + gap) > innerWidth + 2*d ? Math.max(3, Math.ceil((innerWidth + 4*d) / (N * (ws + gap))) + 2) : 1; }
+function goTo(i){
+  if (gridMode){ const b = books[i], el = b && wallIn.querySelector('[data-id="' + CSS.escape(b.id) + '"]'); if (el) el.scrollIntoView({ block:'center', behavior: REDUCE ? 'auto' : 'smooth' }); return; }
+  if (!loop){ T = i; return; } const base = Math.round(T); let dlt = mod(i - mod(base, N), N); if (dlt > N/2) dlt -= N; T = base + dlt; }
 function updateTabs(){
-  const g = books[activeIdx] && books[activeIdx].group;
+  const g = gridMode ? gridFilter : groupOf(books[activeIdx]);
   let on = null;
   tabsEl.querySelectorAll('button').forEach(bt => { const hit = bt.dataset.g === g; bt.classList.toggle('on', hit); if (hit) on = bt; });
   if (on){ ind.style.width = on.offsetWidth + 'px'; ind.style.transform = 'translateX(' + on.offsetLeft + 'px)'; }
@@ -761,9 +1119,10 @@ let last = performance.now();
 function frame(now){
   const dt = Math.min(.05, (now - last)/1000); last = now;
   const W = innerWidth, CY = innerHeight/2;
-  if (N){
+  if (N && !gridMode){
     const k = REDUCE ? 1e4 : dragging ? 18 : 5.2;
     if (Math.abs(T - s) < 1e-4) s = T; else s += (T - s)*(1 - Math.exp(-k*dt));
+    if (!loop) T = clamp(T, 0, N - 1);
     while (s >= 2*M){ s -= M; T -= M; } while (s < -M){ s += M; T += M; }
     const a = mod(Math.round(s), N);
     if (a !== activeIdx) setActive(a, activeIdx < 0 ? 0 : (Math.sign(T - s) || 1));
@@ -776,7 +1135,7 @@ function frame(now){
     let best = 1e9; activeTape = null;
     const le = REDUCE ? 1 : 1 - Math.exp(-12*dt);
     for (const t of tapes){
-      const r = mod(t.v - s + M/2, M) - M/2; t.r = r;
+      const r = loop ? mod(t.v - s + M/2, M) - M/2 : t.v - s; t.r = r;
       const x = F(r);
       if (Math.abs(x) > W/2 + 1.5*d){ if (!t.hidden){ t.el.style.visibility = 'hidden'; t.hidden = true; } continue; }
       if (t.hidden){ t.el.style.visibility = ''; t.hidden = false; }
@@ -797,7 +1156,7 @@ function frame(now){
   cursor.style.transform = 'translate3d(' + cx.toFixed(1) + 'px,' + cy.toFixed(1) + 'px,0)';
   let mode = '';
   const tEl = overEl && overEl.closest ? overEl.closest('.tape') : null;
-  if (onCover) mode = 'open';
+  if (onCover || (overEl && overEl.closest && overEl.closest('.wbook') && !isOpen)) mode = 'open';
   else if (!isOpen && !readerOpen && tEl && tEl._t && Math.abs(tEl._t.r) > .5) mode = 'spine';
   else if (overEl && overEl.closest && overEl.closest('button,a,select,label,input')) mode = 'btn';
   if (cursor.dataset.m !== mode){ cursor.className = 'cursor' + (mode ? ' ' + mode : ''); cursor.dataset.m = mode; }
@@ -826,7 +1185,7 @@ addEventListener('pointerup', () => {
 });
 addEventListener('pointercancel', () => { if (dragging) T = Math.round(T); down = dragging = false; moved = false; });
 addEventListener('wheel', e => {
-  if (isOpen || readerOpen || !N) return;
+  if (isOpen || readerOpen || !N || gridMode || lkOpen) return;
   e.preventDefault();
   const mul = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? innerHeight : 1;
   const dl = (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) * mul;
@@ -837,8 +1196,8 @@ $('#prev').addEventListener('click', () => { if (!isOpen) T = Math.round(T) - 1;
 $('#next').addEventListener('click', () => { if (!isOpen) T = Math.round(T) + 1; });
 playBtn.addEventListener('click', () => openDetail());
 addEventListener('keydown', e => {
-  if (e.key === 'Escape'){ if (readerOpen) closeReader(); else if (isOpen) closeDetail(); return; }
-  if (readerOpen || isOpen) return;
+  if (e.key === 'Escape'){ if (!addMenu.hidden) toggleAddMenu(false); else if (lkOpen){ if (lkAbort) lkAbort.abort(); else closeLinkDlg(); } else if (editorOpen) closeEditor(); else if (readerOpen) closeReader(); else if (isOpen) closeDetail(); return; }
+  if (readerOpen || isOpen || gridMode || lkOpen) return;
   if (e.key === 'ArrowLeft'){ T = Math.round(T) - 1; e.preventDefault(); }
   else if (e.key === 'ArrowRight'){ T = Math.round(T) + 1; e.preventDefault(); }
   else if (e.key === 'Enter' && (document.activeElement === document.body || !document.activeElement)){ openDetail(); }
@@ -848,8 +1207,9 @@ addEventListener('resize', () => {
   clearTimeout(resizeT);
   resizeT = setTimeout(() => {
     const oldC = C; measure();
-    const need = Math.max(3, Math.ceil((innerWidth + 4*d) / (N * (ws + gap))) + 2);
+    const need = N ? copies() : oldC;
     if (need !== oldC && N){ const id = books[mod(Math.round(s), N)].id; buildShelf(id); }
+    else if (gridMode){ const st = wall.scrollTop; renderWall(); wall.scrollTop = st; }
     updateTabs();
     if (readerOpen && R.kind === 'pdf') sizePages(true);
   }, 120);
@@ -860,17 +1220,27 @@ let toastT = 0;
 function toast(msg, ms){ const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), ms || 3200); }
 
 /* ---------- adding books ---------- */
-async function addFiles(list){
+// Reads one PDF/EPUB file, stores it and puts it on your shelf; `extra` carries fields such as the source link.
+async function addOne(f, extra){
+  const rec = await importFile(f);
+  if (typeof extra === 'function') await extra(rec);
+  else if (extra) Object.assign(rec, extra);
+  const saved = await DB.put(rec);
+  const b = prepUpload(rec);
+  mine.push(b);
+  if (view === 'mine'){ const cur = books[activeIdx] && books[activeIdx].id; books.push(b); buildShelf(cur); }
+  else showView('mine', b.id);
+  return { b, saved };
+}
+async function addFiles(list, extra){
   const files = [...list]; if (!files.length) return;
+  if (files.length > 1) extra = null;
   let lastId = null;
   for (const f of files){
     toast('Đang đọc “' + f.name + '”…', 60000);
     try {
-      const rec = await importFile(f);
-      const saved = await DB.put(rec);
-      const b = prepUpload(rec);
-      const cur = books[activeIdx] && books[activeIdx].id;
-      books.push(b); buildShelf(cur); lastId = b.id;
+      const { b, saved } = await addOne(f, extra);
+      lastId = b.id;
       toast(saved === null ? 'Đã thêm “' + b.title + '” (chỉ trong phiên này).' : 'Đã thêm “' + b.title + '” lên kệ.');
     } catch(err){
       toast(err && err.message && /PDF hoặc EPUB/.test(err.message) ? err.message : 'Không đọc được “' + f.name + '”. File có thể bị hỏng hoặc có DRM.', 4800);
@@ -878,34 +1248,219 @@ async function addFiles(list){
   }
   if (lastId){ const i = books.findIndex(b => b.id === lastId); setTimeout(() => goTo(i), 60); }
 }
-$('#addBtn').addEventListener('click', () => $('#fileIn').click());
-$('#fileIn').addEventListener('change', e => { addFiles(e.target.files); e.target.value = ''; });
+const addMenu = $('#addMenu');
+let addAnchor = null;
+function toggleAddMenu(open){
+  addMenu.hidden = !open;
+  if (addAnchor) addAnchor.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if (!open) addAnchor = null;
+}
+// Opens below the button, or above it when there is no room; kept inside the screen on narrow phones.
+function openAddMenu(anchor, e){
+  if (e) e.stopPropagation();
+  if (!addMenu.hidden && addAnchor === anchor){ toggleAddMenu(false); return; }
+  toggleAddMenu(false); addAnchor = anchor; toggleAddMenu(true);
+  const r = anchor.getBoundingClientRect(), m = addMenu.getBoundingClientRect(), pad = 12;
+  const left = clamp(r.left, pad, innerWidth - m.width - pad);
+  const top = r.bottom + 8 + m.height <= innerHeight - pad ? r.bottom + 8 : Math.max(pad, r.top - 8 - m.height);
+  addMenu.style.left = left + 'px'; addMenu.style.top = top + 'px';
+  addMenu.querySelector('button').focus({ preventScroll:true });
+}
+$('#addBtn').addEventListener('click', e => openAddMenu(e.currentTarget, e));
+addEventListener('resize', () => toggleAddMenu(false));
+wall.addEventListener('scroll', () => toggleAddMenu(false), { passive:true });
+addMenu.addEventListener('click', e => {
+  const a = e.target.closest('[data-a]'); if (!a) return;
+  toggleAddMenu(false);
+  if (a.dataset.a === 'file') $('#fileIn').click(); else openLinkDlg();
+});
+addEventListener('click', e => { if (!addMenu.hidden && !e.target.closest('.addmenu')) toggleAddMenu(false); });
+
+/* ---------- import from a link ---------- */
+// Turns share links into direct downloads. Google Drive's usercontent host sends CORS headers (the old uc?export=download does not).
+function bookLink(raw){
+  let u; try { u = new URL(raw.trim()); } catch(e){ return null; }
+  if (!/^https?:$/.test(u.protocol)) return null;
+  const host = u.hostname.replace(/^www\./, ''), page = u.href;
+  if (/^(drive|docs)\.google\.com$|^drive\.usercontent\.google\.com$/.test(host)){
+    if (/\/folders\//.test(u.pathname)) return { err:'Đây là link thư mục. Hãy mở từng file trong Drive rồi copy link của file đó.', page, src:'Google Drive' };
+    const id = (u.pathname.match(/\/d\/([\w-]{10,})/) || [])[1] || u.searchParams.get('id');
+    if (!id) return null;
+    const rk = u.searchParams.get('resourcekey');
+    return { url:'https://drive.usercontent.google.com/download?id=' + id + '&export=download&confirm=t' + (rk ? '&resourcekey=' + encodeURIComponent(rk) : ''), page, src:'Google Drive', key:'gdrive:' + id };
+  }
+  if (host === 'dropbox.com' || host === 'dl.dropboxusercontent.com'){
+    u.searchParams.delete('raw'); u.searchParams.set('dl', '1');
+    return { url:u.href, page, src:'Dropbox', key:'dropbox:' + u.pathname };
+  }
+  if (host === 'github.com'){
+    const m = u.pathname.match(/^\/([^/]+)\/([^/]+)\/(?:blob|raw)\/(.+)$/);
+    if (m) return { url:'https://raw.githubusercontent.com/' + m[1] + '/' + m[2] + '/' + m[3], page, src:'GitHub', key:'github:' + u.pathname.replace('/raw/', '/blob/') };
+  }
+  if (host === 'raw.githubusercontent.com') return { url:u.href, page, src:'GitHub', key:'github:' + u.pathname };
+  return { url:u.href, page, src:host, key:u.href };
+}
+const fmtMB = n => n < 1048576 ? Math.max(1, Math.round(n / 1024)) + ' KB' : (n / 1048576).toFixed(n < 10485760 ? 1 : 0) + ' MB';
+// Downloads with progress, then tells PDF from EPUB by the first bytes (Drive hides the file name from scripts).
+async function fetchBook(link, onProg, signal){
+  let res;
+  const blocked = msg => Object.assign(new Error(msg), { code:'blocked' });
+  try { res = await fetch(link.url, { signal, credentials:'omit' }); }
+  catch(e){
+    if (e.name === 'AbortError') throw e;
+    // Google refuses cross-site downloads from browsers (403 without CORS headers), so Drive always lands here.
+    throw blocked(link.src === 'Google Drive'
+      ? 'Google Drive không cho trang web tải file trực tiếp. Hãy tải file về máy rồi chọn nó (2 bước bên dưới).'
+      : 'Trang này không cho tải file trực tiếp (hoặc mất mạng). Hãy tải file về máy rồi chọn nó.');
+  }
+  if (!res.ok) throw new Error('Không tải được file (lỗi ' + res.status + '). Kiểm tra lại link.');
+  const total = +res.headers.get('content-length') || 0, parts = [];
+  let got = 0;
+  if (res.body && res.body.getReader){
+    const rd = res.body.getReader();
+    for (;;){ const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; onProg(got, total); }
+  } else { const buf = await res.arrayBuffer(); parts.push(buf); got = buf.byteLength; onProg(got, total); }
+  const blob = new Blob(parts), head = await blob.slice(0, 1024).text();
+  const kind = head.includes('%PDF') ? 'pdf' : head.startsWith('PK') ? 'epub' : null;
+  if (!kind){
+    if (/^\s*</.test(head)) throw new Error(link.src === 'Google Drive'
+      ? 'Google Drive trả về trang web thay vì file: file chưa được chia sẻ công khai. Trên Drive chọn Chia sẻ → “Bất kỳ ai có đường liên kết”.'
+      : 'Link này dẫn tới một trang web, không phải file sách. Hãy dùng link tải trực tiếp.');
+    throw new Error('File tải về không phải sách EPUB hoặc PDF.');
+  }
+  let name = decodeURIComponent((new URL(link.url).pathname.split('/').pop() || ''));
+  if (!new RegExp('\\.' + kind + '$', 'i').test(name)) name = 'Sách từ ' + link.src + '.' + kind;
+  return new File([blob], name, { type: kind === 'pdf' ? 'application/pdf' : 'application/epub+zip' });
+}
+const linkDlg = $('#linkDlg'), lkList = $('#lkList');
+let lkOpen = false, lkAbort = null;
+function openLinkDlg(text){
+  if (isOpen || editorOpen) return;
+  toggleAddMenu(false);
+  if (typeof text === 'string') $('#lkIn').value = text.trim();
+  if (!lkAbort) lkList.textContent = '';
+  linkDlg.hidden = false; lkOpen = true; document.body.classList.add('editing');
+  if (matchMedia('(pointer:fine)').matches) setTimeout(() => $('#lkIn').focus(), 30);
+}
+function closeLinkDlg(){
+  if (!lkOpen) return;
+  if (lkAbort) lkAbort.abort();
+  linkDlg.hidden = true; lkOpen = false; document.body.classList.remove('editing');
+}
+async function runLinks(){
+  if (lkAbort) return;
+  const lines = $('#lkIn').value.split(/\s+/).filter(Boolean);
+  if (!lines.length){ toast('Hãy dán ít nhất một link.'); return; }
+  lkList.textContent = '';
+  const jobs = lines.map(raw => {
+    const li = document.createElement('li'); li.className = 'lk-item';
+    const t = document.createElement('b'), st = document.createElement('span'), bar = document.createElement('span'), fill = document.createElement('i');
+    st.className = 'lk-st'; bar.className = 'bar'; bar.appendChild(fill);
+    const link = bookLink(raw);
+    t.textContent = link ? link.src : raw; st.textContent = 'Đang chờ…';
+    li.append(t, st, bar); lkList.appendChild(li);
+    return { raw, link, li, t, st, fill };
+  });
+  lkAbort = new AbortController();
+  const signal = lkAbort.signal, go = $('#lkGo');
+  go.disabled = true; go.textContent = 'Đang tải…'; $('#lkClose').textContent = 'Huỷ';
+  let lastId = null;
+  for (const j of jobs){
+    const fail = msg => { j.li.className = 'lk-item err'; j.st.textContent = msg; };
+    if (signal.aborted){ fail('Đã huỷ.'); continue; }
+    if (!j.link){ fail('Không phải link hợp lệ (cần bắt đầu bằng https://).'); continue; }
+    if (j.link.err){ fail(j.link.err); continue; }
+    const dup = mine.find(b => b.srcKey === j.link.key);
+    if (dup){ j.li.className = 'lk-item ok'; j.st.textContent = 'Đã có trên kệ: “' + dup.title + '”, bỏ qua.'; continue; }
+    j.li.className = 'lk-item run'; j.st.textContent = 'Đang tải…';
+    try {
+      const file = await fetchBook(j.link, (got, total) => {
+        j.st.textContent = 'Đang tải… ' + fmtMB(got) + (total ? ' / ' + fmtMB(total) : '');
+        j.fill.style.width = total ? Math.min(100, 100 * got / total) + '%' : '30%';
+      }, signal);
+      j.st.textContent = 'Đang đọc sách…'; j.fill.style.width = '100%';
+      const { b, saved } = await addOne(file, { src: j.link.src, srcUrl: j.link.page, srcKey: j.link.key });
+      lastId = b.id;
+      j.li.className = 'lk-item ok'; j.t.textContent = b.title;
+      j.st.textContent = 'Đã thêm lên kệ' + (saved === null ? ' (chỉ trong phiên này)' : '') + ' · ' + j.link.src + ' · ' + fmtMB(file.size);
+    } catch(e){
+      fail(e.name === 'AbortError' ? 'Đã huỷ.' : e && e.message && !/^(Failed|NetworkError|Load failed)/.test(e.message) ? e.message : 'Không đọc được sách này. File có thể bị hỏng hoặc có DRM.');
+      if (e.code === 'blocked') manualRoute(j);
+    }
+  }
+  lkAbort = null; go.disabled = false; go.textContent = 'Tải về'; $('#lkClose').textContent = 'Đóng';
+  if (lastId){ $('#lkIn').value = ''; const i = books.findIndex(b => b.id === lastId); setTimeout(() => goTo(i), 60); toast('Đã thêm sách từ link.'); }
+}
+// Fallback when a site blocks scripted downloads: let the browser download the file, then pick it; the source link is kept.
+let nextSrc = null;
+function manualRoute(j){
+  const act = document.createElement('div'); act.className = 'lk-act';
+  const a = document.createElement('a'); a.className = 'box lbl'; a.href = j.link.url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = '1 · Tải file về máy';
+  const pick = document.createElement('button'); pick.type = 'button'; pick.className = 'box lbl'; pick.textContent = '2 · Chọn file vừa tải';
+  pick.addEventListener('click', () => { nextSrc = { src: j.link.src, srcUrl: j.link.page, srcKey: j.link.key }; $('#fileIn').click(); });
+  act.append(a, pick); j.li.appendChild(act);
+}
+$('#lkGo').addEventListener('click', runLinks);
+$('#lkClose').addEventListener('click', () => { if (lkAbort) lkAbort.abort(); else closeLinkDlg(); });
+linkDlg.addEventListener('click', e => { if (e.target === linkDlg && !lkAbort) closeLinkDlg(); });
+$('#lkPaste').addEventListener('click', async () => {
+  try { const t = await navigator.clipboard.readText(); if (t) $('#lkIn').value = ($('#lkIn').value.trim() + '\n' + t.trim()).trim(); }
+  catch(e){ toast('Trình duyệt không cho đọc bộ nhớ tạm. Hãy nhấn giữ vào ô link rồi chọn Dán.', 4200); }
+});
+
+$('#fileIn').addEventListener('change', e => {
+  const extra = nextSrc; nextSrc = null;
+  if (extra && lkOpen) closeLinkDlg();
+  addFiles(e.target.files, extra); e.target.value = '';
+});
 let dragDepth = 0;
 const hasFiles = e => e.dataTransfer && [...(e.dataTransfer.types || [])].includes('Files');
 addEventListener('dragenter', e => { if (!hasFiles(e)) return; e.preventDefault(); dragDepth++; $('#drop').classList.add('on'); });
 addEventListener('dragover', e => { if (hasFiles(e)) e.preventDefault(); });
 addEventListener('dragleave', e => { if (!hasFiles(e)) return; dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) $('#drop').classList.remove('on'); });
-addEventListener('drop', e => { if (!hasFiles(e)) return; e.preventDefault(); dragDepth = 0; $('#drop').classList.remove('on'); if (!readerOpen) addFiles(e.dataTransfer.files); });
+addEventListener('drop', e => {
+  if (!hasFiles(e)) return; e.preventDefault(); dragDepth = 0; $('#drop').classList.remove('on');
+  if (editorOpen){ const f = [...e.dataTransfer.files].find(x => /^image\//.test(x.type)); if (f) edImageBlob(f).then(ok => { if (ok) edNote('Đã chọn ảnh. Bấm Lưu để giữ bìa này.'); }); return; }
+  if (!readerOpen) addFiles(e.dataTransfer.files);
+});
 
 /* ---------- detail ---------- */
 const detail = $('#detail'), blobs = [...document.querySelectorAll('#blobs circle')];
 const BLOB_DELAY = [0, 120, 220, 300, 360, 420, 180];
 let inkRaf = 0, closing = false;
 function coverRect(){
-  const r = activeTape ? activeTape.cv.getBoundingClientRect() : { left: innerWidth/2 - d/2, top: innerHeight/2 - H/2, width: d, height: H };
+  const src = gridMode ? (gridSrc && gridSrc.isConnected ? gridSrc : null) : activeTape && activeTape.cv;
+  const r = src ? src.getBoundingClientRect() : { left: innerWidth/2 - d/2, top: innerHeight/2 - H/2, width: d, height: H };
   return { l: r.left, t: r.top, r: innerWidth - r.left - r.width, b: innerHeight - r.top - r.height, cx: r.left + r.width/2, cy: r.top + r.height/2 };
+}
+function fillDetail(b){
+  const sample = b.kind === 'sample';
+  $('#dSub').textContent = b.author; $('#dSubRow').hidden = !!b.noAuthor;
+  $('#dTitle').textContent = b.title; $('#dTitle').title = b.title;
+  $('#dVi').textContent = b.vi; $('#dViRow').hidden = !b.vi || b.vi === b.title;
+  $('#dMeta').textContent = (sample
+    ? [b.year, GLABEL[b.group], 'Trích đoạn']
+    : [b.kind.toUpperCase(), b.count + (b.kind === 'pdf' ? ' trang' : ' phần'), b.year, b.genre, 'Thêm ' + new Date(b.added).toLocaleDateString('vi-VN')]
+  ).filter(Boolean).join(' · ');
+  const pr = store.get('tsn-prog-' + b.id), started = !!(pr && pr.pct > 0);
+  $('#dProgRow').hidden = !started;
+  if (started){ $('#dBar').style.width = Math.min(100, pr.pct) + '%'; $('#dProg').textContent = 'Đã đọc ' + pr.pct + '%' + (pr.total ? ' · trang ' + pr.page + '/' + pr.total : ''); }
+  $('#dRead').textContent = started ? 'Đọc tiếp →' : 'Đọc sách →';
+  $('#dSyn').textContent = b.syn || ''; $('#dSyn').parentNode.hidden = !b.syn;
+  const cred = $('#dCred'); cred.textContent = '';
+  if (sample) cred.textContent = 'Văn bản thuộc phạm vi công cộng.';
+  else if (b.srcUrl){ const a = document.createElement('a'); a.href = b.srcUrl; a.target = '_blank'; a.rel = 'noopener'; a.textContent = b.src || 'link'; cred.append('Nguồn: ', a); }
+  cred.parentNode.hidden = !cred.textContent;
+  $('#dBody').hidden = !b.syn && !cred.textContent;
+  const del = $('#dDel'); del.hidden = sample; del.classList.remove('arm'); $('#dDel .t').textContent = 'Xoá khỏi kệ';
+  $('#dEdit').hidden = sample;
+  $('#pImg').setAttribute('href', b.cover);
 }
 function openDetail(){
   if (isOpen || !N) return;
   T = Math.round(T); s = T;
   const b = books[activeIdx]; isOpen = true; closing = false;
-  $('#dSub').textContent = b.vi || b.author;
-  $('#dTitle').textContent = b.title;
-  $('#dMeta').textContent = [b.year || 'Không rõ năm', GLABEL[b.group], b.kind === 'sample' ? 'Trích đoạn' : b.kind === 'pdf' ? 'PDF · ' + b.count + ' trang' : 'EPUB · ' + b.count + ' phần'].join(' / ');
-  $('#dSyn').textContent = b.syn;
-  $('#dCred').textContent = b.kind === 'sample' ? b.author + '. Văn bản thuộc phạm vi công cộng.' : b.author + '. Sách bạn tải lên.';
-  const del = $('#dDel'); del.hidden = b.kind === 'sample'; del.classList.remove('arm'); del.textContent = 'Xoá khỏi kệ';
-  $('#pImg').setAttribute('href', b.cover);
+  fillDetail(b);
   blobs.forEach(c => c.setAttribute('r', 0));
   const cr = coverRect();
   detail.getAnimations().forEach(a => a.cancel());
@@ -947,21 +1502,231 @@ function closeDetail(){
 }
 $('#dClose').addEventListener('click', closeDetail);
 // Open the page-flip reader. Uploads are read from IndexedDB by id; samples travel via localStorage.
-$('#dRead').addEventListener('click', () => {
-  const b = books[activeIdx];
+function readBook(b){
   store.set('tsn-last', b.id);
   if (b.kind === 'sample') store.set('tsn-handoff', { id:b.id, title:b.title, vi:b.vi, author:b.author, year:b.year, gid:b.gid, text:b.text });
   location.href = 'reader/?book=' + encodeURIComponent(b.id);
+}
+$('#dRead').addEventListener('click', () => readBook(books[activeIdx]));
+/* ---------- edit details (your books only) ---------- */
+const GENRES = ['Văn học', 'Tiểu thuyết', 'Kỹ năng', 'Kinh tế', 'Tâm lý', 'Công nghệ', 'Khoa học', 'Lịch sử', 'Thiếu nhi', 'Ngoại ngữ'];
+const editor = $('#editor'), edPane = $('#edPane');
+let ed = null, editorOpen = false, edSearchTok = 0;   // ed.cover: undefined = unchanged, null = drawn cover, string = new picture
+function edNote(msg, err){ edPane.textContent = ''; const p = document.createElement('p'); p.className = 'ed-note' + (err ? ' err' : ''); p.textContent = msg; edPane.appendChild(p); return p; }
+function edDraft(){
+  return Object.assign({}, ed.rec, { title: $('#edTitle').value.trim() || ed.rec.title, author: $('#edAuthor').value.trim() || 'Không rõ tác giả',
+    year: +$('#edYear').value || null, pal: ed.pal, motif: ed.motif });
+}
+const edDrawn = () => ed.cover === null || (ed.cover === undefined && !ed.rec.cover);
+function edPreview(){ $('#edImg').src = edDrawn() ? genCover(edDraft()) : ed.cover || ed.b.cover; }
+function edSetCanvas(c){
+  wear(c.getContext('2d'), 600, 900, hashStr(ed.rec.id), .6);
+  ed.cover = c.toDataURL('image/jpeg', .86); ed.spine = avgColor(c); edPreview();
+}
+async function edImageBlob(blob, loose){
+  if (!blob || !(/^image\//.test(blob.type) || (loose && /^$|octet-stream/.test(blob.type)))){ edNote('Hãy chọn một file ảnh (JPG, PNG, WEBP).', true); return false; }
+  const url = URL.createObjectURL(blob);
+  try { edSetCanvas(coverFit(await loadImg(url))); return true; }
+  catch(e){ edNote('Không đọc được ảnh này.', true); return false; }
+  finally { URL.revokeObjectURL(url); }
+}
+function edFile(){ const f = ed.rec.file; return f && f.name ? f : new File([f], 'book.' + ed.rec.kind); }
+function edChips(){
+  const cur = $('#edGenre').value.trim(), box = $('#edChips'); box.textContent = '';
+  [...new Set(GENRES.concat(mineGenres()))].forEach(g => {
+    const c = document.createElement('button'); c.type = 'button'; c.className = 'box lbl chip' + (g === cur ? ' on' : ''); c.textContent = g;
+    c.addEventListener('click', () => { $('#edGenre').value = g === cur ? '' : g; edChips(); });
+    box.appendChild(c);
+  });
+}
+async function openEditor(){
+  const b = books[activeIdx]; if (!b || b.kind === 'sample' || editorOpen) return;
+  const rec = (await DB.get(b.id)) || mine.find(x => x.id === b.id);
+  ed = { b, rec, cover: undefined, spine: null, pal: Object.assign({}, rec.pal), motif: rec.motif, pdf: null };
+  $('#edTitle').value = b.title; $('#edAuthor').value = b.noAuthor ? '' : b.author; $('#edYear').value = b.year || '';
+  $('#edGenre').value = b.genre || ''; $('#edDesc').value = rec.desc || '';
+  $('#edPdfBtn').hidden = b.kind !== 'pdf';
+  edPane.textContent = ''; edChips(); edPreview();
+  editor.hidden = false; editorOpen = true; document.body.classList.add('editing');
+  $('.ed-body').scrollTop = 0;
+}
+function closeEditor(){
+  if (!editorOpen) return;
+  editor.hidden = true; editorOpen = false; document.body.classList.remove('editing');
+  if (ed && ed.pdf) try { ed.pdf.destroy(); } catch(e){}
+  ed = null;
+}
+async function saveEditor(){
+  const title = $('#edTitle').value.trim(), yr = $('#edYear').value.trim();
+  if (!title){ toast('Tên sách không được để trống.'); $('#edTitle').focus(); return; }
+  if (yr && !(/^\d{1,4}$/.test(yr) && +yr <= 2100)){ toast('Năm xuất bản phải là số, ví dụ 2019.'); $('#edYear').focus(); return; }
+  const { spine, group, vi, syn, noAuthor, ...rec } = ed.rec;
+  Object.assign(rec, { title, author: $('#edAuthor').value.trim(), year: yr ? +yr : null, genre: $('#edGenre').value.trim(), desc: $('#edDesc').value.trim(), motif: ed.motif, pal: ed.pal });
+  if (ed.cover !== undefined){ rec.cover = ed.cover; rec.pal = Object.assign({}, ed.pal, { spine: ed.spine || ed.pal.a }); }
+  await DB.put(rec);
+  const nb = prepUpload(rec);
+  mine[mine.findIndex(x => x.id === nb.id)] = nb;
+  closeEditor();
+  showView('mine', nb.id);
+  if (gridMode){ activeIdx = books.findIndex(x => x.id === nb.id); gridSrc = wallIn.querySelector('[data-id="' + CSS.escape(nb.id) + '"]'); }
+  fillDetail(nb);
+  toast('Đã lưu thông tin sách.');
+}
+async function edFromUrl(){
+  const u = $('#edUrl').value.trim();
+  if (!/^https?:\/\//i.test(u)){ $('#edUrlMsg').textContent = 'Link phải bắt đầu bằng http:// hoặc https://'; return; }
+  const msg = $('#edUrlMsg');
+  msg.textContent = 'Đang tải ảnh…'; msg.classList.remove('err');
+  try {
+    const res = await fetch(u, { mode:'cors' });
+    if (!res.ok) throw new Error('http');
+    const blob = await res.blob();
+    if (!msg.isConnected) return;   // the person moved on to another cover source meanwhile
+    if (await edImageBlob(blob, true)) edNote('Đã lấy ảnh từ link. Bấm Lưu để giữ bìa này.');
+  } catch(e){
+    if (!msg.isConnected) return;
+    $('#edUrlMsg').textContent = 'Trang web này không cho tải ảnh trực tiếp, hoặc link không đúng. Hãy lưu ảnh về máy rồi chọn “Tải ảnh lên”.';
+    $('#edUrlMsg').classList.add('err');
+  }
+}
+async function edSearch(){
+  const q = $('#edQ').value.trim(), out = $('#edHits'); if (!q) return;
+  const tok = ++edSearchTok;   // only the latest search may fill the results
+  const say = t => { out.textContent = ''; const m = document.createElement('p'); m.className = 'ed-note'; m.textContent = t; out.appendChild(m); };
+  say('Đang tìm…');
+  try {
+    const res = await fetch('https://openlibrary.org/search.json?limit=18&fields=title,author_name,first_publish_year,cover_i&q=' + encodeURIComponent(q));
+    const docs = ((await res.json()).docs || []).filter(x => x.cover_i);
+    if (tok !== edSearchTok || !out.isConnected) return;
+    out.textContent = '';
+    if (!docs.length){ say('Không tìm thấy bìa nào. Thử bớt từ khoá, hoặc dùng tên tiếng Anh của sách.'); return; }
+    docs.forEach(x => {
+      const bt = document.createElement('button'); bt.type = 'button';
+      const im = new Image(); im.loading = 'lazy'; im.alt = ''; im.src = 'https://covers.openlibrary.org/b/id/' + x.cover_i + '-M.jpg';
+      const cap = document.createElement('span'); cap.textContent = [x.first_publish_year, (x.author_name || [])[0]].filter(Boolean).join(' · ');
+      bt.title = x.title; bt.append(im, cap);
+      bt.addEventListener('click', async () => {
+        out.querySelectorAll('button').forEach(o => o.classList.toggle('on', o === bt));
+        const label = cap.textContent; bt.classList.add('busy'); cap.textContent = 'Đang tải…';
+        try {
+          let res = await fetch('https://covers.openlibrary.org/b/id/' + x.cover_i + '-L.jpg');
+          if (!res.ok) res = await fetch(im.src);
+          const blob = await res.blob();
+          if (!bt.isConnected || !bt.classList.contains('on')) return;
+          if (!(await edImageBlob(blob, true))) return;
+          if (!$('#edAuthor').value.trim() && x.author_name) $('#edAuthor').value = x.author_name[0];
+          if (!$('#edYear').value.trim() && x.first_publish_year) $('#edYear').value = x.first_publish_year;
+          toast('Đã chọn bìa. Bấm Lưu để giữ.');
+        } catch(e){ toast('Không tải được ảnh bìa này.'); }
+        finally { bt.classList.remove('busy'); cap.textContent = label; }
+      });
+      out.appendChild(bt);
+    });
+  } catch(e){ if (tok === edSearchTok) say('Không kết nối được Open Library. Kiểm tra mạng rồi thử lại.'); }
+}
+async function edPdfPage(n, bt){
+  if (bt) $('#edPages').querySelectorAll('button').forEach(o => o.classList.toggle('on', o === bt));
+  const page = await ed.pdf.getPage(n), v1 = page.getViewport({ scale: 1 }), vp = page.getViewport({ scale: 600 / v1.width });
+  const c = mkCanvas(Math.ceil(vp.width), Math.ceil(vp.height)), x = c.getContext('2d');
+  x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+  await page.render({ canvasContext: x, viewport: vp }).promise;
+  edSetCanvas(coverFit(c));
+}
+async function edPdfPane(){
+  edNote('Đang mở PDF…');
+  try { if (!ed.pdf){ const lib = await ensurePdf(); ed.pdf = await lib.getDocument({ data: await ed.rec.file.arrayBuffer() }).promise; } }
+  catch(e){ edNote('Không mở được file PDF.', true); return; }
+  const n = ed.pdf.numPages;
+  edPane.innerHTML = '<p class="ed-note">Chọn trang dùng làm bìa:</p><div class="ed-grid" id="edPages"></div>'
+    + '<div class="ed-row"><input id="edPg" type="text" inputmode="numeric" placeholder="Hoặc nhập số trang (1–' + n + ')"><button class="box lbl" id="edPgGo" type="button">Dùng trang này</button></div>';
+  $('#edPgGo').addEventListener('click', () => { const k = parseInt($('#edPg').value, 10); if (k >= 1 && k <= n) edPdfPage(k); else toast('Số trang từ 1 đến ' + n + '.'); });
+  const grid = $('#edPages'), doc = ed.pdf;
+  for (let i = 1; i <= Math.min(12, n); i++){
+    if (!ed || ed.pdf !== doc) return;
+    const page = await doc.getPage(i), v1 = page.getViewport({ scale: 1 }), vp = page.getViewport({ scale: 160 / v1.width });
+    const c = mkCanvas(Math.ceil(vp.width), Math.ceil(vp.height));
+    await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+    const bt = document.createElement('button'); bt.type = 'button'; const cap = document.createElement('span'); cap.textContent = 'Trang ' + i;
+    bt.append(c, cap); bt.addEventListener('click', () => edPdfPage(i, bt)); grid.appendChild(bt);
+  }
+}
+const ED_SRC = {
+  file(){ edPane.textContent = ''; $('#imgIn').click(); },
+  url(){
+    edPane.innerHTML = '<div class="ed-row"><input id="edUrl" type="url" placeholder="https://…/bia-sach.jpg" autocomplete="off"><button class="box lbl" id="edUrlGo" type="button">Lấy ảnh</button></div><p class="ed-note" id="edUrlMsg">Ảnh được tải về và lưu cùng sách, không cần mạng khi xem lại.</p>';
+    $('#edUrlGo').addEventListener('click', edFromUrl);
+    $('#edUrl').addEventListener('keydown', e => { if (e.key === 'Enter') edFromUrl(); });
+    $('#edUrl').focus();
+  },
+  find(){
+    edPane.innerHTML = '<div class="ed-row"><input id="edQ" type="search" autocomplete="off"><button class="box lbl" id="edQGo" type="button">Tìm</button></div><div class="ed-grid" id="edHits"></div><p class="ed-note">Ảnh bìa từ Open Library (openlibrary.org). Chọn một bìa rồi bấm Lưu.</p>';
+    $('#edQ').value = [$('#edTitle').value.trim(), $('#edAuthor').value.trim()].filter(Boolean).join(' ');
+    $('#edQGo').addEventListener('click', edSearch);
+    $('#edQ').addEventListener('keydown', e => { if (e.key === 'Enter') edSearch(); });
+    edSearch();
+  },
+  pdf(){ edPdfPane(); },
+  async orig(){
+    edNote('Đang tìm bìa trong file…');
+    try {
+      const fresh = await importFile(edFile());
+      if (!ed) return;
+      if (fresh.cover){ ed.cover = fresh.cover; ed.spine = fresh.pal.spine; edPreview(); edNote('Đã lấy lại bìa gốc từ file.'); }
+      else { ed.cover = null; edPreview(); edNote('File không có ảnh bìa nên dùng bìa tự vẽ. Bấm “Bìa tự vẽ” để đổi kiểu.'); }
+    } catch(e){ edNote('Không đọc được file sách.', true); }
+  },
+  gen(){
+    if (edDrawn()){
+      ed.motif = MOTIFS[(MOTIFS.indexOf(ed.motif) + 1) % MOTIFS.length];
+      const k = UPAL.findIndex(q => q[0] === ed.pal.a && q[1] === ed.pal.b), q = UPAL[(k + 1) % UPAL.length];
+      ed.pal = Object.assign({}, ed.pal, { a: q[0], b: q[1] });
+    }
+    ed.cover = null; ed.spine = null; edPreview();
+    edNote('Bìa vẽ từ tên và tác giả. Bấm “Bìa tự vẽ” lần nữa để đổi màu và hình.');
+  }
+};
+$('#edSrc').addEventListener('click', e => { const bt = e.target.closest('[data-src]'); if (bt && ed) ED_SRC[bt.dataset.src](); });
+$('#imgIn').addEventListener('change', async e => { const f = e.target.files[0]; e.target.value = ''; if (f && ed && await edImageBlob(f)) edNote('Đã chọn ảnh. Bấm Lưu để giữ bìa này.'); });
+$('#edGenre').addEventListener('input', edChips);
+['#edTitle', '#edAuthor', '#edYear'].forEach(q => $(q).addEventListener('input', () => { if (ed && edDrawn()) edPreview(); }));
+$('#edReset').addEventListener('click', async () => {
+  edNote('Đang đọc lại file…');
+  try {
+    const fresh = await importFile(edFile());
+    if (!ed) return;
+    $('#edTitle').value = String(fresh.title || '').normalize('NFC'); $('#edAuthor').value = realAuthor(fresh.author).normalize('NFC'); $('#edYear').value = fresh.year || '';
+    if (edDrawn()) edPreview();
+    edNote('Đã điền lại tên, tác giả, năm từ file. Bấm Lưu để giữ.');
+  } catch(e){ edNote('Không đọc được file sách.', true); }
 });
+$('#edCancel').addEventListener('click', closeEditor);
+$('#edSave').addEventListener('click', saveEditor);
+editor.addEventListener('click', e => { if (e.target === editor) closeEditor(); });
+$('#dEdit').addEventListener('click', openEditor);
+addEventListener('paste', e => {
+  if (!editorOpen && !lkOpen && !isOpen && !readerOpen && e.clipboardData && !/^(INPUT|TEXTAREA)$/.test((e.target || {}).tagName || '')){
+    const t = e.clipboardData.getData('text') || '';
+    if (/https?:\/\/\S+/.test(t)){ e.preventDefault(); openLinkDlg(t.match(/https?:\/\/\S+/g).join('\n')); }
+    return;
+  }
+  if (!editorOpen || !e.clipboardData) return;
+  const it = [...e.clipboardData.items].find(i => i.kind === 'file' && /^image\//.test(i.type));
+  if (!it) return;
+  e.preventDefault();
+  edImageBlob(it.getAsFile()).then(ok => { if (ok) edNote('Đã dán ảnh. Bấm Lưu để giữ bìa này.'); });
+});
+
 let armT = 0;
 $('#dDel').addEventListener('click', async e => {
   const bt = e.currentTarget, b = books[activeIdx];
-  if (!bt.classList.contains('arm')){ bt.classList.add('arm'); bt.textContent = 'Bấm lần nữa để xoá'; clearTimeout(armT); armT = setTimeout(() => { bt.classList.remove('arm'); bt.textContent = 'Xoá khỏi kệ'; }, 3000); return; }
-  await DB.del(b.id); store.del('tsn-pos-' + b.id);
+  if (!bt.classList.contains('arm')){ bt.classList.add('arm'); bt.querySelector('.t').textContent = 'Bấm lần nữa để xoá'; clearTimeout(armT); armT = setTimeout(() => { bt.classList.remove('arm'); bt.querySelector('.t').textContent = 'Xoá khỏi kệ'; }, 3000); return; }
+  await DB.del(b.id); store.del('tsn-pos-' + b.id); store.del('tsn-prog-' + b.id);
   closeDetail();
   setTimeout(() => {
+    mine.splice(mine.indexOf(b), 1);
     const i = books.indexOf(b); books.splice(i, 1);
-    buildShelf(books[Math.max(0, i - 1)].id); toast('Đã xoá “' + b.title + '” khỏi kệ.');
+    buildShelf(N > 1 ? books[Math.max(0, i - 1)].id : null);
+    toast('Đã xoá “' + b.title + '” khỏi kệ.');
   }, REDUCE ? 10 : 880);
 });
 
@@ -1192,21 +1957,54 @@ rBody.addEventListener('click', e => {
 });
 
 /* ---------- boot ---------- */
+// Google Fonts ships Vietnamese as its own unicode-range subset; fonts.load() only fetches subsets its sample text touches.
+const VI = 'Aa Ăă Ââ Đđ Êê Ôô Ơơ Ưư ạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ';
 async function boot(){
   measure();
-  try { await Promise.race([Promise.all([document.fonts.load('600 60px "Newsreader"'), document.fonts.load('600 20px "Inter Tight"'), document.fonts.load('400 20px "Newsreader"')]), wait(2500)]); } catch(e){}
+  const fonts = Promise.race([Promise.all([document.fonts.load('600 60px "Newsreader"', VI), document.fonts.load('600 20px "Inter Tight"', VI), document.fonts.load('400 20px "Newsreader"', VI)]), wait(2500)]).catch(() => {});
+  const ups = (await Promise.all([fonts, DB.open().then(() => DB.all())]))[1].sort((a, b) => a.added - b.added);
   SAMPLES.forEach(b => { b.cover = genCover(b); b.spine = genSpine(b); });
-  books = SAMPLES.slice();
-  buildTabs();
+  ups.forEach(r => { try { mine.push(prepUpload(r)); } catch(e){} });
   const want = store.get('tsn-last') || 'holmes';
-  buildShelf(books.some(b => b.id === want) ? want : 'holmes');
+  // Each visit opens on your own shelf (empty at first); the samples view only sticks within this tab, e.g. coming back from the reader.
+  let v = null; try { v = sessionStorage.getItem('tsn-view'); } catch(e){}
+  showView(v, want);
   requestAnimationFrame(t => { last = t; frame(t); });
-  await DB.open();
-  const ups = (await DB.all()).sort((a, b) => a.added - b.added);
-  if (ups.length){
-    ups.forEach(r => { try { books.push(prepUpload(r)); } catch(e){} });
-    buildShelf(books.some(b => b.id === want) ? want : books[activeIdx].id);
+  seedDefaults();
+}
+
+/* ---------- books that ship with the site (books/books.json) ---------- */
+// Each entry is copied into IndexedDB once, so it reads, edits and deletes like any of your books; a deleted one is not re-added.
+async function seedDefaults(){
+  let list;
+  try { const res = await fetch('books/books.json', { cache:'no-cache' }); if (!res.ok) return; list = await res.json(); }
+  catch(e){ return; }
+  const done = new Set(store.get('tsn-defaults') || []);
+  const todo = list.filter(d => !done.has(d.id));
+  if (!todo.length) return;
+  document.body.classList.add('seeding');
+  toast('Đang đặt sách lên kệ…', 60000);
+  let added = 0;
+  for (const [k, d] of todo.entries()){
+    try {
+      if (!mine.some(b => b.id === 'def-' + d.id)){
+        const res = await fetch(d.file); if (!res.ok) throw new Error('missing');
+        const name = d.file.split('/').pop();
+        const file = new File([await res.blob()], decodeURIComponent(name), { type: /\.pdf$/i.test(name) ? 'application/pdf' : 'application/epub+zip' });
+        const cover = d.cover ? coverFit(await loadImg(d.cover)) : null;
+        await addOne(file, rec => {
+          Object.assign(rec, { id: 'def-' + d.id, added: Date.now() - (todo.length - k) * 1000, title: d.title || rec.title, author: d.author || rec.author,
+            year: d.year || rec.year, genre: d.genre || '', desc: d.desc || '' });
+          if (cover){ rec.cover = cover.toDataURL('image/jpeg', .9); rec.pal = Object.assign({}, rec.pal, { spine: avgColor(cover) }); }
+        });
+        added++;
+      }
+      done.add(d.id); store.set('tsn-defaults', [...done]);
+    } catch(e){}
   }
+  document.body.classList.remove('seeding');
+  if (added){ toast('Đã đặt ' + added + ' cuốn sách lên kệ.'); showView('mine'); }
+  else { toast('', 1); showView(view); }
 }
 boot();
 })();
