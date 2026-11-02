@@ -13,6 +13,7 @@ Người dùng viết tiếng Việt; trả lời bằng tiếng Việt.
   - Bóng của vạt giấy gập lên tờ đang lật: dùng điểm đối xứng qua nếp gấp (`vMir`) để đổ bóng theo đúng mép vạt giấy ở mọi góc kéo.
   - PDF: bảng Aa ẩn các mục chữ (`.trow`), hiện "Thu phóng". Phóng to chỉ cho PDF: chạm hai lần / chụm hai ngón / Ctrl+cuộn; khi đang phóng to thì kéo để di chuyển, không lật trang. Màn hình = sách × `zoom.z` + `(zoom.sx, zoom.sy)` (uniform `uZ`); trang đang xem được kết xuất lại sắc nét hơn (tối đa 2.5×). Chạm một lần trên PDF chờ 280ms để phân biệt với chạm hai lần.
   - Tên tác giả trong PDF bị lọc nếu là tên phần mềm (`realAuthor`, có ở cả kệ và trình đọc).
+  - Lăn chuột / vuốt hai ngón trên touchpad: xuống = trang sau, lên = trang trước (cả cuộn ngang). Mỗi cử chỉ chỉ lật 1 trang: sau khi lật, bỏ qua sự kiện wheel đến khi ngừng 180ms (`WHEEL_QUIET`), riêng nấc chuột lớn (≥40px) cho lật tiếp sau 520ms (`WHEEL_REPEAT`). Không lật khi đang phóng to PDF, giữ Ctrl, hoặc đang mở ngăn mục lục / ghi chú.
   - Tô sáng (nhấn giữ 460ms rồi kéo), ghi chú, đánh dấu, mục lục, nền giấy/sepia/tối; dữ liệu lưu localStorage (`lt-settings`, `lt-b-<bookId>`).
 - Thư viện tải khi cần từ cdnjs: pdf.js 3.11.174 (cả `pdf.worker.min.js` dưới dạng script để chạy không cần worker), JSZip 3.10.1.
 

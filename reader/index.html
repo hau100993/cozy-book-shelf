@@ -251,6 +251,7 @@ const SAMPLE = { kind:'text', id:'sample', title:'Một trang giấy cong', auth
  { t:'p', text:'Biểu tượng dải ruy băng ở góc trên đánh dấu trang đang đọc. Mọi trang đã đánh dấu, mọi đoạn tô sáng và ghi chú đều nằm trong ngăn bên trái, cạnh mục lục. Chạm vào một mục để nhảy thẳng tới trang đó.' },
  { t:'p', text:'Nút Aa mở bảng tuỳ chỉnh: cỡ chữ, giãn dòng, lề trang, kiểu chữ, màu nền và bố cục một hay hai trang. Khi đổi cỡ chữ, sách được dàn trang lại nhưng vẫn giữ đúng đoạn bạn đang đọc, và các đoạn tô sáng vẫn bám theo chữ.' },
  { t:'p', text:'Chạm vào giữa trang để ẩn mọi thanh công cụ và chỉ còn lại trang sách. Chạm lần nữa để chúng hiện lại.' },
+ { t:'p', text:'Trên máy tính, lăn chuột xuống để sang trang sau, lăn lên để quay lại trang trước. Phím mũi tên và phím cách cũng lật được trang.' },
  { t:'p', text:'Hãy thử mở một file PDF hoặc EPUB của bạn bằng nút dấu cộng ở góc trên, hoặc thả file thẳng vào trang này. Vị trí đọc, đánh dấu và ghi chú được lưu riêng cho từng cuốn trong trình duyệt của bạn.' },
  { t:'p', text:'Hết bản thử.' }
 ]};
@@ -1252,6 +1253,34 @@ addEventListener('keydown', e => {
   else if (e.key === 'ArrowLeft' || e.key === 'PageUp'){ e.preventDefault(); tapTurn('back'); }
   else if (e.key === 'b' || e.key === 'B') $('#bmBtn').click();
 });
+/* Mouse wheel / trackpad: scroll down = next page, scroll up = previous page.
+   One page per gesture: after a turn, wheel input is ignored until it pauses (WHEEL_QUIET ms),
+   so trackpad inertia doesn't flip several pages. A mouse wheel spun continuously still turns
+   about one page per WHEEL_REPEAT ms, because its notches are large deltas. */
+const WHEEL_STEP = 40, WHEEL_QUIET = 180, WHEEL_REPEAT = 520;
+let wheelAcc = 0, wheelLast = 0, wheelTurnAt = 0, wheelLocked = false;
+addEventListener('wheel', e => {
+  if (e.defaultPrevented || e.ctrlKey || !book) return;
+  if (zoomable() && zoom.z > 1) return;
+  if (e.target.closest && e.target.closest('.drawer,.settings,.note,.pop,input,textarea,select')) return;
+  if ($('#drawer').classList.contains('on') || $('#note').classList.contains('on')) return;
+  if (ptr || pinch) return;
+  e.preventDefault();
+  const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? vh : 1;
+  const d = (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) * unit;
+  const now = performance.now();
+  if (now - wheelLast > WHEEL_QUIET){ wheelLocked = false; wheelAcc = 0; }
+  wheelLast = now;
+  if (wheelLocked && Math.abs(d) >= WHEEL_STEP && now - wheelTurnAt > WHEEL_REPEAT) wheelLocked = false;
+  if (wheelLocked) return;
+  if (wheelAcc && Math.sign(d) !== Math.sign(wheelAcc)) wheelAcc = 0;
+  wheelAcc += d;
+  if (Math.abs(wheelAcc) < WHEEL_STEP) return;
+  const dir = wheelAcc > 0 ? 'fwd' : 'back';
+  wheelAcc = 0; wheelLocked = true; wheelTurnAt = now;
+  closeSettings();
+  tapTurn(dir);
+}, { passive:false });
 let rt = 0; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => layout('key'), 140); });
 let toastT = 0;
 function toast(m, ms){ const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), ms || 2400); }
