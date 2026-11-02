@@ -16,6 +16,10 @@ Người dùng viết tiếng Việt; trả lời bằng tiếng Việt.
   - Lăn chuột / vuốt hai ngón trên touchpad: xuống = trang sau, lên = trang trước (cả cuộn ngang). Mỗi cử chỉ chỉ lật 1 trang: sau khi lật, bỏ qua sự kiện wheel đến khi ngừng 180ms (`WHEEL_QUIET`), riêng nấc chuột lớn (≥40px) cho lật tiếp sau 520ms (`WHEEL_REPEAT`). Không lật khi đang phóng to PDF, giữ Ctrl, hoặc đang mở ngăn mục lục / ghi chú.
   - Toàn màn hình (nút ⛶ trên thanh menu hoặc phím F; thoát bằng F/Esc hoặc nút): `fsMode`, class `body.fs`. Gọi Fullscreen API nếu được (`fsNative`), thoát fullscreen của trình duyệt cũng thoát chế độ này. Sách dùng cả màn hình (lề 14px, giới hạn rộng lớn hơn), màn hình ngang tự hiện 2 trang trừ khi chọn "1 trang". Hai thanh nổi lên trên sách và ẩn: rê chuột sát mép trên (<72px) hiện menu, sát mép dưới hiện thanh tiến độ, rời xa 450ms thì ẩn (giữ nguyên khi đang mở Aa / mục lục / ghi chú). Cảm ứng: chạm giữa trang bật/tắt cả hai thanh (`toggleChrome`). Con trỏ tự ẩn sau 2.2s đứng yên.
   - Tô sáng (nhấn giữ 460ms rồi kéo), ghi chú, đánh dấu, mục lục, nền giấy/sepia/tối; dữ liệu lưu localStorage (`lt-settings`, `lt-b-<bookId>`).
+  - Lớp chữ PDF (`loadPdfText`, `ptPage`): `getTextContent()` → tách từ, ước lượng vị trí từng từ theo tỉ lệ độ rộng đo bằng canvas (pdf.js chỉ cho độ rộng cả đoạn), nối mảnh của cùng một từ, gom dòng theo đường chân chữ; bỏ qua chữ xoay. Lưu theo toạ độ viewport scale 1, `ptPage` co theo W/H hiện tại. key = `trang * 100000 + chỉ số từ` (PDF không dàn lại nên không lệch). Trang có < 3 ký tự = ảnh scan (`SCAN_MSG`). `tpage(i)` trả cấu trúc chữ của trang cho cả PDF và EPUB.
+  - Texture PDF = ảnh pdf.js (`v.base`, chỉ giữ cho trang đang hiện, `pruneBases`) + tô sáng / vùng chọn / chấm ghi chú / ruy băng vẽ trên bản sao (`composePdf`, tô sáng dùng `multiply`). Đổi tô sáng không chạy lại pdf.js.
+  - Chuột (cả PDF và EPUB): đè trên chữ rồi kéo = chọn ngay (`mtext` → `select`); kéo từ dải 12% sát mép ngoài trang (`EDGE`, `isEdgeZone`) hoặc vùng trống = lật trang; nhấp đúp = chọn từ; Shift + nhấp = mở rộng vùng chọn; nhấp lên đoạn đã tô = mở menu. Nhấp trên chữ chờ 320ms để phân biệt nhấp đúp. Con trỏ: chữ I trên chữ, bàn tay ở mép trang / khi đang phóng to (`hoverCursor`). Chạm hai lần để phóng to chỉ còn cho cảm ứng. Khi phóng to: kéo chuột trên chữ = chọn, chỗ khác = di chuyển; `pointToPage` đã trừ phép phóng to.
+  - Phím tắt: bảng `KEYS_KB` / `KEYS_MOUSE` dùng cho cả xử lý phím và bảng "?" (`#keys`). Ctrl/Cmd chỉ chiếm C (chép khi có vùng chọn), +, −, 0; các phím tắt khác của trình duyệt giữ nguyên. Khi PDF đang phóng to, mũi tên dùng để di chuyển.
 - Thư viện tải khi cần từ cdnjs: pdf.js 3.11.174 (cả `pdf.worker.min.js` dưới dạng script để chạy không cần worker), JSZip 3.10.1.
 
 ## Chạy thử
@@ -26,4 +30,4 @@ Test trên điện thoại: Chrome DevTools → Remote devices, hoặc mở link
 - Người dùng báo `/reader/` trên điện thoại "chưa lật trang"; thử bằng touch giả lập S23+ (CDP) thì chạm mép và vuốt đều lật được. Cần kiểm tra trên máy thật (cache trình duyệt? Samsung Internet?).
 - Xoá trình đọc cuộn dọc cũ trong `index.html`.
 - Kệ đọc sách mặc định từ `books/` + `books.json`.
-- Tìm kiếm trong sách, xuất tô sáng ra Markdown, tô sáng cho PDF.
+- Tìm kiếm trong sách (dùng lại lớp chữ `tpage`), xuất tô sáng ra Markdown, OCR cho PDF scan, chọn chữ qua 2 trang khi mở đôi, tay nắm chỉnh vùng chọn.

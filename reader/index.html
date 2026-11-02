@@ -50,7 +50,7 @@ body.immersive .foot{transform:translateY(calc(100% + 4px))}
 body.fs .bar{transform:translateY(calc(-100% - 4px));box-shadow:0 10px 30px -18px rgba(0,0,0,.45)}
 body.fs .foot{transform:translateY(calc(100% + 4px));box-shadow:0 -10px 30px -18px rgba(0,0,0,.45)}
 body.fs.show-top .bar,body.fs.show-bot .foot{transform:none}
-body.fs.idle,body.fs.idle #gl{cursor:none}
+body.fs.idle,body.fs.idle #gl{cursor:none !important}
 .fs-ico .x{display:none}
 body.fs .fs-ico .x{display:block}
 body.fs .fs-ico .o{display:none}
@@ -117,7 +117,20 @@ body.fs .fs-ico .o{display:none}
 .note blockquote{margin:0;padding-left:12px;border-left:3px solid var(--accent);font:italic 400 15px/1.5 var(--serif);max-height:6.2em;overflow:auto}
 .note textarea{min-height:110px;resize:vertical;border:1px solid var(--line);background:var(--page);color:var(--ink);padding:10px;font:400 16px/1.5 var(--serif);border-radius:0;user-select:text;-webkit-user-select:text}
 .note .acts{display:flex;justify-content:flex-end;gap:8px}
-.note .acts .box{height:36px}
+
+/* Keyboard / mouse shortcut sheet ("?") */
+.keys{position:fixed;z-index:66;left:50%;top:50%;width:min(600px,calc(100vw - 32px));max-height:calc(100vh - 48px);overflow:auto;box-sizing:border-box;
+  background:var(--sheet);color:var(--ink);padding:22px 24px 18px;box-shadow:0 30px 70px -30px rgba(0,0,0,.6);
+  visibility:hidden;opacity:0;transform:translate(-50%,-47%);transition:transform .3s var(--ease),opacity .3s var(--ease),visibility 0s linear .3s}
+.keys.on{visibility:visible;opacity:1;transform:translate(-50%,-50%);transition:transform .3s var(--ease),opacity .3s var(--ease)}
+.keys h2{margin:0;font:400 26px/1.1 var(--serif);letter-spacing:-.01em}
+.keys .kh{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.keys h3{margin:16px 0 6px;color:var(--muted)}
+.keys dl{display:grid;grid-template-columns:minmax(0,15em) minmax(0,1fr);gap:7px 18px;margin:0;align-items:baseline}
+.keys dt{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end}
+.keys dd{margin:0;font:400 15px/1.4 var(--serif)}
+kbd{display:inline-block;min-width:1.2em;text-align:center;font:600 11px/1 var(--sans);letter-spacing:.02em;padding:4px 6px;border:1px solid var(--line);border-bottom-width:2px;border-radius:3px;background:var(--page);color:var(--ink);white-space:nowrap}
+@media (max-width:520px){ .keys dl{grid-template-columns:1fr} .keys dt{justify-content:flex-start} .keys dd{margin-bottom:6px} }
 
 .msg{position:fixed;inset:0;z-index:80;display:grid;place-items:center;text-align:center;font:400 19px/1.5 var(--serif);padding:0 24px;visibility:hidden;background:var(--bg)}
 .msg.on{visibility:visible}
@@ -176,6 +189,11 @@ body.fs .fs-ico .o{display:none}
 </div>
 
 <div class="scrim" id="scrim"></div>
+<div class="keys" id="keys" role="dialog" aria-modal="true" aria-label="Phím tắt">
+  <div class="kh"><h2>Phím tắt</h2><button class="box lbl" id="keysClose" type="button">Đóng</button></div>
+  <h3 class="lbl">Bàn phím</h3><dl id="keysKb"></dl>
+  <h3 class="lbl">Chuột</h3><dl id="keysMouse"></dl>
+</div>
 <aside class="drawer" id="drawer" aria-label="Mục lục, đánh dấu và tô sáng">
   <a href="../" class="lbl" style="margin:0 22px 12px;color:var(--accent);text-decoration:none">← Về Tủ Sách Nhỏ</a>
   <h2 id="drawerTitle"></h2>
@@ -190,7 +208,7 @@ body.fs .fs-ico .o{display:none}
 <div class="settings" id="settings" role="dialog" aria-label="Tuỳ chỉnh hiển thị">
   <div class="row" id="zoomRow" hidden><span class="lbl">Thu phóng</span>
     <div class="size"><button class="box" id="zMinus" type="button" aria-label="Thu nhỏ">−</button><output id="zVal">100%</output><button class="box" id="zPlus" type="button" aria-label="Phóng to">+</button></div>
-    <span class="hint">Chạm hai lần vào trang để phóng to, kéo để xem phần khác, chạm hai lần nữa để về như cũ. Có thể chụm hai ngón tay để thu phóng.</span></div>
+    <span class="hint">Điện thoại: chạm hai lần để phóng to, chụm hai ngón để thu phóng. Máy tính: Ctrl + lăn chuột, hoặc Ctrl + / Ctrl −. Khi đang phóng to, kéo hoặc dùng phím mũi tên để xem phần khác.</span></div>
   <div class="row trow"><span class="lbl">Cỡ chữ</span>
     <div class="size"><button class="box" id="fsMinus" type="button" aria-label="Chữ nhỏ hơn" style="font:400 13px var(--serif)">A−</button><output id="fsVal"></output><button class="box" id="fsPlus" type="button" aria-label="Chữ lớn hơn" style="font:400 19px var(--serif)">A+</button></div></div>
   <div class="row trow"><span class="lbl">Giãn dòng</span><div class="seg" data-k="lh"><button type="button" data-v="1.4">Hẹp</button><button type="button" data-v="1.6">Vừa</button><button type="button" data-v="1.85">Rộng</button></div></div>
@@ -198,6 +216,7 @@ body.fs .fs-ico .o{display:none}
   <div class="row trow"><span class="lbl">Kiểu chữ</span><div class="seg" data-k="font"><button type="button" data-v="serif" style="font-family:var(--serif);font-size:15px">Có chân</button><button type="button" data-v="sans">Không chân</button></div></div>
   <div class="row"><span class="lbl">Nền</span><div class="seg themes" data-k="theme"><button type="button" data-v="paper"><i style="background:#FBF8F1"></i>Giấy</button><button type="button" data-v="sepia"><i style="background:#F2E6CC"></i>Sepia</button><button type="button" data-v="dark"><i style="background:#1F1E1B"></i>Tối</button></div></div>
   <div class="row"><span class="lbl">Bố cục</span><div class="seg" data-k="layout"><button type="button" data-v="auto">Tự động</button><button type="button" data-v="single">1 trang</button><button type="button" data-v="spread">2 trang</button></div><span class="hint" id="layoutHint" hidden>Khi cầm dọc luôn hiện 1 trang. 2 trang hiện khi xoay ngang.</span></div>
+  <div class="row"><button class="box lbl" id="keysBtn" type="button" style="justify-self:start">Phím tắt <kbd style="margin-left:4px">?</kbd></button></div>
 </div>
 
 <div class="note" id="note" role="dialog" aria-label="Ghi chú">
@@ -261,6 +280,7 @@ const SAMPLE = { kind:'text', id:'sample', title:'Một trang giấy cong', auth
  { t:'p', text:'Nút Aa mở bảng tuỳ chỉnh: cỡ chữ, giãn dòng, lề trang, kiểu chữ, màu nền và bố cục một hay hai trang. Khi đổi cỡ chữ, sách được dàn trang lại nhưng vẫn giữ đúng đoạn bạn đang đọc, và các đoạn tô sáng vẫn bám theo chữ.' },
  { t:'p', text:'Chạm vào giữa trang để ẩn mọi thanh công cụ và chỉ còn lại trang sách. Chạm lần nữa để chúng hiện lại.' },
  { t:'p', text:'Trên máy tính, lăn chuột xuống để sang trang sau, lăn lên để quay lại trang trước. Phím mũi tên và phím cách cũng lật được trang.' },
+ { t:'p', text:'Muốn tô sáng bằng chuột, chỉ cần kéo chuột trên chữ như trong một tài liệu bình thường, hoặc nhấp đúp để chọn một từ. Kéo từ sát mép trang thì vẫn là lật trang. Nhấn phím chấm hỏi để xem toàn bộ phím tắt.' },
  { t:'p', text:'Hãy thử mở một file PDF hoặc EPUB của bạn bằng nút dấu cộng ở góc trên, hoặc thả file thẳng vào trang này. Vị trí đọc, đánh dấu và ghi chú được lưu riêng cho từng cuốn trong trình duyệt của bạn.' },
  { t:'p', text:'Hết bản thử.' }
 ]};
@@ -404,10 +424,13 @@ function getTex(i){
 }
 function invalidate(i){
   const k = texKey(i); if (!tex.has(k)) return;
-  if (book.kind === 'pdf'){ gl.deleteTexture(tex.get(k).t); tex.delete(k); dirty = true; return; }
+  if (book.kind === 'pdf'){ const v = tex.get(k); if (v.base) composePdf(i, v); else renderPdfInto(i, v, v.res || 1); return; }
   gl.bindTexture(gl.TEXTURE_2D, tex.get(k).t); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, pageCanvas(i)); dirty = true;
 }
-function invalidateKeys(a, b){ pages.forEach((p, i) => { if (p.keyMax >= a && p.keyMin <= b) invalidate(i); }); }
+function invalidateKeys(a, b){
+  if (book.kind === 'pdf'){ for (let i = Math.floor(a / KEY); i <= Math.floor(b / KEY); i++) invalidate(i); return; }
+  pages.forEach((p, i) => { if (p.keyMax >= a && p.keyMin <= b) invalidate(i); });
+}
 
 /* ---------------- typesetting ---------------- */
 function wrapWords(words, font, firstW, restW){
@@ -477,6 +500,7 @@ function paginate(){
 }
 function pageOfKey(key){
   if (key == null || key < 0) return 0;
+  if (book && book.kind === 'pdf') return Math.floor(key / KEY);
   let lo = 1, hi = pages.length - 1, ans = 1;
   while (lo <= hi){ const m = (lo + hi) >> 1; if (pages[m].startKey <= key){ ans = m; lo = m + 1; } else hi = m - 1; }
   return Math.min(ans, pages.length - 1);
@@ -594,6 +618,7 @@ function renderPdfInto(i, v, res = 1){
   pdfQueue = pdfQueue.then(async () => {
     if (book !== myBook || tex.get(k) !== v || v.want !== res) return;
     try {
+      await loadPdfText(i);
       const page = await doc.getPage(i + 1); const v1 = page.getViewport({ scale:1 });
       const sc = Math.min(w / v1.width, h / v1.height) * dpr * res;
       const vp = page.getViewport({ scale: sc });
@@ -604,18 +629,129 @@ function renderPdfInto(i, v, res = 1){
       const sw = c.width * .06;
       const g = left ? x.createLinearGradient(c.width, 0, c.width - sw, 0) : x.createLinearGradient(0, 0, sw, 0);
       g.addColorStop(0, 'rgba(70,50,25,.12)'); g.addColorStop(1, 'rgba(70,50,25,0)'); x.fillStyle = g; if (left) x.fillRect(c.width - sw, 0, sw, c.height); else x.fillRect(0, 0, sw, c.height);
-      if (isBookmarked(i)){ x.save(); x.scale(dpr * res, dpr * res); drawRibbon(x, i); x.restore(); }
       if (book !== myBook || tex.get(k) !== v || W !== w || v.want !== res) return;
-      gl.bindTexture(gl.TEXTURE_2D, v.t); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c); v.res = res; dirty = true;
+      v.base = c; v.res = res; composePdf(i, v);
     } catch(e){}
   });
 }
+// A PDF page texture = the pdf.js rendering (v.base, kept while the page is on screen)
+// + highlights, the current selection, note dots and the bookmark ribbon painted on a copy.
+// So changing a highlight never re-runs pdf.js.
+const HL_PDF = { yellow:'rgba(250,204,48,.62)', green:'rgba(118,200,104,.55)', pink:'rgba(242,118,152,.5)', blue:'rgba(104,152,240,.45)' };
+function composePdf(i, v){
+  const base = v.base, c = document.createElement('canvas');
+  c.width = base.width; c.height = base.height;
+  const x = c.getContext('2d'); x.drawImage(base, 0, 0);
+  x.save(); x.scale(base.width / W, base.height / H);
+  const p = ptPage(i);
+  if (p && p.lines.length){
+    x.globalCompositeOperation = 'multiply';   // keeps the printed text dark under the colour
+    for (const h of data.hls){
+      if (h.b < p.keyMin || h.a > p.keyMax) continue;
+      x.fillStyle = HL_PDF[h.color] || HL_PDF.yellow;
+      hlRects(p, h.a, h.b).forEach(r => { x.beginPath(); if (x.roundRect) x.roundRect(r.x, r.y, r.w, r.h, 2); else x.rect(r.x, r.y, r.w, r.h); x.fill(); });
+    }
+    if (sel && sel.page === i){ const [a, b] = selRange(); x.fillStyle = 'rgba(70,110,230,.32)'; hlRects(p, a, b).forEach(r => x.fillRect(r.x, r.y, r.w, r.h)); }
+    x.globalCompositeOperation = 'source-over';
+    for (const h of data.hls){
+      if (!h.note || h.a < p.keyMin || h.a > p.keyMax) continue;
+      const r0 = hlRects(p, h.a, h.a)[0];
+      if (r0){ x.fillStyle = '#1F3FB0'; x.beginPath(); x.arc(Math.max(6, r0.x - 7), r0.y + r0.h / 2, 3.5, 0, Math.PI * 2); x.fill(); }
+    }
+  }
+  if (isBookmarked(i)) drawRibbon(x, i);
+  x.restore();
+  gl.bindTexture(gl.TEXTURE_2D, v.t); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c); dirty = true;
+}
+// Keep pdf.js renderings only for pages on screen, so memory stays bounded.
+function pruneBases(){
+  if (!book || book.kind !== 'pdf') return;
+  const keep = new Set(visiblePages().map(texKey));
+  tex.forEach((v, k) => { if (v.base && !keep.has(k)) v.base = null; });
+}
+
+/* ---------------- PDF text layer ---------------- */
+// From pdf.js getTextContent(): each text item is split into words. pdf.js gives only the width of a whole
+// item, so a word's x and width are estimated in proportion to its measured width in a similar font.
+// Fragments of one word that the PDF stores as separate items are joined; words are grouped into lines by
+// baseline. Positions are kept in scale-1 viewport units and scaled to the page size on use (ptPage).
+// key = pageIndex * KEY + wordIndex; a PDF never reflows, so highlights stay where they were made.
+const SCAN_MSG = 'Trang này là ảnh scan, không có lớp chữ để chọn.';
+function loadPdfText(i){
+  if (!book || book.kind !== 'pdf' || isBlank(i)) return Promise.resolve(null);
+  const cache = book.text || (book.text = []);
+  if (cache[i]) return cache[i].promise;
+  const myBook = book, rec = { ready:false };
+  cache[i] = rec;
+  rec.promise = (async () => {
+    try {
+      const page = await myBook.doc.getPage(i + 1);
+      const vp = page.getViewport({ scale: 1 });
+      const tc = await page.getTextContent();
+      const lib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
+      const lines = []; let line = null, n = 0, prevSpace = true, eol = false, chars = 0;
+      for (const it of tc.items){
+        if (!('str' in it)) continue;
+        const str = it.str;
+        if (!str || !str.trim()){ if (str) prevSpace = true; if (it.hasEOL) eol = true; continue; }
+        const tx = lib.Util.transform(vp.transform, it.transform);
+        const fs = Math.hypot(tx[2], tx[3]), width = it.width * vp.scale;
+        // Rotated or vertical text is left out: it can't be highlighted with horizontal boxes.
+        if (fs < 2 || !(width > 0) || tx[0] <= 0 || Math.abs(tx[1]) > tx[0] * .05){ eol = true; continue; }
+        const x0 = tx[4], base = tx[5];
+        if (!line || eol || Math.abs(base - line.y) > fs * .5 || x0 < line.end - fs * .5 || x0 > line.end + fs * 3){
+          line = { y: base, fs, words: [], end: x0 }; lines.push(line); prevSpace = true;
+        }
+        eol = !!it.hasEOL;
+        const st = tc.styles && tc.styles[it.fontName];
+        meas.font = '100px ' + ((st && st.fontFamily) || 'sans-serif');
+        const total = meas.measureText(str).width || 1;
+        const re = /\S+/g; let m;
+        while ((m = re.exec(str))){
+          const wx = x0 + width * meas.measureText(str.slice(0, m.index)).width / total;
+          const ww = width * meas.measureText(m[0]).width / total;
+          const last = line.words[line.words.length - 1];
+          if (m.index === 0 && last && !prevSpace && wx - (last.x + last.w) < fs * .15){ last.t += m[0]; last.w = wx + ww - last.x; }
+          else line.words.push({ t: m[0], x: wx, w: ww, key: i * KEY + n++ });
+          chars += m[0].length;
+        }
+        line.fs = Math.max(line.fs, fs); line.end = x0 + width;
+        prevSpace = /\s$/.test(str);
+      }
+      Object.assign(rec, { lines: lines.filter(l => l.words.length), w: vp.width, h: vp.height, scan: chars < 3, ready: true });
+    } catch(e){ Object.assign(rec, { lines: [], w: 1, h: 1, scan: true, err: true, ready: true }); }
+    if (book === myBook){
+      const v = tex.get(texKey(i));
+      const need = data.hls.some(h => h.a < (i + 1) * KEY && h.b >= i * KEY) || (sel && sel.page === i);
+      if (v && v.base && need) composePdf(i, v);
+    }
+    return rec;
+  })();
+  return rec.promise;
+}
+function ptPage(i){
+  const r = book && book.text && book.text[i]; if (!r || !r.ready) return null;
+  if (r.cw !== W || r.ch !== H){
+    const s = Math.min(W / r.w, H / r.h), ox = (W - r.w * s) / 2, oy = (H - r.h * s) / 2;
+    let kMin = Infinity, kMax = -Infinity;
+    const lines = r.lines.map(l => ({ y: oy + l.y * s, fs: l.fs * s, gap: l.fs * s * .3,
+      words: l.words.map(w => { kMin = Math.min(kMin, w.key); kMax = Math.max(kMax, w.key); return { t: w.t, key: w.key, x: ox + w.x * s, w: w.w * s }; }) }));
+    const fss = lines.map(l => l.fs).sort((a, b) => a - b);
+    r.page = { pdf: true, scan: r.scan, lines, keyMin: kMin, keyMax: kMax, lh: (fss[fss.length >> 1] || 12) * 1.6 };
+    r.cw = W; r.ch = H;
+  }
+  return r.page;
+}
+// Text structure of page i for either kind of book: lines[{ y, fs, gap, words[{ t, x, w, key }] }].
+function tpage(i){ return book.kind === 'pdf' ? ptPage(i) : pages[i]; }
 async function openPdf(file){
   const lib = await ensurePdf();
   const doc = await lib.getDocument({ data: await file.arrayBuffer() }).promise;
   const md = await doc.getMetadata().catch(() => null);
   const p1 = await doc.getPage(1); const v = p1.getViewport({ scale:1 });
-  const title = md && md.info && md.info.Title && String(md.info.Title).trim().length > 1 ? String(md.info.Title).trim() : file.name.replace(/\.pdf$/i, '');
+  // Titles like "untitled" or "Microsoft Word - x.docx" come from the authoring tool, not the author: use the file name then.
+  let title = md && md.info && md.info.Title ? String(md.info.Title).trim().replace(/^Microsoft Word - /i, '').replace(/\.(docx?|odt|pages)$/i, '') : '';
+  if (title.length < 2 || /^(untitled|unknown|document|tài liệu)$/i.test(title)) title = file.name.replace(/\.pdf$/i, '');
   const outline = [];
   try {
     const ol = await doc.getOutline() || [];
@@ -825,8 +961,11 @@ function tapTurn(dir, yHint){
 function jumpTo(i){ resetZoom(); flushTurn(); clearSel(); closePop(); cur = i; normCur(); dirty = true; updateUI(); savePos(); }
 
 /* ---------------- hit testing ---------------- */
-function pointToPage(cx, cy){
-  const y = cy - PY; if (y < 0 || y > H) return null;
+// Screen point -> page index and position on that page (page units), undoing the PDF zoom.
+// clampY keeps a selection drag that leaves the page above or below on its first / last line.
+function pointToPage(cx, cy, clampY){
+  cx = (cx - zoom.sx) / zoom.z; cy = (cy - zoom.sy) / zoom.z;
+  let y = cy - PY; if (clampY) y = clamp(y, 1, H - 1); if (y < 0 || y > H) return null;
   if (!spread){ const x = cx - PX; if (x < 0 || x > W) return null; return { i: cur, x, y }; }
   if (cx >= SPINE && cx <= SPINE + W) return { i: rightOf(cur), x: cx - SPINE, y };
   if (cx >= PX && cx < SPINE) return { i: leftOf(cur), x: cx - PX, y };
@@ -834,13 +973,14 @@ function pointToPage(cx, cy){
 }
 function pageToScreenX(i, x){ return !spread ? PX + x : (isLeft(i) ? PX + x : SPINE + x); }
 function wordAt(i, x, y, near){
-  if (book.kind === 'pdf' || isBlank(i)) return null;
-  const p = pages[i]; if (!p || p.title) return null;
+  if (isBlank(i)) return null;
+  const p = tpage(i); if (!p || p.title || !p.lines) return null;
+  const lh = p.pdf ? p.lh : pages.meta.lh;
   let best = null, bd = Infinity;
   for (const l of p.lines){
     const top = l.y - l.fs * .95, bot = l.y + l.fs * .4;
     const dy = y < top ? top - y : y > bot ? y - bot : 0;
-    if (dy > (near ? pages.meta.lh * 1.2 : 3)) continue;
+    if (dy > (near ? lh * 1.2 : 3)) continue;
     for (const w of l.words){
       if (w.key == null) continue;
       const dx = x < w.x ? w.x - x : x > w.x + w.w + l.gap ? x - (w.x + w.w + l.gap) : 0;
@@ -852,6 +992,19 @@ function wordAt(i, x, y, near){
   return best;
 }
 function textOf(a, b){
+  if (book.kind === 'pdf'){
+    // Lines are joined with spaces; a word hyphenated at a line end is joined back together.
+    let out = '';
+    for (let pi = Math.floor(a / KEY); pi <= Math.floor(b / KEY); pi++){
+      const p = ptPage(pi); if (!p) continue;
+      for (const l of p.lines){
+        const ws = l.words.filter(w => w.key >= a && w.key <= b).map(w => w.t); if (!ws.length) continue;
+        const t = ws.join(' ');
+        out = !out ? t : /[A-Za-zÀ-ỹ]-$/.test(out) ? out.slice(0, -1) + t : out + ' ' + t;
+      }
+    }
+    return out;
+  }
   const out = []; const ba = Math.floor(a / KEY), bb = Math.floor(b / KEY);
   for (let bi = ba; bi <= bb; bi++){
     const bl = book.blocks[bi]; if (!bl || !bl.words.length) continue;
@@ -859,6 +1012,17 @@ function textOf(a, b){
     out.push(bl.words.slice(s, e + 1).join(' '));
   }
   return out.join('\n');
+}
+
+// The outer strip of each page (EDGE of its width) is for dragging the page over; elsewhere a mouse drag on text selects.
+const EDGE = .12;
+function isEdgeZone(hp){ const fx = hp.x / W; return !spread ? (fx < EDGE || fx > 1 - EDGE) : isLeft(hp.i) ? fx < EDGE : fx > 1 - EDGE; }
+function mouseText(cx, cy){
+  const hp = pointToPage(cx, cy); if (!hp || isBlank(hp.i)) return null;
+  if (zoom.z <= 1.01 && isEdgeZone(hp)) return null;
+  if (book.kind === 'pdf' && !ptPage(hp.i)){ loadPdfText(hp.i); return null; }
+  const w = wordAt(hp.i, hp.x, hp.y, false);
+  return w ? { i: hp.i, w } : null;
 }
 
 /* ---------------- zoom (PDF only) ---------------- */
@@ -945,10 +1109,31 @@ canvas.addEventListener('pointerdown', e => {
   if (zoomable() && touches.size === 2){ startPinch(); return; }
   if (ptr || pinch || lockUntilUp || touches.size > 1) return;
   requestWake();
-  if (pop || sel){ clearSel(); closePop(); ptr = { id:e.pointerId, state:'consumed' }; return; }
+  const mouse = e.pointerType === 'mouse';
+  if (pop || sel){
+    // Shift + click extends the current selection (mouse).
+    if (mouse && e.shiftKey && sel){
+      const hp = pointToPage(e.clientX, e.clientY, true);
+      if (hp && hp.i === sel.page){ const w = wordAt(hp.i, hp.x, hp.y, true); if (w){ sel.b = w.key; invalidate(sel.page); openPop({ kind:'sel' }); } }
+      ptr = { id:e.pointerId, state:'consumed' }; return;
+    }
+    clearSel(); closePop();
+    // A tap/click that only dismisses the selection does nothing else, unless the mouse lands on text (new selection).
+    if (!mouse || !mouseText(e.clientX, e.clientY)){ ptr = { id:e.pointerId, state:'consumed' }; return; }
+  }
+  // Mouse pressed on text (away from the page edge): drag selects, click / double-click handled on release.
+  const mt = mouse ? mouseText(e.clientX, e.clientY) : null;
+  if (mt){
+    flushTurn(); zoomAnim = null;
+    ptr = { id:e.pointerId, state:'mtext', ptype:'mouse', x0:e.clientX, y0:e.clientY, t0:performance.now(), page: mt.i, anchor: mt.w.key };
+    try { canvas.setPointerCapture(e.pointerId); } catch(err){}
+    return;
+  }
   if (zoom.z > 1.01){
     zoomAnim = null;
-    ptr = { id:e.pointerId, state:'pan', x0:e.clientX, y0:e.clientY, t0:performance.now(), sx0:zoom.sx, sy0:zoom.sy, moved:0 };
+    ptr = { id:e.pointerId, state:'pan', ptype:e.pointerType, x0:e.clientX, y0:e.clientY, t0:performance.now(), sx0:zoom.sx, sy0:zoom.sy, moved:0 };
+    // Touch: holding still on a zoomed page starts a selection too.
+    if (!mouse){ const p = ptr; p.timer = setTimeout(() => onLong(p), 460); }
     try { canvas.setPointerCapture(e.pointerId); } catch(err){}
     return;
   }
@@ -956,14 +1141,18 @@ canvas.addEventListener('pointerdown', e => {
   if (e.clientX < PX - 20 || e.clientX > PX + bookW + 20 || e.clientY < PY - 20 || e.clientY > PY + H + 20) return;
   flushTurn();
   const now = performance.now();
-  ptr = { id:e.pointerId, x0:e.clientX, y0:e.clientY, t0:now, state:'pending', vx:0, lx:e.clientX, lt:now };
+  ptr = { id:e.pointerId, ptype:e.pointerType, x0:e.clientX, y0:e.clientY, t0:now, state:'pending', vx:0, lx:e.clientX, lt:now };
   const p = ptr; p.timer = setTimeout(() => onLong(p), 460);
   try { canvas.setPointerCapture(e.pointerId); } catch(err){}
 });
 function onLong(p){
-  if (!p || ptr !== p || p.state !== 'pending') return;
-  if (book.kind === 'pdf'){ p.state = 'none'; toast('Tô sáng chữ hiện chỉ có với sách mẫu và EPUB.'); return; }
+  if (!p || ptr !== p || !(p.state === 'pending' || (p.state === 'pan' && p.moved < 8))) return;
   const hp = pointToPage(p.x0, p.y0); if (!hp){ p.state = 'none'; return; }
+  if (book.kind === 'pdf'){
+    const tp = ptPage(hp.i);
+    if (!tp){ loadPdfText(hp.i); p.state = 'none'; toast('Đang đọc chữ trên trang, thử lại sau giây lát.'); return; }
+    if (tp.scan){ p.state = 'none'; toast(SCAN_MSG, 3200); return; }
+  }
   const w = wordAt(hp.i, hp.x, hp.y, true); if (!w){ p.state = 'none'; return; }
   p.state = 'select'; sel = { page: hp.i, a: w.key, b: w.key }; invalidate(hp.i);
   try { if (navigator.vibrate) navigator.vibrate(12); } catch(e){}
@@ -989,6 +1178,7 @@ canvas.addEventListener('pointermove', e => {
     setZoom(z, (a.x + b.x) / 2 - bx * z, (a.y + b.y) / 2 - by * z);
     return;
   }
+  if (!ptr && e.pointerType === 'mouse') hoverCursor(e.clientX, e.clientY);
   const p = ptr; if (!p || p.id !== e.pointerId) return;
   if (p.state === 'pan'){
     p.moved = Math.max(p.moved, Math.hypot(e.clientX - p.x0, e.clientY - p.y0));
@@ -998,12 +1188,13 @@ canvas.addEventListener('pointermove', e => {
   const now = performance.now(), dt = Math.max(1, now - p.lt);
   p.vx = p.vx * .6 + ((e.clientX - p.lx) / dt) * .4; p.lx = e.clientX; p.lt = now;
   if (p.state === 'pending' && Math.hypot(e.clientX - p.x0, e.clientY - p.y0) > 8){ clearTimeout(p.timer); beginDrag(p); }
+  if (p.state === 'mtext' && Math.hypot(e.clientX - p.x0, e.clientY - p.y0) > 4){ p.state = 'select'; sel = { page: p.page, a: p.anchor, b: p.anchor }; invalidate(p.page); }
   if (p.state === 'turn' && turn){
     const lx = p.flip * (e.clientX - p.origin), ly = e.clientY - PY;
     const F = { x: (turn.startTurned ? -W : W) + (lx - p.lx0) * p.gain, y: turn.corner.y + (ly - p.ly0) };
     turn.F = clampF(F, turn.corner); dirty = true;
   } else if (p.state === 'select' && sel){
-    const hp = pointToPage(e.clientX, clamp(e.clientY, PY + 1, PY + H - 1));
+    const hp = pointToPage(e.clientX, e.clientY, true);
     if (hp && hp.i === sel.page){ const w = wordAt(hp.i, hp.x, hp.y, true); if (w && w.key !== sel.b){ sel.b = w.key; invalidate(sel.page); } }
   }
 });
@@ -1019,20 +1210,22 @@ function endPtr(e){
   ptr = null; clearTimeout(p.timer);
   if (p.state === 'consumed' || p.state === 'none') return;
   if (p.state === 'pan'){
-    if (p.moved < 8 && performance.now() - p.t0 < 350) handleTap(p.x0, p.y0, toggleChrome);
+    if (p.moved < 8 && performance.now() - p.t0 < 350){ if (p.ptype === 'mouse') toggleChrome(); else handleTap(p.x0, p.y0, toggleChrome); }
     else scheduleHiRes();
     return;
   }
   if (p.state === 'select'){ if (sel) openPop({ kind:'sel' }); return; }
+  if (p.state === 'mtext'){ mouseClickOnText(p); return; }
   if (p.state === 'pending'){
     const hp = pointToPage(p.x0, p.y0);
-    if (hp && book.kind !== 'pdf'){
+    if (hp){
       const w = wordAt(hp.i, hp.x, hp.y, false);
       if (w){ const h = data.hls.find(h => w.key >= h.a && w.key <= h.b); if (h){ openPop({ kind:'hl', hl:h, page:hp.i }); return; } }
     }
     const bookW = spread ? 2 * W : W, rx = (p.x0 - PX) / bookW;
     const single = () => { if (rx > .36 && rx < .64) toggleChrome(); else tapTurn(rx >= .5 ? 'fwd' : 'back', p.y0 - PY); };
-    if (zoomable()) handleTap(p.x0, p.y0, single); else single();
+    // Touch on a PDF waits for a possible double-tap zoom; a mouse click acts at once (double-click selects a word).
+    if (zoomable() && p.ptype !== 'mouse') handleTap(p.x0, p.y0, single); else single();
     return;
   }
   if (p.state === 'turn' && turn){
@@ -1044,10 +1237,45 @@ function endPtr(e){
     animTo(toTurned, clamp(dist / (2*W) * 700, 180, 520));
   }
 }
+// Mouse click on text: on a highlight -> its menu; double-click -> select the word;
+// single click -> the usual click action (turn / show bars), after a short wait for a second click.
+let lastClick = null, clickT = 0;
+function mouseClickOnText(p){
+  const now = performance.now();
+  if (lastClick && now - lastClick.t < 320 && Math.hypot(p.x0 - lastClick.x, p.y0 - lastClick.y) < 6){
+    clearTimeout(clickT); lastClick = null;
+    sel = { page: p.page, a: p.anchor, b: p.anchor }; invalidate(p.page); openPop({ kind:'sel' });
+    return;
+  }
+  const h = data.hls.find(h => p.anchor >= h.a && p.anchor <= h.b);
+  if (h){ lastClick = null; openPop({ kind:'hl', hl:h, page:p.page }); return; }
+  lastClick = { t: now, x: p.x0, y: p.y0 };
+  clearTimeout(clickT);
+  clickT = setTimeout(() => {
+    lastClick = null; if (zoom.z > 1.01 || sel || pop) return;
+    const bookW = spread ? 2 * W : W, rx = (p.x0 - PX) / bookW;
+    if (rx > .36 && rx < .64) toggleChrome(); else tapTurn(rx >= .5 ? 'fwd' : 'back', p.y0 - PY);
+  }, 320);
+}
+// Mouse cursor: I-beam over text, grab over the page edge (drag to turn) or a zoomed page (drag to move).
+let cursorNow = '';
+function hoverCursor(cx, cy){
+  let c = '';
+  if (!turn && book){
+    const hp = pointToPage(cx, cy);
+    if (hp && !isBlank(hp.i)) c = mouseText(cx, cy) ? 'text' : (zoom.z > 1.01 || isEdgeZone(hp)) ? 'grab' : '';
+  }
+  if (c !== cursorNow){ cursorNow = c; canvas.style.cursor = c; }
+}
 canvas.addEventListener('pointerup', endPtr);
 canvas.addEventListener('pointercancel', endPtr);
 
 /* ---------------- highlight popup ---------------- */
+function selectedText(){ return sel ? textOf(...selRange()) : pop && pop.kind === 'hl' ? pop.hl.text : ''; }
+function copyText(t){
+  if (!t) return;
+  try { navigator.clipboard.writeText(t).then(() => toast('Đã chép đoạn chữ.'), () => toast('Trình duyệt không cho chép ở đây.')); } catch(e){ toast('Trình duyệt không cho chép ở đây.'); }
+}
 const popEl = $('#pop');
 function selRange(){ return [Math.min(sel.a, sel.b), Math.max(sel.a, sel.b)]; }
 function openPop(o){
@@ -1058,9 +1286,10 @@ function openPop(o){
   popEl.querySelectorAll('.sw').forEach(s => s.classList.toggle('cur', o.kind === 'hl' && o.hl.color === s.dataset.c));
   $('#popDel').hidden = o.kind !== 'hl';
   $('#popNote').textContent = o.kind === 'hl' && o.hl.note ? 'Sửa ghi chú' : 'Ghi chú';
-  const p = pages[i]; const rs = p ? hlRects(p, a, b) : [];
-  let top = PY + H / 2, bottom = top, cx = vw / 2;
-  if (rs.length){ top = PY + Math.min(...rs.map(r => r.y)); bottom = PY + Math.max(...rs.map(r => r.y + r.h)); const x0 = Math.min(...rs.map(r => r.x)), x1 = Math.max(...rs.map(r => r.x + r.w)); cx = pageToScreenX(i, (x0 + x1) / 2); }
+  const p = tpage(i); const rs = p ? hlRects(p, a, b) : [];
+  const sy = y => (PY + y) * zoom.z + zoom.sy;
+  let top = vh / 2, bottom = top, cx = vw / 2;
+  if (rs.length){ top = sy(Math.min(...rs.map(r => r.y))); bottom = sy(Math.max(...rs.map(r => r.y + r.h))); const x0 = Math.min(...rs.map(r => r.x)), x1 = Math.max(...rs.map(r => r.x + r.w)); cx = pageToScreenX(i, (x0 + x1) / 2) * zoom.z + zoom.sx; }
   popEl.style.left = '0px'; popEl.style.top = '0px'; popEl.classList.add('on');
   const pw = popEl.offsetWidth, ph = popEl.offsetHeight;
   const minTop = 8 + ((fsMode ? !document.body.classList.contains('show-top') : document.body.classList.contains('immersive')) ? 0 : $('.bar').offsetHeight);
@@ -1087,8 +1316,7 @@ popEl.querySelectorAll('.sw').forEach(btn => btn.addEventListener('click', () =>
 }));
 $('#popCopy').addEventListener('click', () => {
   if (!pop) return;
-  const txt = pop.kind === 'hl' ? pop.hl.text : textOf(...selRange());
-  try { navigator.clipboard.writeText(txt).then(() => toast('Đã chép đoạn chữ.'), () => toast('Trình duyệt không cho chép ở đây.')); } catch(e){ toast('Trình duyệt không cho chép ở đây.'); }
+  copyText(selectedText());
   clearSel(); closePop();
 });
 $('#popDel').addEventListener('click', () => {
@@ -1115,7 +1343,7 @@ $('#noteSave').addEventListener('click', () => {
 
 /* ---------------- bookmarks ---------------- */
 function snippet(i){
-  const p = pages[i]; if (!p || p.title) return book.title;
+  const p = tpage(i); if (!p || p.title || !p.lines) return book.title;
   const words = [];
   outer: for (const l of p.lines){ for (const w of l.words){ if (w.key != null) words.push(w.t); if (words.length > 22) break outer; } }
   return words.join(' ') + '…';
@@ -1128,7 +1356,7 @@ $('#bmBtn').addEventListener('click', () => {
     toast('Đã bỏ đánh dấu.');
   } else {
     const i = primaryPage(); if (isBlank(i)) return;
-    if (book.kind === 'pdf') data.bms.push({ page:i, t:Date.now() });
+    if (book.kind === 'pdf'){ const tp = ptPage(i); data.bms.push({ page:i, t:Date.now(), text: tp && !tp.scan ? snippet(i) : '' }); }
     else { const p = pages[i]; data.bms.push({ key: p.title ? 0 : (isFinite(p.keyMin) ? p.keyMin : p.startKey), t:Date.now(), text: snippet(i) }); }
     invalidate(i); toast('Đã đánh dấu trang ' + (book.kind === 'pdf' ? i + 1 : i) + '.');
   }
@@ -1140,7 +1368,7 @@ let tab = 'toc';
 function openDrawer(){ renderList(); $('#drawer').classList.add('on'); $('#scrim').classList.add('on'); closeSettings(); closePop(); clearSel(); }
 function closeDrawer(){ $('#drawer').classList.remove('on'); if (!$('#note').classList.contains('on')) $('#scrim').classList.remove('on'); }
 $('#tocBtn').addEventListener('click', openDrawer);
-$('#scrim').addEventListener('click', () => { closeDrawer(); closeNote(); closeSettings(); });
+$('#scrim').addEventListener('click', () => { closeDrawer(); closeNote(); closeSettings(); closeHelp(); });
 document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => { tab = b.dataset.tab; document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b)); renderList(); }));
 function pageLabel(i){ return book.kind === 'pdf' ? 'Tr. ' + (i + 1) : (i === 0 ? 'Bìa' : 'Tr. ' + i); }
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
@@ -1164,8 +1392,7 @@ function renderList(){
       go(el, i); list.appendChild(el);
     });
   } else {
-    if (book.kind === 'pdf'){ list.innerHTML = '<p class="empty">Tô sáng và ghi chú hiện chỉ dùng được với sách mẫu và EPUB.</p>'; return; }
-    if (!data.hls.length){ list.innerHTML = '<p class="empty">Chưa có đoạn tô sáng nào. Nhấn giữ một chữ trên trang rồi kéo để chọn đoạn văn.</p>'; return; }
+    if (!data.hls.length){ list.innerHTML = '<p class="empty">Chưa có đoạn tô sáng nào. Kéo chuột trên chữ, hoặc nhấn giữ một chữ rồi kéo, để chọn đoạn văn.' + (book.kind === 'pdf' ? ' PDF dạng ảnh scan không có chữ để chọn.' : '') + '</p>'; return; }
     const hlc = settings.theme === 'dark' ? HL_DARK : HL;
     data.hls.forEach(h => {
       const i = pageOfKey(h.a);
@@ -1212,6 +1439,7 @@ $('#zPlus').addEventListener('click', () => zoomStep(1.25));
 
 /* ---------------- UI text ---------------- */
 function updateUI(){
+  pruneBases();
   $('#bookTitle').textContent = book.title;
   const pp = primaryPage();
   let chap = null; for (const t of toc) if (t.page <= pp) chap = t;
@@ -1257,19 +1485,112 @@ function loop(now){
 
 /* ---------------- misc UI ---------------- */
 $('#seek').addEventListener('input', e => jumpTo(+e.target.value));
+/* ---------------- keyboard shortcuts ---------------- */
+// One table drives both the key handling below and the "?" sheet, so the sheet never drifts from the code.
+const KEYS_KB = [
+  [['→', '↓', 'Space', 'PageDown'], 'Trang sau'],
+  [['←', '↑', 'Shift + Space', 'PageUp'], 'Trang trước'],
+  [['Home', 'End'], 'Trang đầu / trang cuối'],
+  [['Ctrl + +', 'Ctrl + −'], 'PDF: phóng to / thu nhỏ · EPUB: chữ to / nhỏ'],
+  [['Ctrl + 0'], 'Về cỡ mặc định'],
+  [['F'], 'Toàn màn hình (bật / tắt)'],
+  [['1', '2'], 'Xem 1 trang / 2 trang'],
+  [['D'], 'Đổi nền: giấy → sepia → tối'],
+  [['B'], 'Đánh dấu trang đang đọc'],
+  [['T'], 'Mục lục'],
+  [['H'], 'Danh sách tô sáng và ghi chú'],
+  [['Ctrl + C'], 'Chép đoạn đang chọn'],
+  [['Esc'], 'Bỏ chọn, đóng bảng, thoát toàn màn hình'],
+  [['?'], 'Mở bảng phím tắt này'],
+];
+const KEYS_MOUSE = [
+  [['Lăn chuột'], 'Lật trang (xuống: trang sau, lên: trang trước)'],
+  [['Kéo trên chữ'], 'Chọn đoạn văn để tô sáng, ghi chú, chép'],
+  [['Nhấp đúp'], 'Chọn một từ'],
+  [['Shift + nhấp'], 'Mở rộng vùng đang chọn'],
+  [['Kéo từ mép trang'], 'Lật trang như sách giấy'],
+  [['Nhấp mép trái / phải'], 'Trang trước / trang sau'],
+  [['Nhấp giữa trang'], 'Ẩn / hiện thanh công cụ'],
+  [['Ctrl + lăn'], 'Phóng to / thu nhỏ PDF'],
+];
+function fillKeys(id, rows){ $(id).innerHTML = rows.map(([ks, d]) => '<dt>' + ks.map(k => '<kbd>' + esc(k) + '</kbd>').join('') + '</dt><dd>' + esc(d) + '</dd>').join(''); }
+fillKeys('#keysKb', KEYS_KB); fillKeys('#keysMouse', KEYS_MOUSE);
+const keysEl = $('#keys');
+function helpOpen(){ return keysEl.classList.contains('on'); }
+function openHelp(){ closeSettings(); closePop(); keysEl.classList.add('on'); $('#scrim').classList.add('on'); }
+function closeHelp(){ if (!helpOpen()) return; keysEl.classList.remove('on'); if (!$('#drawer').classList.contains('on') && !$('#note').classList.contains('on')) $('#scrim').classList.remove('on'); }
+$('#keysClose').addEventListener('click', closeHelp);
+$('#keysBtn').addEventListener('click', openHelp);
+
+function zoomKey(d){
+  if (zoomable()){ if (!d) animZoom(1, 0, 0); else zoomStep(d > 0 ? 1.25 : 1 / 1.25); return; }
+  if (!d){ settings.fs = null; saveSettings(); layout('key'); syncSettings(); }
+  else bumpFs(d);
+  toast('Cỡ chữ ' + (settings.fs || autoFs()) + ' px', 1200);
+}
+function setLayoutKey(v){
+  settings.layout = v; saveSettings(); layout('key'); syncSettings();
+  toast(v === 'single' ? 'Xem 1 trang' : innerHeight > innerWidth ? 'Màn hình dọc luôn hiện 1 trang' : 'Xem 2 trang', 1400);
+}
+function cycleTheme(){
+  const order = ['paper', 'sepia', 'dark'], names = { paper:'Nền giấy', sepia:'Nền sepia', dark:'Nền tối' };
+  settings.theme = order[(order.indexOf(settings.theme) + 1) % order.length]; saveSettings();
+  applyTheme(); layout('key'); syncSettings(); toast(names[settings.theme], 1200);
+}
+function drawerTab(t){
+  const d = $('#drawer');
+  if (d.classList.contains('on') && tab === t){ closeDrawer(); return; }
+  document.querySelector('.tabs [data-tab="' + t + '"]').click(); openDrawer();
+}
+function panBy(dx, dy){ setZoom(zoom.z, zoom.sx + dx, zoom.sy + dy); scheduleHiRes(); }
 addEventListener('keydown', e => {
-  if (e.target.closest && e.target.closest('textarea')){ if (e.key === 'Escape') closeNote(); return; }
+  const tg = e.target;
+  if (tg.closest && tg.closest('textarea, input[type=text], input[type=search]')){ if (e.key === 'Escape') closeNote(); return; }
   if (e.key === 'Escape'){
-    const open = sel || pop || $('#drawer').classList.contains('on') || setEl.classList.contains('on') || $('#note').classList.contains('on');
-    clearSel(); closePop(); closeDrawer(); closeSettings(); closeNote();
+    const open = sel || pop || helpOpen() || $('#drawer').classList.contains('on') || setEl.classList.contains('on') || $('#note').classList.contains('on');
+    clearSel(); closePop(); closeDrawer(); closeSettings(); closeNote(); closeHelp();
     if (!open && fsMode) exitFs();
     return;
   }
-  if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey && !e.altKey){ e.preventDefault(); toggleFs(); return; }
-  if (e.target.closest && e.target.closest('input[type=range]')) return;
-  if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' '){ e.preventDefault(); tapTurn('fwd'); }
-  else if (e.key === 'ArrowLeft' || e.key === 'PageUp'){ e.preventDefault(); tapTurn('back'); }
-  else if (e.key === 'b' || e.key === 'B') $('#bmBtn').click();
+  if (!book) return;
+  if (e.ctrlKey || e.metaKey){
+    // Only these combinations are taken over; every other browser shortcut keeps working.
+    const k = e.key;
+    if ((k === 'c' || k === 'C') && !e.shiftKey){ const t = selectedText(); if (t){ e.preventDefault(); copyText(t); } }
+    else if (k === '=' || k === '+'){ e.preventDefault(); zoomKey(1); }
+    else if (k === '-' || k === '_'){ e.preventDefault(); zoomKey(-1); }
+    else if (k === '0'){ e.preventDefault(); zoomKey(0); }
+    return;
+  }
+  if (e.altKey) return;
+  if (helpOpen()){ if (e.key === '?') closeHelp(); return; }
+  // The page slider and focused buttons keep their own keys.
+  if (tg.closest && tg.closest('input[type=range]') && /^(Arrow|Page|Home|End)/.test(e.key)) return;
+  // (only when it was reached with the keyboard; after a mouse click, Space still turns the page)
+  if ((e.key === ' ' || e.key === 'Enter') && tg.closest && tg.closest('button, a, label, select') && tg.matches && tg.matches(':focus-visible')) return;
+  const zoomed = zoomable() && zoom.z > 1.01, step = Math.round(Math.min(vw, vh) * .15);
+  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  switch (k){
+    case 'ArrowRight': e.preventDefault(); zoomed ? panBy(-step, 0) : tapTurn('fwd'); break;
+    case 'ArrowLeft':  e.preventDefault(); zoomed ? panBy(step, 0) : tapTurn('back'); break;
+    case 'ArrowDown':  e.preventDefault(); zoomed ? panBy(0, -step) : tapTurn('fwd'); break;
+    case 'ArrowUp':    e.preventDefault(); zoomed ? panBy(0, step) : tapTurn('back'); break;
+    case 'PageDown':   e.preventDefault(); tapTurn('fwd'); break;
+    case 'PageUp':     e.preventDefault(); tapTurn('back'); break;
+    case ' ':          e.preventDefault(); tapTurn(e.shiftKey ? 'back' : 'fwd'); break;
+    case 'Home':       e.preventDefault(); jumpTo(0); break;
+    case 'End':        e.preventDefault(); jumpTo(nPages - 1); break;
+    case '+': case '=': e.preventDefault(); zoomKey(1); break;
+    case '-':          e.preventDefault(); zoomKey(-1); break;
+    case 'f':          e.preventDefault(); toggleFs(); break;
+    case '1':          setLayoutKey('single'); break;
+    case '2':          setLayoutKey('spread'); break;
+    case 'd':          cycleTheme(); break;
+    case 'b':          $('#bmBtn').click(); break;
+    case 't':          drawerTab('toc'); break;
+    case 'h':          drawerTab('hl'); break;
+    case '?': case '/': e.preventDefault(); openHelp(); break;
+  }
 });
 /* Mouse wheel / trackpad: scroll down = next page, scroll up = previous page.
    One page per gesture: after a turn, wheel input is ignored until it pauses (WHEEL_QUIET ms),
@@ -1387,7 +1708,7 @@ async function openFile(f){
     else if (ext === 'epub'){ b = await openEpub(f); if (!b.blocks.length) throw new Error('empty'); }
     else { toast('Chỉ mở được PDF hoặc EPUB.'); return; }
     setBook(b); toast('Đã mở “' + b.title + '”.');
-  } catch(err){ toast('Không mở được file này. Có thể file bị hỏng hoặc có DRM.', 4200); }
+  } catch(err){ console.error(err); toast('Không mở được file này. Có thể file bị hỏng hoặc có DRM.', 4200); }
 }
 $('#fileIn').addEventListener('change', e => { openFile(e.target.files[0]); e.target.value = ''; });
 $('#sampleBtn').addEventListener('click', () => setBook(SAMPLE));
