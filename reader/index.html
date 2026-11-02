@@ -72,14 +72,28 @@ body.fs .fs-ico .o{display:none}
 .scrim{position:fixed;inset:0;z-index:55;background:rgba(10,8,5,.32);visibility:hidden}
 .scrim.on{visibility:visible}
 .drawer{position:fixed;top:0;bottom:0;left:0;z-index:60;width:min(380px,88vw);background:var(--sheet);color:var(--ink);box-sizing:border-box;
-  transform:translateX(-102%);transition:transform .45s var(--ease);display:grid;grid-template-rows:auto auto auto minmax(0,1fr);
+  transform:translateX(-102%);transition:transform .45s var(--ease);display:flex;flex-direction:column;
   padding:calc(18px + env(safe-area-inset-top,0px)) 0 env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);box-shadow:20px 0 50px -30px rgba(0,0,0,.5)}
 .drawer.on{transform:none}
 .drawer h2{margin:0 22px 14px;font:400 26px/1.1 var(--serif);letter-spacing:-.01em;text-wrap:balance}
 .tabs{display:flex;margin:0 22px 8px;border-bottom:1px solid var(--soft)}
 .tabs button{padding:10px 0;margin-right:18px;border-bottom:2px solid transparent;color:var(--muted)}
 .tabs button.on{color:var(--ink);border-bottom-color:var(--accent)}
-.list{overflow:auto;padding:4px 0 24px;user-select:text;-webkit-user-select:text}
+.list{flex:1;min-height:0;overflow:auto;padding:4px 0 24px;user-select:text;-webkit-user-select:text}
+/* Search in book */
+.findbox{display:flex;gap:6px;margin:4px 22px 6px}
+.findbox input{flex:1;min-width:0;height:36px;box-sizing:border-box;border:1px solid var(--line);background:var(--page);color:var(--ink);padding:0 10px;font:400 16px var(--serif);border-radius:0;user-select:text;-webkit-user-select:text}
+.findbox input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.findstat{margin:2px 22px 4px;color:var(--muted);font-variant-numeric:tabular-nums;min-height:1em}
+.item mark{background:rgba(255,160,40,.45);color:inherit;padding:0 1px}
+.sbar{position:fixed;left:50%;bottom:calc(66px + env(safe-area-inset-bottom,0px));z-index:45;transform:translateX(-50%);display:flex;align-items:center;
+  background:var(--ink);color:var(--page);box-shadow:0 14px 30px -12px rgba(0,0,0,.5);max-width:calc(100vw - 32px)}
+.sbar button{height:36px;min-width:36px;padding:0 10px;color:var(--page)}
+.sbar button:hover{background:color-mix(in srgb,var(--page) 14%,transparent)}
+.sbar .q{min-width:0;max-width:52vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums}
+body.fs .sbar{bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+body.fs.show-bot .sbar{bottom:calc(66px + env(safe-area-inset-bottom,0px))}
+body.searching .toast{bottom:calc(112px + env(safe-area-inset-bottom,0px))}
 .item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;text-align:left;padding:12px 22px;border-bottom:1px solid var(--soft);cursor:pointer}
 .item:hover{background:color-mix(in srgb,var(--ink) 6%,transparent)}
 .item.cur{background:color-mix(in srgb,var(--accent) 10%,transparent)}
@@ -157,6 +171,7 @@ kbd{display:inline-block;min-width:1.2em;text-align:center;font:600 11px/1 var(-
   <div class="l">
     <a class="box" id="backBtn" href="../" hidden aria-label="Về kệ sách" style="text-decoration:none"><svg width="14" height="10" viewBox="0 0 14 10" aria-hidden="true"><path d="M5 1 L1 5 L5 9 M1 5 H13" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></a>
     <button class="box" id="tocBtn" type="button" aria-label="Mục lục, đánh dấu và tô sáng"><svg width="16" height="12" viewBox="0 0 16 12" aria-hidden="true"><path d="M0 1h16M0 6h16M0 11h10" stroke="currentColor" stroke-width="1.4"/></svg></button>
+    <button class="box" id="findBtn" type="button" aria-label="Tìm trong sách" title="Tìm trong sách (Ctrl + F)"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="5.8" cy="5.8" r="4.6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M9.2 9.2 13 13" stroke="currentColor" stroke-width="1.6"/></svg></button>
     <label class="box lbl" for="fileIn" title="Mở PDF hoặc EPUB"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 0v12M0 6h12" stroke="currentColor" stroke-width="1.4"/></svg><span class="hide-s">Mở sách</span></label>
     <input type="file" id="fileIn" accept=".pdf,.epub,application/pdf,application/epub+zip" hidden>
   </div>
@@ -199,11 +214,20 @@ kbd{display:inline-block;min-width:1.2em;text-align:center;font:600 11px/1 var(-
   <h2 id="drawerTitle"></h2>
   <div class="tabs lbl" role="tablist">
     <button data-tab="toc" class="on" type="button" role="tab">Mục lục</button>
+    <button data-tab="find" type="button" role="tab">Tìm</button>
     <button data-tab="bm" type="button" role="tab">Đánh dấu</button>
     <button data-tab="hl" type="button" role="tab">Tô sáng</button>
   </div>
+  <form class="findbox" id="findBox" hidden role="search"><input type="search" id="findIn" placeholder="Tìm chữ trong sách" autocomplete="off" spellcheck="false" aria-label="Tìm chữ trong sách"></form>
+  <div class="findstat lbl" id="findStat" hidden></div>
   <div class="list" id="list"></div>
 </aside>
+<div class="sbar lbl" id="sbar" hidden role="toolbar" aria-label="Kết quả tìm kiếm">
+  <button type="button" id="sPrev" aria-label="Kết quả trước">‹</button>
+  <button type="button" id="sOpen" class="q" aria-label="Mở danh sách kết quả"></button>
+  <button type="button" id="sNext" aria-label="Kết quả sau">›</button>
+  <button type="button" id="sClose" aria-label="Thoát tìm kiếm">✕</button>
+</div>
 
 <div class="settings" id="settings" role="dialog" aria-label="Tuỳ chỉnh hiển thị">
   <div class="row" id="zoomRow" hidden><span class="lbl">Thu phóng</span>
@@ -416,7 +440,7 @@ function isBlank(i){ return i < 0 || i >= nPages; }
 function texKey(i){ return isBlank(i) ? 'blank' + (isLeft(i) ? 'L' : 'R') : i; }
 function getTex(i){
   const k = texKey(i);
-  if (tex.has(k)){ const v = tex.get(k); tex.delete(k); tex.set(k, v); return v.t; }
+  if (tex.has(k)){ const v = tex.get(k); tex.delete(k); tex.set(k, v); if (v.stale){ v.stale = false; invalidate(i); } return v.t; }
   const v = { t: makeTex(pageCanvas(i)) }; tex.set(k, v);
   if (book.kind === 'pdf' && !isBlank(i)) renderPdfInto(i, v);
   while (tex.size > 12){ const kk = tex.keys().next().value; gl.deleteTexture(tex.get(kk).t); tex.delete(kk); }
@@ -571,6 +595,7 @@ function pageCanvas(i){
       if (r0){ x.fillStyle = t.accent; x.beginPath(); x.arc(W - m.mx * .5, r0.y + r0.h/2, 4, 0, Math.PI*2); x.fill(); }
     }
   }
+  drawHits(x, p);
   if (sel && sel.page === i){
     const a = Math.min(sel.a, sel.b), b = Math.max(sel.a, sel.b);
     x.fillStyle = settings.theme === 'dark' ? 'rgba(147,169,242,.32)' : 'rgba(31,63,176,.2)';
@@ -651,6 +676,7 @@ function composePdf(i, v){
       x.fillStyle = HL_PDF[h.color] || HL_PDF.yellow;
       hlRects(p, h.a, h.b).forEach(r => { x.beginPath(); if (x.roundRect) x.roundRect(r.x, r.y, r.w, r.h, 2); else x.rect(r.x, r.y, r.w, r.h); x.fill(); });
     }
+    drawHits(x, p);
     if (sel && sel.page === i){ const [a, b] = selRange(); x.fillStyle = 'rgba(70,110,230,.32)'; hlRects(p, a, b).forEach(r => x.fillRect(r.x, r.y, r.w, r.h)); }
     x.globalCompositeOperation = 'source-over';
     for (const h of data.hls){
@@ -1363,10 +1389,124 @@ $('#bmBtn').addEventListener('click', () => {
   saveData(); dirty = true; updateUI(); renderList();
 });
 
+/* ---------------- search in book ---------------- */
+// Matching ignores case and Vietnamese diacritics ("tieng viet" finds "tiếng Việt"). Each unit of text
+// (an EPUB block, or a PDF page) is turned into one normalised string of its words joined by spaces, with
+// each word's start offset kept, so a match maps straight back to word keys (a..b) — the same keys that
+// highlights use. PDF pages are read one by one (text layer cached) and results appear as they are found.
+const SEARCH_MAX = 500;
+let search = { q:'', qn:'', hits:[], cur:-1, token:0, done:true, scanned:0, total:0, book:null };
+function norm(t){ return t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'd').toLowerCase(); }
+function searchActive(){ return search.book === book && search.hits.length > 0; }
+function findInUnit(words){
+  if (!words.length) return;
+  const starts = []; let str = '';
+  for (const w of words){ starts.push(str.length); str += norm(w.t) + ' '; }
+  const q = search.qn; let pos = str.indexOf(q);
+  while (pos >= 0 && search.hits.length < SEARCH_MAX){
+    const wi = idx => { let lo = 0, hi = starts.length - 1; while (lo < hi){ const m = (lo + hi + 1) >> 1; if (starts[m] <= idx) lo = m; else hi = m - 1; } return lo; };
+    const s0 = wi(pos), s1 = wi(pos + q.length - 1);
+    const ctx = words.slice(Math.max(0, s0 - 8), s0).map(w => esc(w.t)).join(' ') + ' <mark>' + words.slice(s0, s1 + 1).map(w => esc(w.t)).join(' ') + '</mark> ' + words.slice(s1 + 1, s1 + 9).map(w => esc(w.t)).join(' ');
+    search.hits.push({ a: words[s0].key, b: words[s1].key, ctx: (s0 > 8 ? '… ' : '') + ctx.trim() + (s1 + 9 < words.length ? ' …' : '') });
+    pos = str.indexOf(q, pos + q.length);
+  }
+}
+async function runSearch(q){
+  const tok = ++search.token, myBook = book;
+  const qn = norm(q).replace(/\s+/g, ' ').trim();
+  search = { q, qn, hits:[], cur:-1, token:tok, done:false, scanned:0, total:0, book };
+  if (qn.length < 2){ search.done = true; afterSearch(); return; }
+  if (book.kind === 'pdf'){
+    search.total = nPages;
+    for (let i = 0; i < nPages && search.hits.length < SEARCH_MAX; i++){
+      await loadPdfText(i);
+      if (tok !== search.token || book !== myBook) return;
+      const r = book.text[i];
+      if (r && r.lines) findInUnit(r.lines.flatMap(l => l.words));
+      search.scanned = i + 1;
+      if (i % 12 === 11){ afterSearch(true); await new Promise(res => setTimeout(res)); if (tok !== search.token) return; }
+    }
+  } else {
+    book.blocks.forEach((bl, bi) => { if (bl.words && bl.words.length && search.hits.length < SEARCH_MAX) findInUnit(bl.words.map((t, wi) => ({ t, key: bi * KEY + wi }))); });
+  }
+  search.done = true; afterSearch();
+}
+function hitPage(h){ return pageOfKey(h.a); }
+// Search hits are painted on the page textures: orange, the current one stronger.
+function drawHits(x, p){
+  if (!searchActive() || !p || !isFinite(p.keyMin)) return;
+  search.hits.forEach((h, k) => {
+    if (h.b < p.keyMin || h.a > p.keyMax) return;
+    x.fillStyle = k === search.cur ? 'rgba(255,128,0,.62)' : 'rgba(255,170,40,.34)';
+    hlRects(p, h.a, h.b).forEach(r => x.fillRect(r.x, r.y, r.w, r.h));
+  });
+}
+// Repaint cached page textures. A PDF page that is off screen (no kept rendering) is only marked stale
+// and repainted when it is next drawn, so moving between hits doesn't re-run pdf.js on every cached page.
+function refreshPages(){
+  const vis = new Set(visiblePages());
+  [...tex.keys()].forEach(k => {
+    if (typeof k !== 'number') return;
+    const v = tex.get(k);
+    if (book.kind === 'pdf' && !v.base && !vis.has(k)) v.stale = true; else invalidate(k);
+  });
+}
+function afterSearch(partial){
+  if (!partial) refreshPages();
+  if ($('#drawer').classList.contains('on') && tab === 'find') renderList();
+  updateSbar();
+}
+function goHit(k){
+  if (!search.hits.length) return;
+  search.cur = mod(k, search.hits.length);
+  jumpTo(hitPage(search.hits[search.cur]));
+  refreshPages(); updateSbar();
+}
+// Next / previous: the first step goes to the first hit at or after the page being read.
+function stepHit(d){
+  if (!searchActive()) return;
+  if (search.cur < 0){
+    const pp = primaryPage();
+    let k = search.hits.findIndex(h => hitPage(h) >= pp);
+    if (d < 0){ k = -1; search.hits.forEach((h, j) => { if (hitPage(h) <= pp) k = j; }); }
+    goHit(k < 0 ? (d > 0 ? 0 : search.hits.length - 1) : k);
+  } else goHit(search.cur + d);
+}
+function clearSearch(){
+  search = { q:'', qn:'', hits:[], cur:-1, token: search.token + 1, done:true, scanned:0, total:0, book:null };
+  $('#findIn').value = ''; refreshPages(); updateSbar();
+  if ($('#drawer').classList.contains('on') && tab === 'find') renderList();
+}
+function updateSbar(){
+  const on = searchActive() && !$('#drawer').classList.contains('on');
+  $('#sbar').hidden = !on; document.body.classList.toggle('searching', on);
+  if (!on) return;
+  $('#sOpen').textContent = '“' + search.q.trim() + '” · ' + (search.cur >= 0 ? (search.cur + 1) + ' / ' : '') + search.hits.length + (search.hits.length >= SEARCH_MAX ? '+' : '') + (search.cur < 0 ? ' kết quả' : '');
+}
+function openFind(){
+  if (!$('#drawer').classList.contains('on') || tab !== 'find'){ document.querySelector('.tabs [data-tab="find"]').click(); openDrawer(); }
+  setTimeout(() => { const f = $('#findIn'); f.focus(); f.select(); }, 60);
+}
+let findT = 0;
+$('#findIn').addEventListener('input', e => { clearTimeout(findT); const q = e.target.value; findT = setTimeout(() => runSearch(q), 260); });
+$('#findBox').addEventListener('submit', e => { e.preventDefault(); });
+$('#findIn').addEventListener('keydown', e => {
+  if (e.key === 'Enter'){
+    e.preventDefault(); clearTimeout(findT);
+    const go = () => { if (searchActive()){ closeDrawer(); stepHit(e.shiftKey ? -1 : 1); } };
+    if (norm(e.target.value).replace(/\s+/g, ' ').trim() !== search.qn) runSearch(e.target.value).then(go); else go();
+  }
+});
+$('#findBtn').addEventListener('click', openFind);
+$('#sPrev').addEventListener('click', () => stepHit(-1));
+$('#sNext').addEventListener('click', () => stepHit(1));
+$('#sClose').addEventListener('click', clearSearch);
+$('#sOpen').addEventListener('click', openFind);
+
 /* ---------------- drawer ---------------- */
 let tab = 'toc';
-function openDrawer(){ renderList(); $('#drawer').classList.add('on'); $('#scrim').classList.add('on'); closeSettings(); closePop(); clearSel(); }
-function closeDrawer(){ $('#drawer').classList.remove('on'); if (!$('#note').classList.contains('on')) $('#scrim').classList.remove('on'); }
+function openDrawer(){ renderList(); $('#drawer').classList.add('on'); $('#sbar').hidden = true; $('#scrim').classList.add('on'); closeSettings(); closePop(); clearSel(); }
+function closeDrawer(){ $('#drawer').classList.remove('on'); updateSbar(); if ($('#drawer').contains(document.activeElement)) document.activeElement.blur(); if (!$('#note').classList.contains('on')) $('#scrim').classList.remove('on'); }
 $('#tocBtn').addEventListener('click', openDrawer);
 $('#scrim').addEventListener('click', () => { closeDrawer(); closeNote(); closeSettings(); closeHelp(); });
 document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => { tab = b.dataset.tab; document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b)); renderList(); }));
@@ -1378,6 +1518,26 @@ function renderList(){
   $('#drawerTitle').textContent = book.title;
   const mk = (cls, inner) => { const el = document.createElement('div'); el.className = 'item ' + (cls || ''); el.innerHTML = inner; el.tabIndex = 0; el.setAttribute('role', 'button'); return el; };
   const go = (el, i) => { const f = () => { jumpTo(i); closeDrawer(); }; el.addEventListener('click', e => { if (!e.target.closest('.acts button')) f(); }); el.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target === el) f(); }); };
+  $('#findBox').hidden = $('#findStat').hidden = tab !== 'find';
+  if (tab === 'find'){
+    const st = $('#findStat'), n = search.book === book ? search.hits.length : 0;
+    if (search.book !== book || search.qn.length < 2){
+      st.textContent = '';
+      list.innerHTML = '<p class="empty">Gõ ít nhất 2 ký tự. Không cần gõ dấu: “tieng viet” cũng tìm ra “tiếng Việt”.' + (book.kind === 'pdf' ? ' Trang PDF dạng ảnh scan không tìm được.' : '') + '</p>';
+      return;
+    }
+    st.textContent = !search.done ? 'Đang tìm… trang ' + search.scanned + ' / ' + search.total + ' · ' + n + ' kết quả'
+      : n ? n + (n >= SEARCH_MAX ? '+' : '') + ' kết quả · Enter: kết quả sau' : 'Không tìm thấy “' + search.q.trim() + '”';
+    search.hits.slice(0, 300).forEach((h, k) => {
+      const i = hitPage(h);
+      const el = mk(k === search.cur ? 'cur' : '', '<span class="tt" style="font-size:15px">' + h.ctx + '</span><span class="lbl pg">' + pageLabel(i) + '</span>');
+      const f = () => { closeDrawer(); goHit(k); };
+      el.addEventListener('click', f); el.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target === el) f(); });
+      list.appendChild(el);
+    });
+    if (n > 300){ const pe = document.createElement('p'); pe.className = 'empty'; pe.textContent = 'Còn ' + (n - 300) + ' kết quả nữa. Gõ thêm chữ để thu hẹp.'; list.appendChild(pe); }
+    return;
+  }
   if (tab === 'toc'){
     if (!toc.length){ list.innerHTML = '<p class="empty">Sách này không có mục lục.</p>'; return; }
     const pp = primaryPage(); let curT = null; for (const t of toc) if (t.page <= pp) curT = t;
@@ -1491,6 +1651,9 @@ const KEYS_KB = [
   [['→', '↓', 'Space', 'PageDown'], 'Trang sau'],
   [['←', '↑', 'Shift + Space', 'PageUp'], 'Trang trước'],
   [['Home', 'End'], 'Trang đầu / trang cuối'],
+  [['Ctrl + F', '/'], 'Tìm trong sách (không cần gõ dấu)'],
+  [['Enter', 'Shift + Enter'], 'Trong ô tìm: tới kết quả sau / trước'],
+  [['F3', 'Shift + F3'], 'Kết quả tìm sau / trước'],
   [['Ctrl + +', 'Ctrl + −'], 'PDF: phóng to / thu nhỏ · EPUB: chữ to / nhỏ'],
   [['Ctrl + 0'], 'Về cỡ mặc định'],
   [['F'], 'Toàn màn hình (bật / tắt)'],
@@ -1500,7 +1663,7 @@ const KEYS_KB = [
   [['T'], 'Mục lục'],
   [['H'], 'Danh sách tô sáng và ghi chú'],
   [['Ctrl + C'], 'Chép đoạn đang chọn'],
-  [['Esc'], 'Bỏ chọn, đóng bảng, thoát toàn màn hình'],
+  [['Esc'], 'Bỏ chọn, đóng bảng, tắt tô kết quả tìm, thoát toàn màn hình'],
   [['?'], 'Mở bảng phím tắt này'],
 ];
 const KEYS_MOUSE = [
@@ -1545,11 +1708,11 @@ function drawerTab(t){
 function panBy(dx, dy){ setZoom(zoom.z, zoom.sx + dx, zoom.sy + dy); scheduleHiRes(); }
 addEventListener('keydown', e => {
   const tg = e.target;
-  if (tg.closest && tg.closest('textarea, input[type=text], input[type=search]')){ if (e.key === 'Escape') closeNote(); return; }
+  if (tg.closest && tg.closest('textarea, input[type=text], input[type=search]')){ if (e.key === 'Escape'){ closeNote(); if (tg.id === 'findIn'){ closeDrawer(); tg.blur(); } } return; }
   if (e.key === 'Escape'){
     const open = sel || pop || helpOpen() || $('#drawer').classList.contains('on') || setEl.classList.contains('on') || $('#note').classList.contains('on');
     clearSel(); closePop(); closeDrawer(); closeSettings(); closeNote(); closeHelp();
-    if (!open && fsMode) exitFs();
+    if (!open){ if (searchActive()) clearSearch(); else if (fsMode) exitFs(); }
     return;
   }
   if (!book) return;
@@ -1557,6 +1720,8 @@ addEventListener('keydown', e => {
     // Only these combinations are taken over; every other browser shortcut keeps working.
     const k = e.key;
     if ((k === 'c' || k === 'C') && !e.shiftKey){ const t = selectedText(); if (t){ e.preventDefault(); copyText(t); } }
+    else if (k === 'f' || k === 'F'){ e.preventDefault(); openFind(); }   // the browser's own find can't see text drawn on the page
+    else if ((k === 'g' || k === 'G') && searchActive()){ e.preventDefault(); stepHit(e.shiftKey ? -1 : 1); }
     else if (k === '=' || k === '+'){ e.preventDefault(); zoomKey(1); }
     else if (k === '-' || k === '_'){ e.preventDefault(); zoomKey(-1); }
     else if (k === '0'){ e.preventDefault(); zoomKey(0); }
@@ -1589,7 +1754,9 @@ addEventListener('keydown', e => {
     case 'b':          $('#bmBtn').click(); break;
     case 't':          drawerTab('toc'); break;
     case 'h':          drawerTab('hl'); break;
-    case '?': case '/': e.preventDefault(); openHelp(); break;
+    case '?':          e.preventDefault(); openHelp(); break;
+    case '/':          e.preventDefault(); openFind(); break;
+    case 'F3':         e.preventDefault(); stepHit(e.shiftKey ? -1 : 1); break;
   }
 });
 /* Mouse wheel / trackpad: scroll down = next page, scroll up = previous page.
@@ -1693,6 +1860,7 @@ function requestWake(){ if (wake || !navigator.wakeLock) return; navigator.wakeL
 function setBook(b){
   if (book && book.kind === 'pdf' && book.doc && book !== b) try { book.doc.destroy(); } catch(e){}
   book = b.kind === 'text' && !b.prepped ? prepBook(b) : b;
+  search = { q:'', qn:'', hits:[], cur:-1, token: search.token + 1, done:true, scanned:0, total:0, book:null }; $('#findIn').value = ''; updateSbar();
   loadData(); cur = 0; sel = null; closePop();
   layout(null);
   if (data.pos){ cur = book.kind === 'pdf' ? (data.pos.page || 0) : pageOfKey(data.pos.key); normCur(); dirty = true; updateUI(); }
