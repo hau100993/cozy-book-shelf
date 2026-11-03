@@ -253,6 +253,7 @@ kbd{display:inline-block;min-width:1.2em;text-align:center;font:600 11px/1 var(-
 <div class="drop" id="drop">Thả PDF hoặc EPUB để đọc</div>
 <div class="toast lbl" id="toast" role="status"></div>
 
+<script src="../sync.js"></script>
 <script>
 (() => {
 'use strict';
@@ -268,6 +269,12 @@ const store = {
   set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
 };
 function hashStr(s){ let h = 2166136261; for (let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+// Same as the shelf: SHA-256 of the file (first 128 bits) identifies a book across devices.
+async function fingerprint(file){
+  try { const h = await crypto.subtle.digest('SHA-256', await file.arrayBuffer()); return [...new Uint8Array(h, 0, 16)].map(x => x.toString(16).padStart(2, '0')).join(''); }
+  catch(e){ return 'n' + hashStr(file.name + file.size); }
+}
 
 const THEMES = {
   paper: { bg:'#EDEBE6', page:'#FBF8F1', ink:'#1C1A17', muted:'#7A766D', accent:'#1F3FB0', line:'rgba(20,20,20,.88)', soft:'rgba(20,20,20,.12)', sheet:'#F7F4EE', spine:'rgba(70,50,25,.13)', scheme:'light' },
@@ -339,8 +346,43 @@ function prepBook(b){
   b.blocks = out; b.totalWords = words; b.prepped = true;
   return b;
 }
-function loadData(){ data = Object.assign({ pos:null, hls:[], bms:[] }, store.get('lt-b-' + book.id) || {}); }
-function saveData(){ store.set('lt-b-' + book.id, data); }
+// One record per book in 'tsn-b-<key>' (key = file fingerprint, 's-<id>' for samples), shared with the shelf.
+// For sync: each highlight/bookmark carries `m` (last change), deleted ids go to `gone`, the record itself has `m`.
+let snap = new Map();
+const itemJson = ({ m, ...x }) => JSON.stringify(x);
+function loadData(){
+  const k = 'tsn-b-' + (book.key || book.id);
+  let d = store.get(k);
+  if (!d && (d = store.get('lt-b-' + book.id))){ store.set(k, d); store.del('lt-b-' + book.id); }
+  data = Object.assign({ pos:null, prog:null, hls:[], bms:[], gone:{} }, d || {});
+  snap = new Map([...data.hls, ...data.bms].filter(x => x.id).map(x => [x.id, itemJson(x)]));
+}
+function saveData(){
+  const now = Date.now(), seen = new Map();
+  for (const x of [...data.hls, ...data.bms]){
+    if (!x.id) x.id = uid();
+    const j = itemJson(x);
+    if (snap.get(x.id) !== j) x.m = now;
+    seen.set(x.id, j);
+  }
+  for (const id of snap.keys()) if (!seen.has(id)) data.gone[id] = now;
+  snap = seen; data.m = now;
+  store.set('tsn-b-' + (book.key || book.id), data);
+  TSNSync.dirty();
+}
+// Another device changed this book: take the merged record; offer to jump if it read further somewhere else.
+TSNSync.on('data', keys => {
+  if (!book || !keys.includes(book.key || book.id)) return;
+  const d = store.get('tsn-b-' + (book.key || book.id)); if (!d) return;
+  const mine = data.prog && data.prog.t || 0;
+  data = Object.assign({ pos:null, prog:null, hls:[], bms:[], gone:{} }, d);
+  snap = new Map([...data.hls, ...data.bms].filter(x => x.id).map(x => [x.id, itemJson(x)]));
+  closePop(); refreshPages(); updateUI(); renderList();
+  if (!data.pos || !data.prog || data.prog.t <= mine) return;
+  const to = book.kind === 'pdf' ? data.pos.page || 0 : pageOfKey(data.pos.key);
+  if (visiblePages().includes(to)) return;
+  TSNSync.notice('Máy khác đã đọc tới ' + pageLabel(to).replace('Tr.', 'trang'), 'Chuyển tới', () => jumpTo(to));
+});
 function saveSettings(){ store.set('lt-settings', settings); }
 
 /* ---------------- WebGL ---------------- */
@@ -1347,7 +1389,7 @@ function clearSel(){ if (sel){ const i = sel.page; sel = null; invalidate(i); } 
 function ensureHl(color){
   if (pop.kind === 'hl') return pop.hl;
   const [a, b] = selRange();
-  const h = { id: Date.now().toString(36), a, b, color: color || 'yellow', note:'', text: textOf(a, b), t: Date.now() };
+  const h = { id: uid(), a, b, color: color || 'yellow', note:'', text: textOf(a, b), t: Date.now() };
   const removed = data.hls.filter(x => !(x.b < a || x.a > b));
   data.hls = data.hls.filter(x => x.b < a || x.a > b); data.hls.push(h); data.hls.sort((x, y) => x.a - y.a);
   removed.forEach(x => invalidateKeys(x.a, x.b));
@@ -1642,15 +1684,14 @@ function updateUI(){
   $('#bmBtn').setAttribute('aria-pressed', bm ? 'true' : 'false');
 }
 let posT = 0;
-function savePos(){ clearTimeout(posT); posT = setTimeout(() => { data.pos = book.kind === 'pdf' ? { page: cur } : { key: currentKey() }; saveData(); saveShelfProg(); }, 300); }
-// Books opened from the shelf report progress under their shelf id, so the detail page can offer "Đọc tiếp".
-function saveShelfProg(){
-  if (!book.shelfId) return;
+// `prog` is what the shelf shows ("Đang đọc", "Đọc tiếp · trang x/y").
+function savePos(){ clearTimeout(posT); posT = setTimeout(() => { data.pos = book.kind === 'pdf' ? { page: cur } : { key: currentKey() }; data.prog = shelfProg(); saveData(); }, 300); }
+function shelfProg(){
   const vis = visiblePages(), lastV = vis[vis.length - 1] ?? 0;
-  store.set('tsn-prog-' + book.shelfId, {
+  return {
     page: book.kind === 'pdf' ? lastV + 1 : Math.max(1, lastV), total: book.kind === 'pdf' ? nPages : nPages - 1,
     pct: Math.round(100 * lastV / Math.max(1, nPages - 1)), t: Date.now()
-  });
+  };
 }
 
 /* ---------------- loop ---------------- */
@@ -1901,6 +1942,7 @@ async function openFile(f){
     if (ext === 'pdf') b = await openPdf(f);
     else if (ext === 'epub'){ b = await openEpub(f); if (!b.blocks.length) throw new Error('empty'); }
     else { toast('Chỉ mở được PDF hoặc EPUB.'); return; }
+    b.key = await fingerprint(f);
     setBook(b); toast('Đã mở “' + b.title + '”.');
   } catch(err){ console.error(err); toast('Không mở được file này. Có thể file bị hỏng hoặc có DRM.', 4200); }
 }
@@ -1924,6 +1966,7 @@ async function boot(){
   try { await Promise.race([Promise.all([document.fonts.load('400 18px "Newsreader"', VI), document.fonts.load('italic 400 18px "Newsreader"', VI), document.fonts.load('600 12px "Inter Tight"', VI), document.fonts.load('400 16px "Inter Tight"', VI)]), wait(2500)]); } catch(e){}
   if (!(await openFromShelf())) setBook(SAMPLE);
   requestAnimationFrame(loop);
+  TSNSync.init({ full:false });
 }
 
 /* ---------------- opened from the shelf: reader/?book=<id> ---------------- */
@@ -1955,7 +1998,8 @@ async function openFromShelf(){
       const b = rec.kind === 'pdf' ? await openPdf(rec.file) : await openEpub(rec.file);
       if (rec.title) b.title = rec.title.normalize('NFC');
       if (!b.author) b.author = realAuthor(rec.author).normalize('NFC');
-      setBook(b); book.shelfId = id; toast('Đã mở “' + b.title + '”.');
+      b.key = rec.fp || await fingerprint(rec.file);
+      setBook(b); toast('Đã mở “' + b.title + '”.');
       return true;
     } catch(e){ toast('Không mở được sách này. File có thể bị hỏng hoặc có DRM.', 4200); return false; }
   }
@@ -1964,7 +2008,7 @@ async function openFromShelf(){
     const blocks = [{ t:'h', level:1, kicker:h.vi && h.vi !== h.title ? h.vi : 'Đoạn mở đầu', text:h.title }];
     h.text.forEach(p => blocks.push({ t:'p', text:p }));
     blocks.push({ t:'p', text:'Bản demo chỉ có đoạn mở đầu. Bản đầy đủ miễn phí có trên Project Gutenberg (gutenberg.org/ebooks/' + h.gid + '): tải file EPUB về rồi thả vào kệ để đọc cả cuốn.' });
-    setBook({ kind:'text', id:'s-' + h.id, title:h.title, author:h.author + (h.year ? ' · ' + h.year : ''), blocks }); book.shelfId = id;
+    setBook({ kind:'text', id:'s-' + h.id, key:'s-' + h.id, title:h.title, author:h.author + (h.year ? ' · ' + h.year : ''), blocks });
     return true;
   }
   toast('Không tìm thấy sách này trong trình duyệt.', 4200);

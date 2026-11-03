@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quyền riêng tư · Tủ Sách Nhỏ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap">
+<style>
+/* Privacy policy: both languages live in the DOM (readable without JS); the toggle only hides one. */
+:root{
+  --paper:#EDEBE6; --sheet:#F4F2ED; --ink:#141414; --muted:#6D6A63;
+  --cobalt:#1F3FB0; --rule:rgba(20,20,20,.9);
+  --serif:"Newsreader",Georgia,"Times New Roman",serif;
+  --sans:"Inter Tight",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 18px/1.6 var(--serif);-webkit-font-smoothing:antialiased;
+  padding:0 max(16px,env(safe-area-inset-right,0px)) 64px max(16px,env(safe-area-inset-left,0px))}
+a{color:var(--cobalt)}
+a:focus-visible,button:focus-visible{outline:2px solid var(--cobalt);outline-offset:3px}
+.lbl{font:600 10.5px/1.5 var(--sans);letter-spacing:.09em;text-transform:uppercase}
+.box{display:inline-flex;align-items:center;justify-content:center;height:21px;padding:0 8px;border:1px solid var(--rule);color:var(--ink);text-decoration:none;white-space:nowrap;background:none;cursor:pointer}
+.box[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.top{max-width:720px;margin:0 auto;padding:28px 0 0;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.langs{display:flex;gap:6px}
+main{max-width:720px;margin:0 auto}
+h1{font:600 40px/1.15 var(--serif);margin:40px 0 6px}
+h2{font:600 22px/1.3 var(--serif);margin:36px 0 8px}
+.meta{color:var(--muted);margin:0 0 28px}
+.lead{font-size:20px;background:var(--sheet);border-left:3px solid var(--ink);padding:14px 18px;margin:0 0 8px}
+ul{padding-left:1.2em}
+li{margin:4px 0}
+code{font:500 .82em/1 var(--sans);background:var(--sheet);padding:2px 5px}
+table{width:100%;border-collapse:collapse;font-size:16px;margin:8px 0}
+th,td{text-align:left;vertical-align:top;padding:8px 10px 8px 0;border-bottom:1px solid rgba(20,20,20,.15)}
+th{font:600 10.5px/1.5 var(--sans);letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.scroll{overflow-x:auto}
+body.en [lang="vi"], body:not(.en) [lang="en"]{display:none}
+@media (max-width:560px){ h1{font-size:32px} body{font-size:17px} }
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="box lbl" href="./">← <span lang="vi">Tủ Sách Nhỏ</span><span lang="en">Cozy Book Shelf</span></a>
+  <div class="langs" role="group" aria-label="Ngôn ngữ / Language">
+    <button class="box lbl" type="button" data-lang="vi">Tiếng Việt</button>
+    <button class="box lbl" type="button" data-lang="en">English</button>
+  </div>
+</header>
+
+<main>
+<article lang="vi">
+  <h1>Chính sách quyền riêng tư</h1>
+  <p class="meta">Phiên bản 1.0 · Cập nhật ngày 03/11/2026</p>
+  <p class="lead">Tủ Sách Nhỏ không có máy chủ. Sách, tiến độ đọc và ghi chú của bạn chỉ nằm trên thiết bị của bạn và, nếu bạn bật đồng bộ, trong Google Drive của chính bạn. Chúng tôi không nhận, không xem và không lưu bất kỳ dữ liệu nào của bạn.</p>
+
+  <h2>1. Tủ Sách Nhỏ là gì</h2>
+  <p>Tủ Sách Nhỏ (<a href="https://hau100993.github.io/cozy-book-shelf/">hau100993.github.io/cozy-book-shelf</a>) là một kệ sách và trình đọc sách PDF/EPUB chạy hoàn toàn trong trình duyệt. Trang web là các tệp tĩnh được phục vụ qua GitHub Pages; mọi xử lý diễn ra trên máy của bạn.</p>
+
+  <h2>2. Dữ liệu lưu trên thiết bị của bạn</h2>
+  <p>Khi dùng ứng dụng, trình duyệt của bạn lưu (trong IndexedDB và localStorage):</p>
+  <ul>
+    <li>tệp sách bạn thêm vào và thông tin sách (tên, tác giả, năm, thể loại, mô tả, ảnh bìa);</li>
+    <li>vị trí đang đọc, tiến độ, tô sáng, ghi chú, đánh dấu trang;</li>
+    <li>cài đặt hiển thị (kiểu kệ, loại gỗ, cỡ chữ, nền giấy…).</li>
+  </ul>
+  <p>Dữ liệu này không được gửi đi đâu trừ khi bạn bật đồng bộ (mục 3). Nút “Tải bản sao lưu” tạo một file .zip ngay trên máy và lưu vào nơi bạn chọn; chúng tôi không nhận được file này. Bạn có thể xoá dữ liệu bất cứ lúc nào bằng nút “Xoá dữ liệu trên máy này” hoặc xoá dữ liệu trang web trong cài đặt trình duyệt.</p>
+
+  <h2>3. Đồng bộ với Google Drive (tuỳ chọn)</h2>
+  <p>Đồng bộ chỉ bật khi bạn chủ động đăng nhập Google và đánh dấu đồng ý. Khi bật, trình duyệt của bạn gửi dữ liệu <strong>trực tiếp</strong> tới Google Drive của bạn; dữ liệu không đi qua máy chủ nào của chúng tôi.</p>
+  <div class="scroll"><table>
+    <tr><th>Quyền Google xin cấp</th><th>Dùng để</th></tr>
+    <tr><td><code>drive.appdata</code></td><td>Lưu tiến độ đọc, tô sáng, ghi chú, đánh dấu, thông tin sách (tên, tác giả, ảnh bìa…) và nhật ký đồng ý của bạn vào thư mục ẩn dành riêng cho ứng dụng trong Drive của bạn. Cài đặt hiển thị không được đồng bộ. Ứng dụng không thấy các tệp khác của bạn.</td></tr>
+    <tr><td><code>drive.file</code></td><td>Lưu tệp sách vào thư mục “Tủ Sách Nhỏ” trong Drive của bạn để mở trên thiết bị khác. Ứng dụng chỉ thấy các tệp do chính nó tạo hoặc bạn chọn mở bằng nó.</td></tr>
+  </table></div>
+  <ul>
+    <li>Chúng tôi <strong>không</strong> xin quyền đọc toàn bộ Drive, email, danh bạ hay hồ sơ Google của bạn.</li>
+    <li>Mã truy cập (access token) do Google cấp chỉ có hiệu lực khoảng 1 giờ, chỉ được giữ trong phiên của thẻ trình duyệt đang mở (sessionStorage, mất khi đóng thẻ) và không gửi cho bên nào khác ngoài Google.</li>
+    <li>Dữ liệu từ Google chỉ được dùng để hiển thị và đồng bộ sách của bạn trong ứng dụng. Không dùng cho quảng cáo, không bán, không chuyển cho bên thứ ba, và không ai đọc được ngoài bạn.</li>
+    <li>Việc sử dụng dữ liệu nhận từ Google API tuân thủ <a href="https://developers.google.com/terms/api-services-user-data-policy">Chính sách dữ liệu người dùng của Google API Services</a>, bao gồm các yêu cầu Sử dụng giới hạn (Limited Use).</li>
+    <li>Dữ liệu trong Drive được lưu trên máy chủ của Google, có thể đặt ngoài Việt Nam, theo <a href="https://policies.google.com/privacy">Chính sách quyền riêng tư của Google</a>. Chính bạn là người chuyển dữ liệu của mình vào tài khoản của mình.</li>
+  </ul>
+
+  <h2>4. Kết nối tới bên thứ ba</h2>
+  <p>Như mọi trang web, khi trình duyệt tải tài nguyên từ máy chủ khác, máy chủ đó nhận được địa chỉ IP và thông tin trình duyệt của bạn:</p>
+  <ul>
+    <li><strong>Google Fonts</strong> (fonts.googleapis.com, fonts.gstatic.com): phông chữ, mỗi lần mở trang.</li>
+    <li><strong>cdnjs / Cloudflare</strong> (cdnjs.cloudflare.com): thư viện đọc PDF (pdf.js) và EPUB (JSZip), khi mở sách.</li>
+    <li><strong>Open Library</strong> (openlibrary.org): chỉ khi bạn tìm ảnh bìa; từ khoá bạn gõ được gửi tới đó.</li>
+    <li><strong>Trang chứa sách</strong> (Google Drive, Dropbox, GitHub…): chỉ khi bạn thêm sách từ một đường link.</li>
+    <li><strong>Google</strong> (accounts.google.com, www.googleapis.com): chỉ khi bạn bật đồng bộ.</li>
+  </ul>
+  <p>Ứng dụng không dùng cookie theo dõi, công cụ thống kê hay quảng cáo.</p>
+
+  <h2>5. Quyền của bạn</h2>
+  <p>Theo Luật Bảo vệ dữ liệu cá nhân (số 91/2025/QH15), bạn có quyền được biết, đồng ý, rút lại đồng ý, xem, sửa và xoá dữ liệu của mình. Vì dữ liệu chỉ nằm trong tay bạn, bạn tự thực hiện các quyền này ngay trong ứng dụng:</p>
+  <ul>
+    <li><strong>Xem, sửa:</strong> mọi thông tin sách, tô sáng, ghi chú đều xem và sửa được trong ứng dụng.</li>
+    <li><strong>Rút lại đồng ý:</strong> bấm “Ngắt kết nối” để dừng đồng bộ và thu hồi quyền truy cập Drive. Bạn cũng có thể thu hồi tại <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>.</li>
+    <li><strong>Xoá:</strong> “Xoá dữ liệu đồng bộ trên Drive” xoá thư mục ẩn của ứng dụng (và, nếu bạn chọn, thư mục sách) khỏi Drive; “Xoá dữ liệu trên máy này” xoá dữ liệu trên thiết bị đang dùng.</li>
+  </ul>
+  <p>Mỗi lần đồng ý, ứng dụng ghi lại mục đích, phiên bản chính sách và thời điểm, lưu cùng dữ liệu của bạn để bạn có thể xem lại.</p>
+
+  <h2>6. Bảo mật</h2>
+  <p>Mọi kết nối dùng HTTPS. Vì không có máy chủ trung gian nên không có cơ sở dữ liệu tập trung nào có thể bị lộ. Dữ liệu của bạn an toàn đến mức thiết bị và tài khoản Google của bạn an toàn: hãy khoá thiết bị và bật xác minh hai bước cho tài khoản Google.</p>
+
+  <h2>7. Thay đổi chính sách</h2>
+  <p>Khi chính sách thay đổi, số phiên bản ở đầu trang sẽ tăng. Nếu thay đổi liên quan tới dữ liệu được đồng bộ, ứng dụng sẽ hỏi lại sự đồng ý của bạn trước khi tiếp tục đồng bộ.</p>
+</article>
+
+<article lang="en">
+  <h1>Privacy Policy</h1>
+  <p class="meta">Version 1.0 · Updated November 3, 2026</p>
+  <p class="lead">Cozy Book Shelf has no server. Your books, reading progress and notes stay on your device and, if you turn on sync, in your own Google Drive. We never receive, view or store any of your data.</p>
+
+  <h2>1. What Cozy Book Shelf is</h2>
+  <p>Cozy Book Shelf (<a href="https://hau100993.github.io/cozy-book-shelf/">hau100993.github.io/cozy-book-shelf</a>) is a bookshelf and PDF/EPUB reader that runs entirely in your browser. The site is a set of static files served by GitHub Pages; all processing happens on your device.</p>
+
+  <h2>2. Data stored on your device</h2>
+  <p>While you use the app, your browser stores (in IndexedDB and localStorage):</p>
+  <ul>
+    <li>book files you add and their details (title, author, year, genre, description, cover image);</li>
+    <li>reading position, progress, highlights, notes and bookmarks;</li>
+    <li>display settings (shelf style, wood type, font size, paper theme…).</li>
+  </ul>
+  <p>This data is not sent anywhere unless you turn on sync (section 3). “Download backup” builds a .zip file on your device and saves it wherever you choose; we never receive it. You can delete the data at any time with “Delete data on this device” or by clearing site data in your browser settings.</p>
+
+  <h2>3. Google Drive sync (optional)</h2>
+  <p>Sync is only enabled when you sign in with Google and tick the consent box. Once enabled, your browser sends data <strong>directly</strong> to your Google Drive; it never passes through any server of ours.</p>
+  <div class="scroll"><table>
+    <tr><th>Google scope requested</th><th>Used to</th></tr>
+    <tr><td><code>drive.appdata</code></td><td>Store reading progress, highlights, notes, bookmarks, book details (title, author, cover…) and your consent log in a hidden app-specific folder in your Drive. Display settings are not synced. The app cannot see your other files.</td></tr>
+    <tr><td><code>drive.file</code></td><td>Store your book files in a “Tủ Sách Nhỏ” folder in your Drive so you can open them on other devices. The app can only see files it created or that you opened with it.</td></tr>
+  </table></div>
+  <ul>
+    <li>We do <strong>not</strong> request access to your whole Drive, your email, contacts or Google profile.</li>
+    <li>The access token issued by Google is valid for about an hour, is kept only for the session of the open browser tab (sessionStorage, cleared when the tab closes) and is never sent to anyone other than Google.</li>
+    <li>Data received from Google is used only to display and sync your books inside the app. It is not used for advertising, not sold, not transferred to third parties, and not read by anyone but you.</li>
+    <li>Cozy Book Shelf’s use and transfer of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements.</li>
+    <li>Drive data is stored on Google’s servers, which may be outside Vietnam, under <a href="https://policies.google.com/privacy">Google’s Privacy Policy</a>. You are the one transferring your own data into your own account.</li>
+  </ul>
+
+  <h2>4. Third-party connections</h2>
+  <p>As with any website, when your browser loads resources from another server, that server receives your IP address and browser information:</p>
+  <ul>
+    <li><strong>Google Fonts</strong> (fonts.googleapis.com, fonts.gstatic.com): typefaces, on every visit.</li>
+    <li><strong>cdnjs / Cloudflare</strong> (cdnjs.cloudflare.com): PDF (pdf.js) and EPUB (JSZip) libraries, when opening a book.</li>
+    <li><strong>Open Library</strong> (openlibrary.org): only when you search for a cover; your search terms are sent there.</li>
+    <li><strong>The site hosting a book</strong> (Google Drive, Dropbox, GitHub…): only when you add a book from a link.</li>
+    <li><strong>Google</strong> (accounts.google.com, www.googleapis.com): only when sync is on.</li>
+  </ul>
+  <p>The app uses no tracking cookies, analytics or advertising.</p>
+
+  <h2>5. Your rights</h2>
+  <p>Under Vietnam’s Law on Personal Data Protection (No. 91/2025/QH15) you have the right to be informed, to consent, to withdraw consent, and to view, correct and delete your data. Because your data stays with you, you exercise these rights directly in the app:</p>
+  <ul>
+    <li><strong>View and correct:</strong> all book details, highlights and notes can be viewed and edited in the app.</li>
+    <li><strong>Withdraw consent:</strong> press “Disconnect” to stop syncing and revoke Drive access. You can also revoke it at <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>.</li>
+    <li><strong>Delete:</strong> “Delete synced data from Drive” removes the app’s hidden folder (and, if you choose, the books folder) from your Drive; “Delete data on this device” clears the device you are using.</li>
+  </ul>
+  <p>Each time you consent, the app records the purpose, policy version and time, and stores this record with your data so you can review it.</p>
+
+  <h2>6. Security</h2>
+  <p>All connections use HTTPS. With no intermediate server there is no central database that could leak. Your data is as safe as your device and your Google account: lock your device and turn on 2-Step Verification for your Google account.</p>
+
+  <h2>7. Changes to this policy</h2>
+  <p>When this policy changes, the version number at the top will increase. If a change affects synced data, the app will ask for your consent again before syncing continues.</p>
+</article>
+</main>
+
+<script>
+(() => {
+  const btns = document.querySelectorAll('[data-lang]');
+  function setLang(l){
+    document.body.classList.toggle('en', l === 'en');
+    document.documentElement.lang = l;
+    document.title = l === 'en' ? 'Privacy · Cozy Book Shelf' : 'Quyền riêng tư · Tủ Sách Nhỏ';
+    btns.forEach(b => b.setAttribute('aria-pressed', b.dataset.lang === l));
+  }
+  const q = new URLSearchParams(location.search).get('lang');
+  setLang(q === 'en' || q === 'vi' ? q : (navigator.language || '').toLowerCase().startsWith('vi') ? 'vi' : 'en');
+  btns.forEach(b => b.addEventListener('click', () => {
+    setLang(b.dataset.lang);
+    history.replaceState(null, '', '?lang=' + b.dataset.lang);
+  }));
+})();
+</script>
+</body>
+</html>

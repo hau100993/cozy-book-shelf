@@ -229,6 +229,28 @@ body.editing .cursor{display:none}
 .lk-act .box{height:30px;padding:0 10px}
 .dcred a{color:var(--cobalt);text-underline-offset:3px}
 
+/* sync & backup */
+.sy-sec{display:grid;gap:12px;align-content:start}
+.sy-sec[hidden]{display:none}
+.sy-h{margin:0;color:var(--muted)}
+.sy-st{margin:0;font:400 17px/1.4 var(--serif)}
+.sy-st.err{color:var(--verm)}
+.sy-sp{width:62px}
+.sy-ck{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;font:400 15px/1.45 var(--serif)}
+.editor .sy-ck input{width:16px;height:16px;margin:3px 0 0;padding:0;accent-color:var(--cobalt)}
+.ed-note a,.e-p a,.foot .priv{color:var(--cobalt);text-underline-offset:3px}
+.foot .priv{text-decoration:none}
+.btn-read:disabled{opacity:.4;cursor:not-allowed}
+.box.arm{background:var(--verm);border-color:var(--verm);color:#fff}
+.sybtn{position:relative}
+.addwrap>.box{vertical-align:top}
+.sybtn i{position:absolute;right:-3px;top:-3px;width:7px;height:7px;border-radius:50%;background:var(--muted);box-shadow:0 0 0 2px var(--paper);display:none}
+.sybtn.on i{display:block;background:#2E6A5E}
+.sybtn.paused i,.sybtn.error i{display:block;background:var(--verm)}
+.sybtn.busy i{display:block;background:var(--cobalt)}
+.empty .e-p{margin:18px 0 0;color:var(--muted);line-height:1.6}
+.wbook.ghost img{opacity:.55;filter:saturate(.6)}
+
 /* empty shelf */
 .empty{position:fixed;left:50%;top:calc(50% + var(--H)/2 - 20px);transform:translate(-50%,-100%);z-index:12;
   display:none;width:min(420px,calc(100vw - 32px));text-align:center;color:var(--ink)}
@@ -444,6 +466,7 @@ body.is-empty :is(.play,.caption,.arrow){visibility:hidden}
   .top-r .cnt{display:none}
   .top-r{gap:6px}
   .helpbtn{margin-left:6px}
+  .xs-hide{display:none}
   .lay{width:28px;padding:0}.lay .t{display:none}
   .wall{top:calc(64px + env(safe-area-inset-top,0px))}
   body.grid-on.has-tabs .wall{top:calc(100px + env(safe-area-inset-top,0px))}
@@ -493,7 +516,7 @@ body.is-empty :is(.play,.caption,.arrow){visibility:hidden}
 <div class="grain" aria-hidden="true"></div>
 
 <header class="top">
-  <div class="addwrap"><button class="box lbl" id="addBtn" type="button" aria-haspopup="true" aria-expanded="false">+ Thêm sách</button><button class="box lbl helpbtn" id="helpBtn" type="button" aria-label="Hướng dẫn sử dụng" title="Hướng dẫn">?</button>
+  <div class="addwrap"><button class="box lbl" id="addBtn" type="button" aria-haspopup="true" aria-expanded="false">+ Thêm<span class="xs-hide">&nbsp;sách</span></button><button class="box lbl helpbtn" id="helpBtn" type="button" aria-label="Hướng dẫn sử dụng" title="Hướng dẫn">?</button><button class="box lbl helpbtn sybtn" id="syncBtn" type="button" aria-label="Đồng bộ và sao lưu" title="Đồng bộ &amp; sao lưu"><svg width="14" height="10" viewBox="0 0 14 10" aria-hidden="true"><path d="M3.6 9.3h7.2a2.6 2.6 0 0 0 .3-5.2A3.9 3.9 0 0 0 3.6 3.4a3 3 0 0 0 0 5.9z" fill="none" stroke="currentColor" stroke-width="1.1"/></svg><i></i></button>
     <div class="addmenu" id="addMenu" hidden>
       <button class="lbl" type="button" data-a="file">Từ máy<small>Chọn file PDF hoặc EPUB</small></button>
       <button class="lbl" type="button" data-a="link">Từ link<small>Google Drive, Dropbox, GitHub, link .epub / .pdf</small></button>
@@ -523,6 +546,7 @@ body.is-empty :is(.play,.caption,.arrow){visibility:hidden}
   <p class="e-t">Kệ sách còn trống</p>
   <p class="lbl e-s">Thêm PDF / EPUB để đặt sách lên kệ,<br>hoặc xem thử vài cuốn sách mẫu.</p>
   <div class="e-a"><button class="box lbl" id="eAdd" type="button">+ Thêm sách</button><button class="box lbl" id="eSamples" type="button">Xem sách mẫu</button></div>
+  <p class="lbl e-p">Tủ sách và trình đọc PDF / EPUB chạy ngay trong trình duyệt · <a href="privacy.html">Quyền riêng tư</a></p>
 </div>
 
 <button class="play" id="play" type="button" aria-label="Mở sách">
@@ -541,6 +565,7 @@ body.is-empty :is(.play,.caption,.arrow){visibility:hidden}
 <footer class="foot lbl">
   <span>Kéo thả PDF / EPUB vào trang để thêm vào kệ</span>
   <span class="hint">← → lật · Enter mở · Esc đóng · <a href="reader/" style="color:var(--cobalt);text-decoration:none">Trình đọc lật trang →</a></span>
+  <a class="priv" href="privacy.html">Quyền riêng tư</a>
 </footer>
 
 <div class="cursor" id="cursor" aria-hidden="true"><i class="ring"></i><i class="dot"></i><b class="clabel">MỞ<br>SÁCH</b></div>
@@ -608,6 +633,42 @@ body.is-empty :is(.play,.caption,.arrow){visibility:hidden}
   </div>
 </div>
 
+<div class="editor" id="syncDlg" role="dialog" aria-modal="true" aria-labelledby="syHead" hidden>
+  <div class="ed-panel">
+    <div class="ed-top"><button class="box lbl" id="syClose" type="button">Đóng</button><b class="lbl" id="syHead">Đồng bộ &amp; sao lưu</b><span class="sy-sp"></span></div>
+    <div class="ed-body">
+      <section class="sy-sec">
+        <p class="lbl sy-h">Google Drive</p>
+        <p class="sy-st" id="syState"></p>
+        <div class="sy-sec" id="syOff">
+          <p class="ed-note">Đọc tiếp trên máy khác đúng trang đang đọc, cùng tô sáng và ghi chú. Dữ liệu đi thẳng từ trình duyệt vào Google Drive của chính bạn, không qua máy chủ nào. <a href="privacy.html" target="_blank" rel="noopener">Chính sách quyền riêng tư</a></p>
+          <label class="sy-ck"><input type="checkbox" id="syCkData"><span>Tôi đồng ý lưu tiến độ đọc, tô sáng, ghi chú, đánh dấu và thông tin sách (tên, tác giả, bìa) vào thư mục ẩn của ứng dụng trong Google Drive của tôi.</span></label>
+          <label class="sy-ck"><input type="checkbox" id="syCkFile"><span>Đồng bộ cả file sách: lưu file PDF / EPUB vào thư mục “Tủ Sách Nhỏ” trong Drive của tôi để mở trên máy khác (dùng dung lượng Drive).</span></label>
+          <div class="ed-row"><button class="lbl btn-read" id="syGo" type="button" disabled>Kết nối Google Drive</button></div>
+        </div>
+        <div class="sy-sec" id="syOn" hidden>
+          <label class="sy-ck"><input type="checkbox" id="syFiles"><span>Đồng bộ cả file sách (thư mục “Tủ Sách Nhỏ” trong Drive)</span></label>
+          <div class="ed-row"><button class="box lbl" id="syNow" type="button">Đồng bộ ngay</button><button class="box lbl" id="syOut" type="button">Ngắt kết nối</button></div>
+          <div class="ed-row"><button class="box lbl" id="syWipe" type="button">Xoá dữ liệu đồng bộ trên Drive</button></div>
+          <p class="ed-note">Ngắt kết nối: dừng đồng bộ và thu hồi quyền truy cập Drive (dữ liệu trên máy này vẫn còn). Cũng có thể thu hồi tại <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">myaccount.google.com/permissions</a>.</p>
+        </div>
+      </section>
+      <section class="sy-sec">
+        <p class="lbl sy-h">Sao lưu</p>
+        <p class="ed-note">Tải về một file .zip gồm thông tin sách, tiến độ, tô sáng và ghi chú, để khôi phục khi đổi máy hoặc trình duyệt. File chỉ nằm trên máy bạn.</p>
+        <label class="sy-ck"><input type="checkbox" id="syBkFiles" checked><span>Kèm file sách</span></label>
+        <div class="ed-row"><button class="box lbl" id="syBk" type="button">Tải bản sao lưu</button><button class="box lbl" id="syRs" type="button">Khôi phục từ file…</button></div>
+      </section>
+      <section class="sy-sec">
+        <p class="lbl sy-h">Trên máy này</p>
+        <div class="ed-row"><button class="box lbl" id="syLocal" type="button">Xoá dữ liệu trên máy này</button></div>
+        <p class="ed-note">Xoá mọi sách, tiến độ, tô sáng và cài đặt trong trình duyệt này. Dữ liệu trên Google Drive (nếu có) không bị xoá.</p>
+      </section>
+    </div>
+  </div>
+</div>
+<input type="file" id="zipIn" accept=".zip,application/zip" hidden>
+
 <div class="detail" id="detail" role="dialog" aria-modal="true" aria-label="Chi tiết sách">
   <button class="box lbl close" id="dClose" type="button">← Về kệ</button>
   <div class="dlogo"><div class="logo"><span class="l1">Tủ Sách Nhỏ</span><span class="l2">A Small Library</span></div></div>
@@ -657,6 +718,7 @@ body.is-empty :is(.play,.caption,.arrow){visibility:hidden}
   <div class="rbody" id="rBody" tabindex="-1"></div>
 </div>
 
+<script src="sync.js"></script>
 <script>
 (() => {
 'use strict';
@@ -673,6 +735,25 @@ const store = {
   set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} },
   del(k){ try { localStorage.removeItem(k); } catch(e){} }
 };
+// A book's identity across devices: SHA-256 of the file (first 128 bits), so the same file elsewhere finds the same reading data.
+async function fingerprint(file){
+  try { const h = await crypto.subtle.digest('SHA-256', await file.arrayBuffer()); return [...new Uint8Array(h, 0, 16)].map(x => x.toString(16).padStart(2, '0')).join(''); }
+  catch(e){ return 'n' + hashStr(file.name + file.size).toString(36); }
+}
+// Everything the reader keeps for one book (position, progress, highlights, bookmarks) lives in localStorage 'tsn-b-<key>'.
+const bookKey = b => b.kind === 'sample' ? 's-' + b.id : b.fp || 'u-' + b.id;
+const progOf = b => (store.get('tsn-b-' + bookKey(b)) || {}).prog || null;
+// Moves the pre-fingerprint keys (shelf 'tsn-prog-<shelf id>', reader 'lt-b-<reader id>') into 'tsn-b-<key>'.
+function migrateBook(key, shelfId, readerId){
+  const pr = store.get('tsn-prog-' + shelfId), old = store.get('lt-b-' + readerId);
+  if (!pr && !old) return;
+  const cur = store.get('tsn-b-' + key);
+  const d = cur || Object.assign({ pos:null, prog:null, hls:[], bms:[], gone:{} }, old || {});
+  const same = (x, y) => x.id ? x.id === y.id : x.page === y.page && x.key === y.key;
+  if (cur && old) ['hls', 'bms'].forEach(f => (old[f] || []).forEach(x => { if (!d[f].some(y => same(x, y))) d[f].push(x); }));
+  if (pr && !(d.prog && d.prog.t >= pr.t)) d.prog = pr;
+  store.set('tsn-b-' + key, d); store.del('tsn-prog-' + shelfId); store.del('lt-b-' + readerId);
+}
 
 /* ---------- data ---------- */
 const GROUPS = [
@@ -1248,7 +1329,7 @@ applyWood();
 function wallCols(){ return innerWidth < 768 ? 3 : clamp(Math.floor((Math.min(wall.clientWidth, 1180) - 40) / 150), 3, 8); }
 // Your shelf: a top row of the 3 books read most recently (or newest, before anything is read), then the rest, newest first; each book appears once.
 function wallSections(){
-  const all = books.map((b, i) => ({ b, i, p: store.get('tsn-prog-' + b.id) }));
+  const all = books.map((b, i) => ({ b, i, p: progOf(b) }));
   if (view !== 'mine' || gridFilter !== 'all'){
     const items = all.filter(o => gridFilter === 'all' || groupOf(o.b) === gridFilter);
     return [{ label: (gridFilter === 'all' ? 'Sách mẫu' : GLABEL[gridFilter] || gridFilter) + ' · ' + items.length, items }];
@@ -1264,7 +1345,7 @@ function wallSections(){
 function openFrom(bt, i){ if (isOpen) return; activeIdx = i; gridSrc = bt; openDetail(); }
 function wallBook(o, direct){
   const b = o.b, bt = document.createElement('button');
-  bt.type = 'button'; bt.className = 'wbook'; bt.dataset.id = b.id;
+  bt.type = 'button'; bt.className = 'wbook' + (isGhost(b) ? ' ghost' : ''); bt.dataset.id = b.id;
   bt.setAttribute('aria-label', (direct ? 'Đọc tiếp: ' : '') + b.title + (b.noAuthor ? '' : ', ' + b.author));
   // A slight lean and height difference per book, fixed by its id (used when the level includes fx-lean).
   const lr = rng(hashStr(b.id));
@@ -1520,7 +1601,7 @@ addEventListener('pointerup', () => {
 });
 addEventListener('pointercancel', () => { if (dragging) T = Math.round(T); down = dragging = false; moved = false; });
 addEventListener('wheel', e => {
-  if (isOpen || readerOpen || !N || gridMode || lkOpen) return;
+  if (isOpen || readerOpen || !N || gridMode || lkOpen || syOpen) return;
   e.preventDefault();
   const mul = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? innerHeight : 1;
   const dl = (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) * mul;
@@ -1531,8 +1612,8 @@ $('#prev').addEventListener('click', () => { if (!isOpen) T = Math.round(T) - 1;
 $('#next').addEventListener('click', () => { if (!isOpen) T = Math.round(T) + 1; });
 playBtn.addEventListener('click', () => openDetail());
 addEventListener('keydown', e => {
-  if (e.key === 'Escape'){ if (!addMenu.hidden) toggleAddMenu(false); else if (!woodMenu.hidden){ toggleWoodMenu(false); if (woodAnchor.isConnected) woodAnchor.focus(); } else if (lkOpen){ if (lkAbort) lkAbort.abort(); else closeLinkDlg(); } else if (editorOpen) closeEditor(); else if (readerOpen) closeReader(); else if (isOpen) closeDetail(); return; }
-  if (readerOpen || isOpen || gridMode || lkOpen) return;
+  if (e.key === 'Escape'){ if (!addMenu.hidden) toggleAddMenu(false); else if (!woodMenu.hidden){ toggleWoodMenu(false); if (woodAnchor.isConnected) woodAnchor.focus(); } else if (syOpen) closeSyncDlg(); else if (lkOpen){ if (lkAbort) lkAbort.abort(); else closeLinkDlg(); } else if (editorOpen) closeEditor(); else if (readerOpen) closeReader(); else if (isOpen) closeDetail(); return; }
+  if (readerOpen || isOpen || gridMode || lkOpen || syOpen) return;
   if (e.key === 'ArrowLeft'){ T = Math.round(T) - 1; e.preventDefault(); }
   else if (e.key === 'ArrowRight'){ T = Math.round(T) + 1; e.preventDefault(); }
   else if (e.key === 'Enter' && (document.activeElement === document.body || !document.activeElement)){ openDetail(); }
@@ -1557,16 +1638,31 @@ function toast(msg, ms){ const t = $('#toast'); t.textContent = msg; t.classList
 /* ---------- adding books ---------- */
 // Reads one PDF/EPUB file, stores it and puts it on your shelf; `extra` carries fields such as the source link.
 async function addOne(f, extra){
+  const fp = await fingerprint(f), dup = mine.find(b => b.fp === fp);
+  if (dup && !dup.file) return { b: await attachFile(dup, f), saved: true };
+  if (dup){ const e = new Error('“' + dup.title + '” đã có trên kệ.'); e.dup = dup; throw e; }
   const rec = await importFile(f);
+  Object.assign(rec, { fp, fileName: f.name, size: f.size, m: Date.now() });
   if (typeof extra === 'function') await extra(rec);
   else if (extra) Object.assign(rec, extra);
   const saved = await DB.put(rec);
+  TSNSync.dirty();
   const b = prepUpload(rec);
   mine.push(b);
   if (view === 'mine'){ const cur = books[activeIdx] && books[activeIdx].id; books.push(b); buildShelf(cur); }
   else showView('mine', b.id);
   return { b, saved };
 }
+// A book known from sync / a backup but without its file here: the matching file (same fingerprint) completes it.
+async function attachFile(b, f){
+  const rec = (await DB.get(b.id)) || b;
+  Object.assign(rec, { file: f, fileName: rec.fileName || f.name, size: f.size });
+  await DB.put(rec); b.file = f;
+  if (view === 'mine' && !isOpen) buildShelf(b.id);
+  TSNSync.dirty();
+  return b;
+}
+const isGhost = b => b.kind !== 'sample' && !b.file;
 async function addFiles(list, extra){
   const files = [...list]; if (!files.length) return;
   if (files.length > 1) extra = null;
@@ -1578,7 +1674,8 @@ async function addFiles(list, extra){
       lastId = b.id;
       toast(saved === null ? 'Đã thêm “' + b.title + '” (chỉ trong phiên này).' : 'Đã thêm “' + b.title + '” lên kệ.');
     } catch(err){
-      toast(err && err.message && /PDF hoặc EPUB/.test(err.message) ? err.message : 'Không đọc được “' + f.name + '”. File có thể bị hỏng hoặc có DRM.', 4800);
+      if (err && err.dup){ lastId = err.dup.id; if (view !== 'mine') showView('mine', lastId); }
+      toast(err && err.message && (err.dup || /PDF hoặc EPUB/.test(err.message)) ? err.message : 'Không đọc được “' + f.name + '”. File có thể bị hỏng hoặc có DRM.', 4800);
     }
   }
   if (lastId){ const i = books.findIndex(b => b.id === lastId); setTimeout(() => goTo(i), 60); }
@@ -1776,12 +1873,12 @@ function fillDetail(b){
   $('#dVi').textContent = b.vi; $('#dViRow').hidden = !b.vi || b.vi === b.title;
   $('#dMeta').textContent = (sample
     ? [b.year, GLABEL[b.group], 'Trích đoạn']
-    : [b.kind.toUpperCase(), b.count + (b.kind === 'pdf' ? ' trang' : ' phần'), b.year, b.genre, 'Thêm ' + new Date(b.added).toLocaleDateString('vi-VN')]
+    : [b.kind.toUpperCase(), b.count + (b.kind === 'pdf' ? ' trang' : ' phần'), b.year, b.genre, 'Thêm ' + new Date(b.added).toLocaleDateString('vi-VN'), isGhost(b) && 'Chưa có file trên máy này']
   ).filter(Boolean).join(' · ');
-  const pr = store.get('tsn-prog-' + b.id), started = !!(pr && pr.pct > 0);
+  const pr = progOf(b), started = !!(pr && pr.pct > 0);
   $('#dProgRow').hidden = !started;
   if (started){ $('#dBar').style.width = Math.min(100, pr.pct) + '%'; $('#dProg').textContent = 'Đã đọc ' + pr.pct + '%' + (pr.total ? ' · trang ' + pr.page + '/' + pr.total : ''); }
-  $('#dRead').textContent = started ? 'Đọc tiếp →' : 'Đọc sách →';
+  $('#dRead').textContent = isGhost(b) ? (b.fileId ? 'Tải về và đọc →' : 'Chọn file để đọc →') : started ? 'Đọc tiếp →' : 'Đọc sách →';
   $('#dSyn').textContent = b.syn || ''; $('#dSyn').parentNode.hidden = !b.syn;
   const cred = $('#dCred'); cred.textContent = '';
   if (sample) cred.textContent = 'Văn bản thuộc phạm vi công cộng.';
@@ -1839,9 +1936,30 @@ function closeDetail(){
 $('#dClose').addEventListener('click', closeDetail);
 // Open the page-flip reader. Uploads are read from IndexedDB by id; samples travel via localStorage.
 function readBook(b){
+  if (isGhost(b)) return fetchGhost(b);
   store.set('tsn-last', b.id);
   if (b.kind === 'sample') store.set('tsn-handoff', { id:b.id, title:b.title, vi:b.vi, author:b.author, year:b.year, gid:b.gid, text:b.text });
   location.href = 'reader/?book=' + encodeURIComponent(b.id);
+}
+// A book whose file isn't on this device: download it from Drive, or ask for the file (its fingerprint must match).
+let ghostBusy = false;
+async function fetchGhost(b){
+  if (ghostBusy) return;
+  if (!TSNSync.canDownload(b)){
+    if (b.fileId && TSNSync.enabled) toast('Phiên Google đã hết hạn: bấm “Tiếp tục” ở đầu trang rồi mở lại sách.', 5200);
+    else { toast(b.fileId ? 'Bật đồng bộ Google Drive (nút ☁) để tải sách này, hoặc chọn file trên máy.' : 'File của sách này chưa có trên máy. Hãy chọn đúng file PDF / EPUB.', 5600); $('#fileIn').click(); }
+    return;
+  }
+  ghostBusy = true;
+  const msg = 'Đang tải “' + b.title + '” từ Drive…';
+  toast(msg, 600000);
+  try {
+    const f = await TSNSync.download(b, (a, t) => toast(msg + ' ' + (t ? Math.round(100 * a / t) + '%' : fmtMB(a)), 600000));
+    if (await fingerprint(f) !== b.fp) throw new Error('File trên Drive không khớp với sách này.');
+    await attachFile(b, f); toast('', 1);
+    readBook(b);
+  } catch(e){ toast(e && e.message || 'Không tải được sách từ Drive.', 4800); }
+  ghostBusy = false;
 }
 $('#dRead').addEventListener('click', () => readBook(books[activeIdx]));
 /* ---------- edit details (your books only) ---------- */
@@ -1881,7 +1999,9 @@ async function openEditor(){
   ed = { b, rec, cover: undefined, spine: null, pal: Object.assign({}, rec.pal), motif: rec.motif, pdf: null };
   $('#edTitle').value = b.title; $('#edAuthor').value = b.noAuthor ? '' : b.author; $('#edYear').value = b.year || '';
   $('#edGenre').value = b.genre || ''; $('#edDesc').value = rec.desc || '';
-  $('#edPdfBtn').hidden = b.kind !== 'pdf';
+  // Without the file on this device (synced / restored book), the sources that read the file are hidden.
+  $('#edPdfBtn').hidden = b.kind !== 'pdf' || !rec.file;
+  $('#edSrc [data-src="orig"]').hidden = $('#edReset').hidden = !rec.file;
   edPane.textContent = ''; edChips(); edPreview();
   editor.hidden = false; editorOpen = true; document.body.classList.add('editing');
   $('.ed-body').scrollTop = 0;
@@ -1897,9 +2017,9 @@ async function saveEditor(){
   if (!title){ toast('Tên sách không được để trống.'); $('#edTitle').focus(); return; }
   if (yr && !(/^\d{1,4}$/.test(yr) && +yr <= 2100)){ toast('Năm xuất bản phải là số, ví dụ 2019.'); $('#edYear').focus(); return; }
   const { spine, group, vi, syn, noAuthor, ...rec } = ed.rec;
-  Object.assign(rec, { title, author: $('#edAuthor').value.trim(), year: yr ? +yr : null, genre: $('#edGenre').value.trim(), desc: $('#edDesc').value.trim(), motif: ed.motif, pal: ed.pal });
+  Object.assign(rec, { title, author: $('#edAuthor').value.trim(), year: yr ? +yr : null, genre: $('#edGenre').value.trim(), desc: $('#edDesc').value.trim(), motif: ed.motif, pal: ed.pal, m: Date.now() });
   if (ed.cover !== undefined){ rec.cover = ed.cover; rec.pal = Object.assign({}, ed.pal, { spine: ed.spine || ed.pal.a }); }
-  await DB.put(rec);
+  await DB.put(rec); TSNSync.dirty();
   const nb = prepUpload(rec);
   mine[mine.findIndex(x => x.id === nb.id)] = nb;
   closeEditor();
@@ -2040,7 +2160,7 @@ $('#edSave').addEventListener('click', saveEditor);
 editor.addEventListener('click', e => { if (e.target === editor) closeEditor(); });
 $('#dEdit').addEventListener('click', openEditor);
 addEventListener('paste', e => {
-  if (!editorOpen && !lkOpen && !isOpen && !readerOpen && e.clipboardData && !/^(INPUT|TEXTAREA)$/.test((e.target || {}).tagName || '')){
+  if (!editorOpen && !lkOpen && !syOpen && !isOpen && !readerOpen && e.clipboardData && !/^(INPUT|TEXTAREA)$/.test((e.target || {}).tagName || '')){
     const t = e.clipboardData.getData('text') || '';
     if (/https?:\/\/\S+/.test(t)){ e.preventDefault(); openLinkDlg(t.match(/https?:\/\/\S+/g).join('\n')); }
     return;
@@ -2056,12 +2176,16 @@ let armT = 0;
 $('#dDel').addEventListener('click', async e => {
   const bt = e.currentTarget, b = books[activeIdx];
   if (!bt.classList.contains('arm')){ bt.classList.add('arm'); bt.querySelector('.t').textContent = 'Bấm lần nữa để xoá'; clearTimeout(armT); armT = setTimeout(() => { bt.classList.remove('arm'); bt.querySelector('.t').textContent = 'Xoá khỏi kệ'; }, 3000); return; }
-  await DB.del(b.id); store.del('tsn-pos-' + b.id); store.del('tsn-prog-' + b.id);
+  // Highlights and notes stay under the fingerprint, so adding the same file again brings them back; only progress resets.
+  await DB.del(b.id); store.del('tsn-pos-' + b.id); TSNSync.removed(b);
+  const bd = store.get('tsn-b-' + bookKey(b));
+  if (bd){ bd.pos = null; bd.prog = null; bd.m = Date.now(); store.set('tsn-b-' + bookKey(b), bd); }
   closeDetail();
   setTimeout(() => {
-    mine.splice(mine.indexOf(b), 1);
-    const i = books.indexOf(b); books.splice(i, 1);
-    buildShelf(N > 1 ? books[Math.max(0, i - 1)].id : null);
+    // The lists may have been rebuilt by a sync meanwhile, so look the book up by id.
+    const mi = mine.findIndex(x => x.id === b.id); if (mi >= 0) mine.splice(mi, 1);
+    const i = books.findIndex(x => x.id === b.id); if (i >= 0) books.splice(i, 1);
+    buildShelf(books.length ? books[clamp(i - 1, 0, books.length - 1)].id : null);
     toast('Đã xoá “' + b.title + '” khỏi kệ.');
   }, REDUCE ? 10 : 880);
 });
@@ -2362,7 +2486,7 @@ addEventListener('resize', () => { if (tourOpen) tourRing(); });
 // Capture phase so the shelf's own keys (arrows, Enter, Esc) never see a key the tour used.
 addEventListener('keydown', e => {
   if (!tourOpen){
-    if (e.key === '?' && !isOpen && !editorOpen && !lkOpen && !readerOpen && !/^(INPUT|TEXTAREA)$/.test((e.target || {}).tagName || '')){ e.preventDefault(); openTour(); }
+    if (e.key === '?' && !isOpen && !editorOpen && !lkOpen && !syOpen && !readerOpen && !/^(INPUT|TEXTAREA)$/.test((e.target || {}).tagName || '')){ e.preventDefault(); openTour(); }
     return;
   }
   const onCtl = /^(BUTTON|INPUT)$/.test((document.activeElement || {}).tagName || '');
@@ -2375,7 +2499,7 @@ addEventListener('keydown', e => {
 }, true);
 function maybeTour(){
   let seen = null; try { seen = sessionStorage.getItem('tsn-tour'); } catch(e){}
-  if (!store.get('tsn-tour') && !seen) tourT = setTimeout(() => { if (!isOpen && !editorOpen && !lkOpen && !readerOpen) openTour(); }, 700);
+  if (!store.get('tsn-tour') && !seen) tourT = setTimeout(() => { if (!isOpen && !editorOpen && !lkOpen && !syOpen && !readerOpen) openTour(); }, 700);
 }
 
 /* ---------- boot ---------- */
@@ -2385,7 +2509,14 @@ async function boot(){
   measure();
   const fonts = Promise.race([Promise.all([document.fonts.load('600 60px "Newsreader"', VI), document.fonts.load('600 20px "Inter Tight"', VI), document.fonts.load('400 20px "Newsreader"', VI)]), wait(2500)]).catch(() => {});
   const ups = (await Promise.all([fonts, DB.open().then(() => DB.all())]))[1].sort((a, b) => a.added - b.added);
-  SAMPLES.forEach(b => { b.cover = genCover(b); b.spine = genSpine(b); });
+  // One-off for books added before fingerprints: hash each file once and move its old progress/highlight keys.
+  const unhashed = ups.filter(r => !r.fp && r.file);
+  if (unhashed.length) toast('Đang cập nhật dữ liệu kệ sách…', 60000);
+  for (const r of unhashed){
+    try { r.fp = await fingerprint(r.file); await DB.put(r); migrateBook(r.fp, r.id, 'f-' + hashStr(r.file.name + r.file.size).toString(36)); } catch(e){}
+  }
+  if (unhashed.length) toast('', 1);
+  SAMPLES.forEach(b => { migrateBook(bookKey(b), b.id, 's-' + b.id); b.cover = genCover(b); b.spine = genSpine(b); });
   ups.forEach(r => { try { mine.push(prepUpload(r)); } catch(e){} });
   const want = store.get('tsn-last') || 'holmes';
   // Each visit opens on your own shelf (empty at first); the samples view only sticks within this tab, e.g. coming back from the reader.
@@ -2394,6 +2525,128 @@ async function boot(){
   requestAnimationFrame(t => { last = t; frame(t); });
   maybeTour();
   seedDefaults();
+  TSNSync.init({ full:true }); syncUI();
+}
+
+/* ---------- sync (sync.js) & backup ---------- */
+const syncDlg = $('#syncDlg');
+let syOpen = false;
+function openSyncDlg(){
+  if (isOpen || editorOpen || lkOpen) return;
+  toggleAddMenu(false); TSNSync.prepare();
+  syncDlg.hidden = false; syOpen = true; document.body.classList.add('editing'); syncUI();
+}
+function closeSyncDlg(){ if (!syOpen) return; syncDlg.hidden = true; syOpen = false; document.body.classList.remove('editing'); }
+function syncUI(){
+  const S = TSNSync, s = S.status, el = $('#syState');
+  $('#syncBtn').className = 'box lbl helpbtn sybtn' + (S.enabled ? ' ' + (s.s === 'ok' ? 'on' : s.s) : '');
+  $('#syOff').hidden = S.enabled; $('#syOn').hidden = !S.enabled;
+  $('#syFiles').checked = S.files;
+  el.classList.toggle('err', S.enabled && s.s === 'error');
+  el.textContent = !S.configured ? 'Đồng bộ chưa được bật trên trang này (thiếu Google Client ID).'
+    : !S.enabled ? 'Chưa kết nối.'
+    : s.s === 'busy' ? s.msg || 'Đang đồng bộ…'
+    : s.s === 'paused' ? 'Phiên Google đã hết hạn. Bấm “Đồng bộ ngay” để đăng nhập lại.'
+    : s.s === 'error' ? 'Lỗi: ' + s.msg
+    : 'Đã đồng bộ' + (S.last ? ' lúc ' + new Date(S.last).toLocaleTimeString('vi-VN', { hour:'2-digit', minute:'2-digit' }) : '') + (S.files ? ' · cả file sách.' : ' · không gồm file sách.');
+  $('#syGo').disabled = !S.configured || !$('#syCkData').checked;
+  $('#syCkFile').disabled = !$('#syCkData').checked;
+}
+// Two-step buttons: the first click arms, the second (within 3s) runs.
+function armBtn(bt, label, fn){
+  const t0 = bt.textContent; let t = 0;
+  const reset = () => { bt.classList.remove('arm'); bt.textContent = t0; };
+  bt.addEventListener('click', () => {
+    clearTimeout(t);
+    if (!bt.classList.contains('arm')){ bt.classList.add('arm'); bt.textContent = label; t = setTimeout(reset, 3000); return; }
+    reset(); fn();
+  });
+}
+$('#syncBtn').addEventListener('click', openSyncDlg);
+$('#syClose').addEventListener('click', closeSyncDlg);
+$('#syCkData').addEventListener('change', () => { if (!$('#syCkData').checked) $('#syCkFile').checked = false; syncUI(); });
+$('#syGo').addEventListener('click', () => {
+  if (!$('#syCkData').checked) return;
+  TSNSync.connect($('#syCkFile').checked).then(() => toast('Đã kết nối Google Drive.'), e => toast(e.message, 4800)).finally(syncUI);
+});
+$('#syNow').addEventListener('click', () => { (TSNSync.status.s === 'paused' ? TSNSync.resume() : TSNSync.sync()).catch(e => toast(e.message, 4800)); });
+$('#syFiles').addEventListener('change', e => { TSNSync.setFiles(e.target.checked).catch(err => toast(err.message, 4800)).finally(syncUI); });
+$('#syOut').addEventListener('click', () => TSNSync.disconnect().then(() => { toast('Đã ngắt kết nối Google Drive.'); syncUI(); }));
+armBtn($('#syWipe'), 'Bấm lần nữa để xoá trên Drive', () => {
+  toast('Đang xoá dữ liệu trên Drive…', 60000);
+  TSNSync.wipe(TSNSync.files).then(() => TSNSync.disconnect()).then(() => toast('Đã xoá dữ liệu đồng bộ trên Drive và ngắt kết nối.'), e => toast(e.message, 4800)).finally(syncUI);
+});
+armBtn($('#syLocal'), 'Bấm lần nữa để xoá hết', async () => {
+  TSNSync.reset();
+  try { Object.keys(localStorage).filter(k => /^(tsn-|lt-)/.test(k)).forEach(k => localStorage.removeItem(k)); sessionStorage.clear(); } catch(e){}
+  if (DB.db){ DB.db.close(); DB.db = null; }
+  await new Promise(r => { try { const q = indexedDB.deleteDatabase('tu-sach-nho'); q.onsuccess = q.onerror = q.onblocked = r; } catch(e){ r(); } });
+  location.reload();
+});
+$('#syBk').addEventListener('click', () => makeBackup($('#syBkFiles').checked));
+$('#syRs').addEventListener('click', () => $('#zipIn').click());
+$('#zipIn').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) restoreBackup(f); });
+TSNSync.on('status', syncUI);
+// Another device changed books or reading progress: rebuild the shelf, but not under an open page or dialog.
+let reloadT = 0;
+async function reloadMine(){
+  clearTimeout(reloadT);
+  if (isOpen || editorOpen || lkOpen || readerOpen){ reloadT = setTimeout(reloadMine, 2000); return; }
+  const ups = (await DB.all()).sort((a, b) => a.added - b.added);
+  mine = []; ups.forEach(r => { try { mine.push(prepUpload(r)); } catch(e){} });
+  if (view === 'mine') showView('mine', books[activeIdx] && books[activeIdx].id);
+}
+TSNSync.on('meta', reloadMine);
+TSNSync.on('data', () => { if (!isOpen && !editorOpen && !lkOpen && !readerOpen && N) buildShelf(books[activeIdx] && books[activeIdx].id); });
+
+// Backup: tu-sach-nho.json (book details as synced + every 'tsn-b-*' record) and, if asked, books/<fp>.<ext>.
+async function makeBackup(withFiles){
+  toast('Đang tạo bản sao lưu…', 60000);
+  try {
+    const JSZip = await ensureZip(), zip = new JSZip(), list = [], data = {};
+    for (const r of await DB.all()){
+      if (!r.fp) continue;
+      const m = TSNSync.toMeta(r);
+      if (withFiles && r.file){ m.path = 'books/' + r.fp + '.' + r.kind; zip.file(m.path, r.file); }
+      list.push(m);
+    }
+    Object.keys(localStorage).forEach(k => { if (k.startsWith('tsn-b-')) data[k.slice(6)] = store.get(k); });
+    zip.file('tu-sach-nho.json', JSON.stringify({ app:'tu-sach-nho', v:1, t:Date.now(), books:list, data }));
+    const blob = await zip.generateAsync({ type:'blob', mimeType:'application/zip' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'tu-sach-nho-' + new Date().toISOString().slice(0, 10) + '.zip';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    toast('Đã tạo bản sao lưu: ' + list.length + ' cuốn, ' + fmtMB(blob.size) + '.');
+  } catch(e){ console.error(e); toast('Không tạo được bản sao lưu.', 4800); }
+}
+// Restore merges into what is here: new books are added (without a file if the backup has none), newer details win, reading data is merged.
+async function restoreBackup(file){
+  toast('Đang khôi phục…', 60000);
+  try {
+    const JSZip = await ensureZip(), zip = await JSZip.loadAsync(file), mf = zip.file('tu-sach-nho.json');
+    if (!mf) throw Object.assign(new Error('File này không phải bản sao lưu của Tủ Sách Nhỏ.'), { shown:true });
+    const man = JSON.parse(await mf.async('text')), recs = await DB.all();
+    let nb = 0, nf = 0;
+    for (const m of man.books || []){
+      if (!m.fp) continue;
+      const zf = m.path && zip.file(m.path); delete m.path;
+      const f = zf ? new File([await zf.async('blob')], m.fileName || m.title + '.' + m.kind, { type: m.kind === 'pdf' ? 'application/pdf' : 'application/epub+zip' }) : null;
+      let r = recs.find(x => x.fp === m.fp);
+      if (!r){ r = Object.assign({}, m, { id: 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), file: f }); nb++; if (f) nf++; }
+      else {
+        if ((m.m || m.added || 0) > (r.m || r.added || 0)) Object.assign(r, m, { id: r.id, file: r.file });
+        if (!r.file && f){ r.file = f; nf++; }
+      }
+      await DB.put(r);
+    }
+    for (const [k, d] of Object.entries(man.data || {})){
+      const cur = store.get('tsn-b-' + k), mg = TSNSync.mergeData(cur, d);
+      if (JSON.stringify(cur) !== JSON.stringify(mg)){ mg.m = Date.now(); store.set('tsn-b-' + k, mg); }
+    }
+    closeSyncDlg(); await reloadMine(); if (view !== 'mine') showView('mine');
+    TSNSync.dirty();
+    toast('Đã khôi phục: ' + nb + ' cuốn mới' + (nf ? ', ' + nf + ' file sách' : '') + '.');
+  } catch(e){ console.error(e); toast(e.shown ? e.message : 'Không đọc được file sao lưu.', 4800); }
 }
 
 /* ---------- books that ship with the site (books/books.json) ---------- */
