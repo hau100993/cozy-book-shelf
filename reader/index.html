@@ -154,10 +154,21 @@ kbd{display:inline-block;min-width:1.2em;text-align:center;font:600 11px/1 var(-
 .toast{position:fixed;left:50%;bottom:calc(66px + env(safe-area-inset-bottom,0px));z-index:90;background:var(--ink);color:var(--page);padding:10px 14px;
   transform:translate(-50%,calc(100% + 140px));transition:transform .5s var(--ease);max-width:calc(100vw - 32px);line-height:1.4}
 .toast.on{transform:translate(-50%,0)}
+/* zoomed PDF, swiping past the page edge: arrow that fills in once letting go will turn the page */
+.ovh{position:fixed;top:50%;z-index:25;width:52px;height:52px;margin-top:-26px;border-radius:50%;display:grid;place-items:center;pointer-events:none;
+  background:var(--page);color:var(--ink);border:1px solid var(--line);box-shadow:0 8px 22px -10px rgba(0,0,0,.45);opacity:0;transition:background-color .15s,color .15s,border-color .15s}
+.ovh.r{right:14px}.ovh.l{left:14px}
+.ovh.l svg{transform:scaleX(-1)}
+.ovh.ready{background:var(--accent);border-color:var(--accent);color:var(--page)}
 @media (max-width:640px){
   .lbl{font-size:9px}
-  .bar .t b{font-size:15px;max-width:34vw}
-  .bar .t span{max-width:34vw}
+  /* phone: buttons on one row, title + chapter on their own row below (the book area follows .bar's height) */
+  .bar{height:auto;grid-template-columns:1fr auto;grid-template-areas:"l r" "t t";row-gap:7px;
+    padding-top:calc(env(safe-area-inset-top,0px) + 10px);padding-bottom:8px}
+  .bar .l{grid-area:l}.bar .r{grid-area:r}
+  .bar .t{grid-area:t;display:flex;justify-content:center;align-items:baseline;gap:8px}
+  .bar .t b{font-size:15px;max-width:none;min-width:0}
+  .bar .t span{max-width:40vw;flex:none}
   .hide-s{display:none !important}
   .box{padding:0 8px}
   .foot .prog{max-width:50vw}
@@ -252,6 +263,7 @@ kbd{display:inline-block;min-width:1.2em;text-align:center;font:600 11px/1 var(-
 <div class="msg" id="msg"></div>
 <div class="drop" id="drop">Thả PDF hoặc EPUB để đọc</div>
 <div class="toast lbl" id="toast" role="status"></div>
+<div class="ovh" id="ovHint" aria-hidden="true"><svg width="20" height="14" viewBox="0 0 20 14"><path d="M12 1l6 6-6 6M18 7H1" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></div>
 
 <script src="../sync.js"></script>
 <script>
@@ -1023,9 +1035,11 @@ function animTo(toTurned, dur, arc){
   turn.anim = { from: { ...turn.F }, to, t0: performance.now(), dur: REDUCE ? 1 : dur, arc: arc || 0, ease: arc ? easeInOut : easeOut, toTurned };
 }
 function finishTurn(){
-  const a = turn.anim, dir = turn.dir; cur = a.toTurned ? turn.turnedCur : turn.flatCur; turn = null; dirty = true; updateUI(); savePos();
-  // Zoomed PDF: keep the zoom, start the next page at its top (the previous one at its bottom).
-  if (a.toTurned && zoom.z > 1){ trimHiRes(); animZoom(zoom.z, zoom.sx, dir === 'fwd' ? Infinity : -Infinity); }
+  const a = turn.anim, dir = turn.dir, ex = turn.edgeX, done = a.toTurned !== turn.startTurned;
+  cur = a.toTurned ? turn.turnedCur : turn.flatCur; turn = null; dirty = true; updateUI(); savePos();
+  // Zoomed PDF: keep the zoom, start the next page at its top (the previous one at its bottom);
+  // a turn from a swipe / tap at the screen edge also starts at the left (right) side.
+  if (done && zoom.z > 1){ trimHiRes(); animZoom(zoom.z, ex != null ? ex : zoom.sx, dir === 'fwd' ? Infinity : -Infinity); }
 }
 function flushTurn(){ if (turn && turn.anim){ turn.F = { ...turn.anim.to }; finishTurn(); } else if (turn){ turn = null; dirty = true; } }
 function tapTurn(dir, yHint){
@@ -1186,8 +1200,19 @@ function handleTap(x, y, single){
   lastTap = { t: now, x, y };
   clearTimeout(tapTimer); tapTimer = setTimeout(() => { lastTap = null; single(); }, 280);
 }
+// Zoomed PDF on touch: swipe on past the page edge the finger started at, or tap a screen edge, to turn.
+const OVER_TURN = 70, EDGE_TAP = .12;
+function edgeTurn(dir){ tapTurn(dir); if (turn) turn.edgeX = dir === 'fwd' ? Infinity : -Infinity; }
+function edgeTapDir(x){ return x < vw * EDGE_TAP ? 'back' : x > vw * (1 - EDGE_TAP) ? 'fwd' : null; }
+function overHint(dir, k){
+  const el = $('#ovHint');
+  if (!dir){ el.style.opacity = 0; el.classList.remove('ready'); return; }
+  el.className = 'ovh ' + (dir === 'fwd' ? 'r' : 'l') + (k >= 1 ? ' ready' : '');
+  el.style.opacity = Math.min(1, k * 1.6);
+  el.style.transform = 'scale(' + (.7 + .3 * Math.min(1, k)) + ')';
+}
 function startPinch(){
-  const p = ptr; ptr = null;
+  const p = ptr; ptr = null; overHint(null);
   if (p){ clearTimeout(p.timer); if (p.state === 'turn' && turn) animTo(false, 200); }
   zoomAnim = null; clearTimeout(tapTimer); lastTap = null;
   const [a, b] = [...touches.values()];
@@ -1223,7 +1248,9 @@ canvas.addEventListener('pointerdown', e => {
   }
   if (zoom.z > 1.01){
     zoomAnim = null;
-    ptr = { id:e.pointerId, state:'pan', ptype:e.pointerType, x0:e.clientX, y0:e.clientY, t0:performance.now(), sx0:zoom.sx, sy0:zoom.sy, moved:0 };
+    const now = performance.now();
+    ptr = { id:e.pointerId, state:'pan', ptype:e.pointerType, x0:e.clientX, y0:e.clientY, t0:now, sx0:zoom.sx, sy0:zoom.sy, moved:0, vx:0, lx:e.clientX, lt:now,
+      atL: clampZoom(zoom.z, zoom.sx + 1, zoom.sy).sx < zoom.sx + .5, atR: clampZoom(zoom.z, zoom.sx - 1, zoom.sy).sx > zoom.sx - .5 };
     // Touch: holding still on a zoomed page starts a selection too.
     if (!mouse){ const p = ptr; p.timer = setTimeout(() => onLong(p), 460); }
     try { canvas.setPointerCapture(e.pointerId); } catch(err){}
@@ -1273,8 +1300,17 @@ canvas.addEventListener('pointermove', e => {
   if (!ptr && e.pointerType === 'mouse') hoverCursor(e.clientX, e.clientY);
   const p = ptr; if (!p || p.id !== e.pointerId) return;
   if (p.state === 'pan'){
-    p.moved = Math.max(p.moved, Math.hypot(e.clientX - p.x0, e.clientY - p.y0));
-    setZoom(zoom.z, p.sx0 + e.clientX - p.x0, p.sy0 + e.clientY - p.y0);
+    const dx = e.clientX - p.x0, dy = e.clientY - p.y0, now = performance.now();
+    p.moved = Math.max(p.moved, Math.hypot(dx, dy));
+    p.vx = p.vx * .6 + ((e.clientX - p.lx) / Math.max(1, now - p.lt)) * .4; p.lx = e.clientX; p.lt = now;
+    setZoom(zoom.z, p.sx0 + dx, p.sy0 + dy);
+    // Past an edge the page was already at when the finger went down: it stretches a little and the hint shows.
+    if (p.ptype !== 'mouse'){
+      const over = p.sx0 + dx - zoom.sx, dir = over < -1 && p.atR ? 'fwd' : over > 1 && p.atL ? 'back' : null;
+      p.over = dir && Math.abs(dx) > Math.abs(dy) ? Math.abs(over) : 0; p.overDir = dir;
+      if (p.over) applyZoom({ ...zoom, sx: zoom.sx + Math.sign(over) * Math.min(56, p.over * .35) });
+      overHint(p.over ? dir : null, p.over / OVER_TURN);
+    }
     return;
   }
   const now = performance.now(), dt = Math.max(1, now - p.lt);
@@ -1302,7 +1338,17 @@ function endPtr(e){
   ptr = null; clearTimeout(p.timer);
   if (p.state === 'consumed' || p.state === 'none') return;
   if (p.state === 'pan'){
-    if (p.moved < 8 && performance.now() - p.t0 < 350){ if (p.ptype === 'mouse') toggleChrome(); else handleTap(p.x0, p.y0, toggleChrome); }
+    overHint(null);
+    if (p.over){
+      const fast = (p.overDir === 'fwd' ? -p.vx : p.vx) > .5;
+      if (e.type !== 'pointercancel' && (p.over >= OVER_TURN || (p.over >= 24 && fast))){ setZoom(zoom.z, zoom.sx, zoom.sy); edgeTurn(p.overDir); }
+      else animZoom(zoom.z, zoom.sx, zoom.sy);
+      return;
+    }
+    if (p.moved < 8 && performance.now() - p.t0 < 350){
+      if (p.ptype === 'mouse') toggleChrome();
+      else handleTap(p.x0, p.y0, () => { const d = edgeTapDir(p.x0); if (d) edgeTurn(d); else toggleChrome(); });
+    }
     else scheduleHiRes();
     return;
   }
