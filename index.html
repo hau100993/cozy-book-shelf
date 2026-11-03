@@ -83,27 +83,80 @@ body.grid-on .wall{display:block}
 body.grid-on.has-tabs .wall{top:calc(124px + env(safe-area-inset-top,0px))}
 body.grid-on .tabs{top:calc(86px + env(safe-area-inset-top,0px))}
 body.grid-on :is(.shelf,.plank,.play,.caption,.arrow,.foot){display:none}
-.wcab{--wood:#A06A37;max-width:1180px;min-height:100%;margin:0 auto;box-sizing:border-box;padding:0 0 env(safe-area-inset-bottom,0px);
-  border:solid #6A3E1C;border-width:0 14px;background-color:var(--wood);
-  background-image:
-    linear-gradient(90deg,rgba(40,18,4,.38),rgba(40,18,4,0) 5%,rgba(40,18,4,0) 95%,rgba(40,18,4,.38)),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='480'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7 .008' numOctaves='3' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 .25 0 0 0 0 .12 0 0 0 0 .03 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23w)'/%3E%3C/svg%3E");
-  box-shadow:0 0 0 1px rgba(40,18,4,.5)}
-.wshelf{position:relative;padding-top:28px;background:linear-gradient(rgba(40,18,4,.42),rgba(40,18,4,0) 38px)}
-.wshelf::after{content:"";position:relative;z-index:1;display:block;height:16px;
-  background:linear-gradient(#E3AB6B,#C1834A 22%,#9C6232 70%,#7C4A22);box-shadow:0 7px 10px -3px rgba(30,12,2,.55)}
-.wrow{display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:0 clamp(12px,2.6vw,32px);align-items:end;padding:0 clamp(10px,2.2vw,28px)}
-.wbook{position:relative;display:block;width:100%;aspect-ratio:2/3;border-radius:1px 3px 3px 1px;overflow:hidden;
-  box-shadow:3px 4px 7px rgba(30,12,2,.5),0 0 0 1px rgba(30,12,2,.18);transition:transform .35s var(--ease),box-shadow .35s var(--ease)}
-.wbook img{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none;-webkit-touch-callout:none}
-.wbook::before{content:"";position:absolute;inset:0 auto 0 0;width:7%;background:linear-gradient(90deg,rgba(255,255,255,.28),rgba(0,0,0,.18) 45%,rgba(0,0,0,0))}
-@media (hover:hover){.wbook:hover{transform:translateY(-6px);box-shadow:5px 10px 14px rgba(30,12,2,.5),0 0 0 1px rgba(30,12,2,.18)}}
+/* Wood textures (--wBack / --wEdge / --wSide) are canvas tiles from woodTex(); the fx-* classes on .wcab come from the "Gỗ" menu. */
+.wcab{--wood:#A06A37;--side:14px;--crown:16px;--edge:18px;--top:10px;
+  --wEdge:linear-gradient(#D9A066,#B07440 40%,#8A5328);--wSide:linear-gradient(#6A3E1C,#6A3E1C);
+  position:relative;max-width:1180px;min-height:100%;margin:0 auto;box-sizing:border-box;overflow:clip;
+  padding:var(--crown) var(--side) env(safe-area-inset-bottom,0px);background-color:var(--wood);
+  background-image:linear-gradient(rgba(30,12,0,.2),rgba(30,12,0,.2)),var(--wBack,none);background-size:auto,512px 768px;
+  box-shadow:0 0 0 1px rgba(20,8,0,.55)}
+.wside{position:absolute;top:0;bottom:0;width:var(--side);z-index:5;background:var(--wSide) 0 0/100% 768px repeat-y}
+.wside.l{left:0;box-shadow:inset -1px 0 rgba(255,228,186,.22),inset 1px 0 rgba(0,0,0,.4),3px 0 7px rgba(20,8,0,.45)}
+.wside.r{right:0;box-shadow:inset 1px 0 rgba(0,0,0,.45),inset -1px 0 rgba(255,228,186,.12),-3px 0 7px rgba(20,8,0,.45)}
+.wcrown,.wplinth{z-index:6;background-image:var(--wEdge);background-size:512px 300%}
+.wcrown{position:absolute;left:0;right:0;top:0;height:var(--crown);background-position:0 100%;box-shadow:inset 0 -1px rgba(0,0,0,.4),0 8px 12px -4px rgba(20,8,0,.6)}
+.wplinth{position:relative;display:block;height:26px;margin:0 calc(var(--side) * -1);background-position:0 0;
+  box-shadow:inset 0 1px rgba(255,228,186,.2),inset 0 -6px 10px -4px rgba(0,0,0,.5)}
+.wplinth::after{content:"";position:absolute;inset:0;background:rgba(20,8,0,.28)}
+/* Lamp: sticks to the visible part of the wall instead of covering the whole (tall) cabinet. */
+.wlamp{display:none;position:sticky;top:0;z-index:7;pointer-events:none;height:var(--wallH,100svh);
+  margin:calc(var(--crown) * -1) calc(var(--side) * -1) calc((var(--wallH,100svh) - var(--crown)) * -1);
+  background:radial-gradient(85% 50% at 50% -4%,rgba(255,200,125,.34),rgba(255,200,125,.08) 55%,rgba(255,200,125,0) 75%),
+             radial-gradient(150% 110% at 50% 40%,rgba(0,0,0,0) 48%,rgba(12,4,0,.5))}
+.fx-lamp .wlamp{display:block}
+/* content-visibility skips shelves off screen; so nothing may paint outside a shelf (the shadow under a board is the next shelf's ::before). */
+.wshelf{position:relative;padding-top:28px;content-visibility:auto;contain-intrinsic-size:auto var(--rowH,320px)}
+.wshelf::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(rgba(40,18,4,.42),rgba(40,18,4,0)) 0 0/100% 40px no-repeat}
+.fx-ao .wshelf::before{background:linear-gradient(rgba(20,8,0,.62),rgba(20,8,0,.22) 40%,rgba(20,8,0,0)) 0 0/100% 74px no-repeat,
+  linear-gradient(90deg,rgba(20,8,0,.5),rgba(20,8,0,0) 34px,rgba(20,8,0,0) calc(100% - 34px),rgba(20,8,0,.5))}
+.wrow{position:relative;z-index:2;display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:0 clamp(12px,2.6vw,32px);align-items:end;justify-items:center;padding:0 clamp(10px,2.2vw,28px)}
+.fx-top .wrow{margin-bottom:calc(var(--top) * -.55)}
+.wbd{position:relative;z-index:1;display:block}
+.wbd::before,.wbd::after{content:"";display:block;background-size:100% 100%,512px 300%;background-position:0 0,0 var(--ep,0%)}
+.wbd::before{display:none;height:var(--top);background-image:linear-gradient(rgba(20,8,0,.55),rgba(20,8,0,.15) 55%,rgba(255,232,196,.12)),var(--wEdge)}
+.fx-top .wbd::before{display:block}
+.wbd::after{height:var(--edge);background-image:linear-gradient(rgba(255,236,204,.5) 0 1px,rgba(255,236,204,.12) 1px 3px,rgba(255,236,204,0) 40%,rgba(0,0,0,0) 60%,rgba(20,8,0,.45)),var(--wEdge)}
+.wbook{position:relative;display:block;width:100%;aspect-ratio:2/3;max-width:100%;transform-origin:50% 100%;transition:transform .35s var(--ease)}
+.fx-lean .wbook{transform:rotate(var(--rot,0deg)) scale(var(--hs,1))}
+.wcv{position:absolute;inset:0;overflow:hidden;border-radius:1px 3px 3px 1px;box-shadow:3px 4px 7px rgba(30,12,2,.5),0 0 0 1px rgba(30,12,2,.18)}
+.fx-cast .wcv{box-shadow:0 1px 1px rgba(10,4,0,.6),2px 0 2px rgba(10,4,0,.35),8px 3px 12px rgba(20,8,0,.5),18px 8px 26px -6px rgba(20,8,0,.42),0 0 0 1px rgba(30,12,2,.2)}
+.wcv img{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none;-webkit-touch-callout:none}
+.wcv::before{content:"";position:absolute;inset:0 auto 0 0;width:7%;z-index:1;background:linear-gradient(90deg,rgba(255,255,255,.28),rgba(0,0,0,.18) 45%,rgba(0,0,0,0))}
+.wcv::after{content:"";position:absolute;inset:0;z-index:1;display:none;
+  background:linear-gradient(118deg,rgba(255,255,255,0) 28%,rgba(255,255,255,.16) 40%,rgba(255,255,255,.04) 50%,rgba(255,255,255,0) 58%),linear-gradient(rgba(255,255,255,.07),rgba(0,0,0,.1))}
+.fx-gloss .wcv::after{display:block}
+.wbook::before{content:"";position:absolute;left:-3%;right:-8%;bottom:-4px;height:9px;border-radius:50%;z-index:-1;display:none;
+  background:radial-gradient(closest-side,rgba(10,4,0,.8),rgba(10,4,0,.35) 60%,rgba(10,4,0,0))}
+.fx-contact .wbook::before{display:block}
+.wbook::after{content:"";position:absolute;top:1.6%;bottom:1px;right:-5px;width:5px;display:none;clip-path:polygon(0 0,100% 4px,100% calc(100% - 1px),0 100%);
+  background:linear-gradient(90deg,rgba(0,0,0,.05),rgba(0,0,0,.38)),repeating-linear-gradient(90deg,#F1E9D8 0 1px,#CBBFA6 1px 2px)}
+.fx-thick .wbook::after{display:block}
+/* Hover moves only transform: animating the layered shadows would repaint every frame. */
+@media (hover:hover){.wbook:hover{transform:translateY(-6px)}.fx-lean .wbook:hover{transform:translateY(-6px) scale(var(--hs,1))}}
 .wslot{display:block;aspect-ratio:2/3;visibility:hidden}
-.wrow{justify-items:center}
 .wbook,.wslot,.wadd{width:var(--bw,100%)}
-.wtag{position:absolute;left:clamp(10px,2.2vw,28px);top:7px;z-index:2;padding:3px 7px;font:600 9px/1 var(--sans);letter-spacing:.12em;
-  text-transform:uppercase;color:#3B200A;background:linear-gradient(#F1D9A8,#D2AA68);border-radius:1px;
-  box-shadow:0 1px 2px rgba(30,12,2,.5),inset 0 0 0 1px rgba(90,50,10,.35)}
+.wtag,.wknob{position:absolute;left:clamp(10px,2.2vw,28px);top:8px;z-index:3;padding:4px 9px;font:600 9px/1 var(--sans);letter-spacing:.14em;
+  text-transform:uppercase;color:#3A2408;background:linear-gradient(#F6E2B0,#D8B36A 55%,#B88C44);border-radius:2px;
+  box-shadow:0 2px 3px rgba(20,8,0,.55),inset 0 1px rgba(255,255,255,.6),inset 0 -1px rgba(90,55,10,.5),inset 0 0 0 1px rgba(90,55,10,.35)}
+/* Phones: the wood button sits on the cabinet (top right of the first shelf), the top bar has no room for it. */
+.wknob{display:none;left:auto;right:clamp(10px,2.2vw,28px);align-items:center;gap:5px}
+.wprog{z-index:2}
+/* wood menu */
+.wbtn{display:none;gap:6px}
+body.grid-on .wbtn{display:inline-flex}
+.woodmenu{position:fixed;left:0;top:0;z-index:85;width:min(290px,calc(100vw - 24px));display:grid;gap:10px;padding:14px;background:var(--sheet);
+  border:1px solid var(--rule);box-shadow:0 14px 30px -12px rgba(20,16,10,.35)}
+.woodmenu[hidden]{display:none}
+.wm-w{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+.wm-w button{display:grid;justify-items:center;gap:6px;padding:6px 0;font:400 13px/1.2 var(--serif);color:var(--ink)}
+.wm-w i{width:38px;height:38px;border-radius:50%;background:repeating-linear-gradient(100deg,var(--l) 0 5px,var(--d) 6px 7px,var(--l) 8px 12px);box-shadow:inset 0 0 0 1px rgba(0,0,0,.2)}
+.wm-w button[aria-pressed="true"] i{box-shadow:0 0 0 2px var(--sheet),0 0 0 4px var(--cobalt)}
+.wm-l{display:grid;border:1px solid var(--rule)}
+.wm-l button{display:grid;gap:3px;text-align:left;padding:10px 12px;border-top:1px solid rgba(20,20,20,.12)}
+.wm-l button:first-child{border-top:0}
+.wm-l button:hover{background:rgba(31,63,176,.07)}
+.wm-l button[aria-pressed="true"]{background:rgba(31,63,176,.1);color:var(--cobalt)}
+.wm-l small{font:400 13px/1.3 var(--serif);color:var(--muted);text-transform:none;letter-spacing:0}
 .wadd{display:grid;place-content:center;gap:6px;aspect-ratio:2/3;border:1.5px dashed rgba(255,236,200,.6);color:rgba(255,240,215,.9);
   font:600 9.5px/1.3 var(--sans);letter-spacing:.1em;text-transform:uppercase;text-align:center;transition:background-color .3s var(--ease)}
 .wadd b{font:400 30px/1 var(--serif)}
@@ -395,11 +448,14 @@ body.is-empty :is(.play,.caption,.arrow){visibility:hidden}
   .wall{top:calc(64px + env(safe-area-inset-top,0px))}
   body.grid-on.has-tabs .wall{top:calc(100px + env(safe-area-inset-top,0px))}
   body.grid-on .tabs{top:calc(66px + env(safe-area-inset-top,0px))}
-  .wcab{border-width:0 9px}
+  .wcab{--side:9px;--crown:10px;--edge:12px;--top:8px}
   .wshelf{padding-top:22px;scroll-snap-align:start}
-  .wall{scroll-snap-type:y mandatory}
+  .wall{scroll-snap-type:y mandatory;scroll-padding-top:10px}
   .wtag{top:4px;padding:3px 6px;font-size:8px}
-  .wshelf::after{height:12px}
+  .wplinth{height:14px}
+  .wbook::after{right:-4px;width:4px}
+  body.grid-on .wbtn{display:none}
+  .wknob{display:inline-flex;top:4px;padding:3px 6px;font-size:8px}
   .tabs{top:calc(50% - var(--H)/2 - 70px)}
   .tabs button{padding:0 7px}
   .cap-t,.empty .e-t{font-size:24px}
@@ -444,8 +500,18 @@ body.is-empty :is(.play,.caption,.arrow){visibility:hidden}
     </div>
   </div>
   <div class="logo"><span class="l1">Tủ Sách Nhỏ</span><span class="l2">A Small Library</span></div>
-  <div class="top-r"><span class="lbl cnt" id="count">PDF · EPUB</span><button class="box lbl lay" id="layBtn" type="button"><svg class="i-grid" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M.7.7h4.3v4.3H.7zM7 .7h4.3v4.3H7zM.7 7h4.3v4.3H.7zM7 7h4.3v4.3H7z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg><svg class="i-3d" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M.7 1.5h2.2v9.8H.7zM4.3 1.5h2.2v9.8H4.3zM8 2.6l2.1-.6 1.6 9.2-2.1.5z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg><span class="t"></span></button><button class="box lbl" id="viewBtn" type="button">Sách mẫu</button></div>
+  <div class="top-r"><span class="lbl cnt" id="count">PDF · EPUB</span><button class="box lbl lay" id="layBtn" type="button"><svg class="i-grid" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M.7.7h4.3v4.3H.7zM7 .7h4.3v4.3H7zM.7 7h4.3v4.3H.7zM7 7h4.3v4.3H7z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg><svg class="i-3d" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M.7 1.5h2.2v9.8H.7zM4.3 1.5h2.2v9.8H4.3zM8 2.6l2.1-.6 1.6 9.2-2.1.5z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg><span class="t"></span></button><button class="box lbl wbtn" id="woodBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Đổi loại gỗ của tủ"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M.7 11.3V.7h10.6v10.6zM3 11.3c0-3 1-5 3-5s3 2 3 5M5 11.3c0-2 .3-3 1-3s1 1 1 3" fill="none" stroke="currentColor" stroke-width="1.1"/></svg><span class="t">Gỗ</span></button><button class="box lbl" id="viewBtn" type="button">Sách mẫu</button></div>
 </header>
+<div class="woodmenu" id="woodMenu" role="dialog" aria-label="Kiểu tủ gỗ" hidden>
+  <span class="lbl">Loại gỗ</span>
+  <div class="wm-w" id="wmWood"></div>
+  <span class="lbl">Độ chân thực</span>
+  <div class="wm-l">
+    <button class="lbl" type="button" data-lv="full">Đầy đủ<small>Vân gỗ, mắt gỗ, bóng đổ, đèn ấm, sách nghiêng nhẹ</small></button>
+    <button class="lbl" type="button" data-lv="mid">Vừa<small>Vân gỗ và bóng cơ bản, sách đứng thẳng</small></button>
+    <button class="lbl" type="button" data-lv="flat">Đơn giản<small>Gỗ phẳng, ít bóng</small></button>
+  </div>
+</div>
 <input type="file" id="fileIn" accept=".pdf,.epub,application/pdf,application/epub+zip" multiple hidden>
 
 <nav class="tabs" id="tabs" aria-label="Thể loại"><div class="ind" id="ind"></div></nav>
@@ -1071,7 +1137,114 @@ $('#eAdd').addEventListener('click', e => openAddMenu(e.currentTarget, e));
 const wall = $('#wall'), wallIn = $('#wallIn');
 // Phones open on the wall by default, larger screens on the 3D shelf; an explicit choice is remembered.
 let gridMode = (store.get('tsn-layout') || (matchMedia('(max-width:767px)').matches ? 'grid' : '3d')) === 'grid', gridFilter = 'all', gridSrc = null;
-const PHONE_ROWS = 4, SHELF_PAD = 22, PLANK = 12;
+const PHONE_ROWS = 4, SHELF_PAD = 22, PHONE_CROWN = 10;
+
+/* ---------- wood: grain drawn once on a canvas as repeating tiles, cached in localStorage ---------- */
+const WOODS = {
+  oak:{ n:'Sồi', l:[210,164,108], d:[140,92,50] },
+  walnut:{ n:'Óc chó', l:[126,86,56], d:[56,33,19] },
+  pine:{ n:'Thông', l:[232,196,142], d:[190,132,74] },
+  cherry:{ n:'Anh đào', l:[182,106,68], d:[106,50,28] },
+};
+// Levels: which fx-* classes go on the cabinet, and which grain layers the texture gets.
+const WOOD_LV = {
+  full:{ fx:['ao','top','contact','cast','thick','lean','lamp','gloss'], rings:1, knots:1, boards:1 },
+  mid:{ fx:['ao','top','contact'], rings:1, knots:0, boards:1 },
+  flat:{ fx:[], rings:0, knots:0, boards:0 },
+};
+const WOOD_TEX_V = 1;
+let woodCfg = Object.assign({ wood:'oak', lv:'full' }, store.get('tsn-wood'));
+if (!WOODS[woodCfg.wood]) woodCfg.wood = 'oak';
+if (!WOOD_LV[woodCfg.lv]) woodCfg.lv = 'full';
+// Value noise that repeats every P lattice cells along x, so a tile repeats seamlessly along the grain.
+function wnoise(seed){
+  const r = rng(seed), p = [...Array(256).keys()], perm = new Uint8Array(512), val = new Float32Array(256);
+  for (let i = 255; i > 0; i--){ const j = r() * (i + 1) | 0; [p[i], p[j]] = [p[j], p[i]]; }
+  for (let i = 0; i < 512; i++) perm[i] = p[i & 255];
+  for (let i = 0; i < 256; i++) val[i] = r();
+  return (x, y, P) => {
+    const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+    const X = mod(xi, P) & 255, X1 = mod(xi + 1, P) & 255, Y = yi & 255, Y1 = (yi + 1) & 255;
+    const a = val[perm[X + perm[Y]]], b = val[perm[X1 + perm[Y]]], c = val[perm[X + perm[Y1]]], e = val[perm[X1 + perm[Y1]]];
+    const u = ss(xf), v = ss(yf);
+    return a + (b - a) * u + (c - a) * v + (a - b - c + e) * u * v;
+  };
+}
+function wfbm(n, x, y, o, P){ let s = 0, a = .5, f = 1, t = 0; for (let i = 0; i < o; i++){ s += a * n(x * f, y * f, P * f); t += a; f *= 2; a *= .5; } return s / t; }
+// u runs along the grain (repeats with the tile), v across it. Rings = noise-warped bands; knots bend the rings and darken a core.
+// A generator: yields every 24 rows so the drawing can be spread over idle callbacks; returns the JPEG data URL.
+function* woodTex({ w, h, vertical, seed, rings, knots, boards, wood, gain = 1 }){
+  const S = .75, cw = Math.round(w * S), ch = Math.round(h * S);
+  const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
+  const g = cv.getContext('2d'), img = g.createImageData(cw, ch), D = img.data;
+  const n1 = wnoise(seed), n2 = wnoise(seed + 7), n3 = wnoise(seed + 13), r = rng(seed + 99), W = WOODS[wood];
+  const L = vertical ? h : w, A = vertical ? w : h, K = [];
+  const q = f => Math.max(1, Math.round(f * L)) / L, f1 = q(.003), f2 = q(.012), f3 = q(.09), f4 = q(.0015);
+  if (knots) for (let i = 0, c = Math.max(1, Math.round(L * A / 150000)); i < c; i++)
+    K.push({ u:r() * L, v:r() * A, ru:9 + r() * 14, rv:5 + r() * 6, a:(r() < .5 ? -1 : 1) * (1.4 + r() * 1.2) });
+  const tint = Array.from({ length:16 }, () => .9 + r() * .18);
+  for (let py = 0; py < ch; py++) for (let px = 0; px < cw; px++){
+    const x = px / S, y = py / S, u = vertical ? y : x, v = vertical ? x : y;
+    const bi = boards ? Math.floor(x / boards) : 0, off = bi * 31.7;
+    let t = v * .045 + wfbm(n1, u * f1 + off, v * .018, 3, f1 * L) * 5 + off * .37, core = 0;
+    for (const k of K){
+      let du = u - k.u; du = (du - L * Math.round(du / L)) / k.ru;
+      const dv = (v - k.v) / k.rv, d2 = du * du + dv * dv;
+      if (d2 < 60){ t += k.a * Math.exp(-d2 * .18); core += Math.exp(-d2 * 1.6) * .85; }
+    }
+    const band = rings ? Math.pow(t - Math.floor(t), 2.4) * .75 : .2;
+    const fib = (wfbm(n2, u * f2, v * .6, 2, f2 * L) - .5) * .55;
+    const pore = n3(u * f3, v * 1.8, f3 * L) > .8 ? .22 : 0;
+    const low = (n1(u * f4 + 50, v * .004 + 9, f4 * L) - .5) * .3;
+    const m = clamp(.15 + band + fib + pore + low + core, 0, 1), tt = tint[bi & 15] * gain, i = (py * cw + px) * 4;
+    for (let c = 0; c < 3; c++) D[i + c] = (W.l[c] + (W.d[c] - W.l[c]) * m) * tt;
+    D[i + 3] = 255;
+    if (px === cw - 1 && py % 24 === 23) yield;
+  }
+  g.putImageData(img, 0, 0);
+  // Board seams: a dark gap, a lit edge on its left, a soft shadow on its right. The tile edge is a seam too.
+  if (boards) for (let x = 0; x <= w; x += boards){
+    const X = x * S, gr = g.createLinearGradient(X, 0, X + 8 * S, 0);
+    gr.addColorStop(0, 'rgba(20,8,0,.35)'); gr.addColorStop(1, 'rgba(20,8,0,0)');
+    g.fillStyle = gr; g.fillRect(X, 0, 8 * S, ch);
+    g.fillStyle = 'rgba(15,6,0,.75)'; g.fillRect(X - 1.2 * S, 0, 1.4 * S, ch);
+    g.fillStyle = 'rgba(255,230,190,.16)'; g.fillRect(X - 2.4 * S, 0, 1.2 * S, ch);
+  }
+  return cv.toDataURL('image/jpeg', .88);
+}
+function woodKey(){ const L = WOOD_LV[woodCfg.lv]; return [WOOD_TEX_V, woodCfg.wood, L.rings, L.knots, L.boards].join('|'); }
+function setWoodTex(t){
+  wallIn.style.setProperty('--wBack', 'url(' + t.back + ')');
+  wallIn.style.setProperty('--wEdge', 'url(' + t.edge + ')');
+  wallIn.style.setProperty('--wSide', 'url(' + t.side + ')');
+}
+let woodJob = 0;
+// Cached tiles apply at once; otherwise the old tiles stay up while the new ones are drawn in idle time, one tile per callback.
+function applyWood(){
+  const W = WOODS[woodCfg.wood], L = WOOD_LV[woodCfg.lv];
+  wallIn.className = 'wcab' + L.fx.map(k => ' fx-' + k).join('');
+  wallIn.style.setProperty('--wood', 'rgb(' + W.l.map((c, i) => Math.round((c + W.d[i]) / 2)) + ')');
+  const key = woodKey(), c = store.get('tsn-woodtex');
+  if (c && c.k === key){ woodJob++; setWoodTex(c); return; }
+  const job = ++woodJob, base = { rings:L.rings, knots:L.knots, wood:woodCfg.wood }, out = { k:key };
+  const idle = f => window.requestIdleCallback ? requestIdleCallback(f, { timeout:1200 }) : setTimeout(f, 60);
+  const steps = [
+    ['back', woodTex({ ...base, w:512, h:768, vertical:true, seed:11, boards:L.boards ? 128 : 0 })],
+    ['edge', woodTex({ ...base, w:512, h:66, vertical:false, seed:23, boards:0, gain:1.08 })],
+    ['side', woodTex({ ...base, w:18, h:768, vertical:true, seed:37, knots:0, boards:0, gain:.86 })],
+  ];
+  // Runs 24-row slices while the idle period lasts (one slice when there is no requestIdleCallback).
+  const next = dl => {
+    if (job !== woodJob) return;
+    do {
+      const r = steps[0][1].next();
+      if (r.done) out[steps.shift()[0]] = r.value;
+    } while (steps.length && dl && dl.timeRemaining && dl.timeRemaining() > 6);
+    if (steps.length) idle(next); else { setWoodTex(out); store.set('tsn-woodtex', out); }
+  };
+  idle(next);
+}
+applyWood();
 function wallCols(){ return innerWidth < 768 ? 3 : clamp(Math.floor((Math.min(wall.clientWidth, 1180) - 40) / 150), 3, 8); }
 // Your shelf: a top row of the 3 books read most recently (or newest, before anything is read), then the rest, newest first; each book appears once.
 function wallSections(){
@@ -1093,8 +1266,12 @@ function wallBook(o, direct){
   const b = o.b, bt = document.createElement('button');
   bt.type = 'button'; bt.className = 'wbook'; bt.dataset.id = b.id;
   bt.setAttribute('aria-label', (direct ? 'Đọc tiếp: ' : '') + b.title + (b.noAuthor ? '' : ', ' + b.author));
-  const im = new Image(); im.src = b.cover; im.alt = ''; im.decoding = 'async'; im.draggable = false; bt.appendChild(im);
-  if (o.p && o.p.pct > 0){ const bar = document.createElement('span'); bar.className = 'wprog'; const f = document.createElement('i'); f.style.width = Math.min(100, o.p.pct) + '%'; bar.appendChild(f); bt.appendChild(bar); }
+  // A slight lean and height difference per book, fixed by its id (used when the level includes fx-lean).
+  const lr = rng(hashStr(b.id));
+  bt.style.setProperty('--rot', ((lr() - .5) * 2.8).toFixed(2) + 'deg'); bt.style.setProperty('--hs', (.9 + lr() * .1).toFixed(3));
+  const cv = document.createElement('span'); cv.className = 'wcv'; bt.appendChild(cv);
+  const im = new Image(); im.src = b.cover; im.alt = ''; im.decoding = 'async'; im.draggable = false; cv.appendChild(im);
+  if (o.p && o.p.pct > 0){ const bar = document.createElement('span'); bar.className = 'wprog'; const f = document.createElement('i'); f.style.width = Math.min(100, o.p.pct) + '%'; bar.appendChild(f); cv.appendChild(bar); }
   // "Đang đọc" covers open the reader on tap; a long press (or right click) shows the detail page instead.
   let lp = 0, held = false;
   if (direct){
@@ -1112,15 +1289,29 @@ function renderWall(focusId){
   if (!on) return;
   const cols = wallCols();
   wallIn.style.setProperty('--cols', cols);
-  // On phones the book size comes from the height, so exactly PHONE_ROWS shelves fill the screen.
+  wallIn.style.setProperty('--wallH', wall.clientHeight + 'px');
+  // On phones the book size comes from the height, so the crown plus exactly PHONE_ROWS shelves fill the screen.
   if (innerWidth < 768){
-    const byH = (wall.clientHeight / PHONE_ROWS - SHELF_PAD - PLANK) / 1.5, byW = (wallIn.clientWidth - 20 - 12 * (cols + 1)) / cols;
+    const plank = 12 + (WOOD_LV[woodCfg.lv].fx.includes('top') ? 8 * .45 : 0);
+    const byH = ((wall.clientHeight - PHONE_CROWN) / PHONE_ROWS - SHELF_PAD - plank) / 1.5, byW = (wallIn.clientWidth - 20 - 12 * (cols + 1)) / cols;
     wallIn.style.setProperty('--bw', Math.max(48, Math.min(byH, byW)).toFixed(1) + 'px');
   } else wallIn.style.removeProperty('--bw');
+  wallIn.insertAdjacentHTML('beforeend', '<i class="wlamp"></i><i class="wside l"></i><i class="wside r"></i><i class="wcrown"></i>');
+  let nShelf = 0;
   const addRow = label => {
     const sh = document.createElement('div'); sh.className = 'wshelf';
+    sh.style.setProperty('--ep', (nShelf++ % 3) * 50 + '%');   // each board shows a different strip of the edge tile
     if (label){ const t = document.createElement('span'); t.className = 'wtag'; t.textContent = label; sh.appendChild(t); }
-    const row = document.createElement('div'); row.className = 'wrow'; sh.appendChild(row); wallIn.appendChild(sh); return row;
+    if (nShelf === 1){
+      const k = document.createElement('button'); k.type = 'button'; k.className = 'wknob';
+      k.setAttribute('aria-haspopup', 'true'); k.setAttribute('aria-expanded', 'false'); k.setAttribute('aria-label', 'Đổi loại gỗ của tủ');
+      k.innerHTML = woodBtn.querySelector('svg').outerHTML + 'Gỗ';
+      k.addEventListener('click', e => { e.stopPropagation(); toggleAddMenu(false); toggleWoodMenu(woodMenu.hidden, k); });
+      sh.appendChild(k);
+    }
+    const row = document.createElement('div'); row.className = 'wrow'; sh.appendChild(row);
+    const bd = document.createElement('i'); bd.className = 'wbd'; sh.appendChild(bd);
+    wallIn.appendChild(sh); return row;
   };
   const fill = row => { while (row.children.length < cols){ const e = document.createElement('i'); e.className = 'wslot'; row.appendChild(e); } };
   let focusEl = null;
@@ -1142,8 +1333,10 @@ function renderWall(focusId){
   });
   // Empty shelves continue down to the bottom of the screen, like a real bookcase.
   const used = () => wallIn.lastElementChild ? wallIn.lastElementChild.getBoundingClientRect().bottom - wallIn.getBoundingClientRect().top : 0;
-  const rowH = wallIn.firstElementChild ? wallIn.firstElementChild.offsetHeight : 1e9;
+  const first = wallIn.querySelector('.wshelf'), rowH = first ? first.offsetHeight : 1e9;
+  if (first) wallIn.style.setProperty('--rowH', rowH + 'px');
   for (let n = 0; n < 40 && used() + rowH <= wall.clientHeight + 1; n++) fill(addRow());
+  wallIn.insertAdjacentHTML('beforeend', '<i class="wplinth"></i>');
   if (focusEl) focusEl.scrollIntoView({ block:'nearest' });
 }
 function updateLayBtn(){
@@ -1155,6 +1348,7 @@ function updateLayBtn(){
 function setLayout(g){
   const id = books[activeIdx] && books[activeIdx].id;
   gridMode = g; store.set('tsn-layout', g ? 'grid' : '3d');
+  toggleWoodMenu(false);
   gridFilter = 'all';
   updateLayBtn();
   buildShelf(id);
@@ -1162,6 +1356,40 @@ function setLayout(g){
 }
 $('#layBtn').addEventListener('click', () => { if (!isOpen) setLayout(!gridMode); });
 updateLayBtn();
+
+/* ---------- wood menu (grid only) ---------- */
+const woodMenu = $('#woodMenu'), woodBtn = $('#woodBtn');
+$('#wmWood').innerHTML = Object.entries(WOODS).map(([k, w]) =>
+  '<button type="button" data-wood="' + k + '"><i style="--l:rgb(' + w.l + ');--d:rgb(' + w.d + ')"></i>' + w.n + '</button>').join('');
+function syncWoodMenu(){
+  woodMenu.querySelectorAll('[data-wood]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.wood === woodCfg.wood)));
+  woodMenu.querySelectorAll('[data-lv]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lv === woodCfg.lv)));
+}
+let woodAnchor = woodBtn;
+function toggleWoodMenu(open, anchor){
+  if (anchor) woodAnchor = anchor;
+  woodMenu.hidden = !open; woodAnchor.setAttribute('aria-expanded', String(open));
+  if (!open) return;
+  syncWoodMenu();
+  const r = woodAnchor.getBoundingClientRect(), m = woodMenu.getBoundingClientRect(), pad = 12;
+  woodMenu.style.left = clamp(r.right - m.width, pad, innerWidth - m.width - pad) + 'px';
+  woodMenu.style.top = r.bottom + 8 + 'px';
+  woodMenu.querySelector('[aria-pressed="true"]').focus({ preventScroll:true });
+}
+woodBtn.addEventListener('click', e => { e.stopPropagation(); toggleAddMenu(false); toggleWoodMenu(woodMenu.hidden, woodBtn); });
+woodMenu.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const lv = b.dataset.lv && b.dataset.lv !== woodCfg.lv;
+  if (b.dataset.wood) woodCfg.wood = b.dataset.wood; else if (b.dataset.lv) woodCfg.lv = b.dataset.lv;
+  store.set('tsn-wood', woodCfg); syncWoodMenu(); applyWood();
+  // The level changes the board height, which sets the book size on phones.
+  if (lv){ const st = wall.scrollTop; renderWall(); wall.scrollTop = st; woodRebuilt = performance.now(); }
+});
+let woodRebuilt = 0;
+addEventListener('click', e => { if (!woodMenu.hidden && !e.target.closest('#woodMenu')) toggleWoodMenu(false); });
+addEventListener('resize', () => toggleWoodMenu(false));
+// Scrolling the wall closes the menu, except for the scroll caused by redrawing it after a level change.
+wall.addEventListener('scroll', () => { if (performance.now() - woodRebuilt > 400) toggleWoodMenu(false); }, { passive:true });
 
 /* ---------- tabs ---------- */
 const tabsEl = $('#tabs'), ind = $('#ind');
@@ -1303,7 +1531,7 @@ $('#prev').addEventListener('click', () => { if (!isOpen) T = Math.round(T) - 1;
 $('#next').addEventListener('click', () => { if (!isOpen) T = Math.round(T) + 1; });
 playBtn.addEventListener('click', () => openDetail());
 addEventListener('keydown', e => {
-  if (e.key === 'Escape'){ if (!addMenu.hidden) toggleAddMenu(false); else if (lkOpen){ if (lkAbort) lkAbort.abort(); else closeLinkDlg(); } else if (editorOpen) closeEditor(); else if (readerOpen) closeReader(); else if (isOpen) closeDetail(); return; }
+  if (e.key === 'Escape'){ if (!addMenu.hidden) toggleAddMenu(false); else if (!woodMenu.hidden){ toggleWoodMenu(false); if (woodAnchor.isConnected) woodAnchor.focus(); } else if (lkOpen){ if (lkAbort) lkAbort.abort(); else closeLinkDlg(); } else if (editorOpen) closeEditor(); else if (readerOpen) closeReader(); else if (isOpen) closeDetail(); return; }
   if (readerOpen || isOpen || gridMode || lkOpen) return;
   if (e.key === 'ArrowLeft'){ T = Math.round(T) - 1; e.preventDefault(); }
   else if (e.key === 'ArrowRight'){ T = Math.round(T) + 1; e.preventDefault(); }
@@ -1365,6 +1593,7 @@ function toggleAddMenu(open){
 // Opens below the button, or above it when there is no room; kept inside the screen on narrow phones.
 function openAddMenu(anchor, e){
   if (e) e.stopPropagation();
+  toggleWoodMenu(false);
   if (!addMenu.hidden && addAnchor === anchor){ toggleAddMenu(false); return; }
   toggleAddMenu(false); addAnchor = anchor; toggleAddMenu(true);
   const r = anchor.getBoundingClientRect(), m = addMenu.getBoundingClientRect(), pad = 12;
@@ -2075,7 +2304,7 @@ const TOUR = [
       ? (TOUCH() ? '<b>Chạm</b>' : '<b>Bấm</b>') + ' vào bìa để xem chi tiết rồi chọn <b>Đọc sách</b>. Bìa ở tầng <b>Đang đọc</b> mở thẳng trang bạn đọc dở; ' + (TOUCH() ? 'nhấn giữ' : 'chuột phải') + ' để xem chi tiết.'
       : (TOUCH() ? '<b>Vuốt</b> ngang để lướt kệ, chạm' : '<b>Kéo</b>, lăn chuột hoặc dùng phím <b>← →</b> để lướt kệ. Bấm') + ' vào cuốn ở giữa để xem chi tiết rồi chọn <b>Đọc sách</b>.' },
   { t:'Sửa thông tin sách', b:() => (TOUCH() ? 'Chạm' : 'Bấm') + ' một cuốn của bạn để mở chi tiết, rồi bấm <b>Sửa</b> (bút chì) để đổi <b>bìa</b> (tải ảnh, dán link, tìm trên mạng, chọn trang PDF), <b>tên</b>, <b>tác giả</b>, năm và <b>thể loại</b>. Thể loại thành tab lọc trên kệ.' },
-  { t:'Hai kiểu kệ, sách mẫu', to:['#layBtn', '#viewBtn'], b:() => 'Nút đầu đổi giữa <b>kệ 3D</b> và <b>kệ lưới</b>. Chưa có sách? Bấm <b>Sách mẫu</b> để đọc thử vài cuốn.' },
+  { t:'Hai kiểu kệ, sách mẫu', to:['#layBtn', '#viewBtn'], b:() => 'Nút đầu đổi giữa <b>kệ 3D</b> và <b>kệ lưới</b>. Ở kệ lưới, nút <b>Gỗ</b> đổi loại gỗ và độ chân thực. Chưa có sách? Bấm <b>Sách mẫu</b> để đọc thử vài cuốn.' },
   { t:'Lật trang như sách thật', b:() => TOUCH()
       ? '<b>Chạm mép</b> hoặc <b>vuốt</b> để lật trang. Nhấn giữ chữ để tô sáng, ghi chú. Chạm giữa trang để ẩn / hiện thanh công cụ.'
       : '<b>Kéo mép trang</b>, lăn chuột hoặc phím <b>← →</b> để lật. Kéo trên chữ để tô sáng, ghi chú; <b>F</b> toàn màn hình, <b>?</b> xem phím tắt.' }
