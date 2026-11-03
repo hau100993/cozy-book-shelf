@@ -974,10 +974,14 @@ function animTo(toTurned, dur, arc){
   const to = toTurned ? { x: -W, y: turn.corner.y } : { x: W, y: turn.corner.y };
   turn.anim = { from: { ...turn.F }, to, t0: performance.now(), dur: REDUCE ? 1 : dur, arc: arc || 0, ease: arc ? easeInOut : easeOut, toTurned };
 }
-function finishTurn(){ const a = turn.anim; cur = a.toTurned ? turn.turnedCur : turn.flatCur; turn = null; dirty = true; updateUI(); savePos(); }
+function finishTurn(){
+  const a = turn.anim, dir = turn.dir; cur = a.toTurned ? turn.turnedCur : turn.flatCur; turn = null; dirty = true; updateUI(); savePos();
+  // Zoomed PDF: keep the zoom, start the next page at its top (the previous one at its bottom).
+  if (a.toTurned && zoom.z > 1){ trimHiRes(); animZoom(zoom.z, zoom.sx, dir === 'fwd' ? Infinity : -Infinity); }
+}
 function flushTurn(){ if (turn && turn.anim){ turn.F = { ...turn.anim.to }; finishTurn(); } else if (turn){ turn = null; dirty = true; } }
 function tapTurn(dir, yHint){
-  resetZoom(); flushTurn(); clearSel(); closePop();
+  flushTurn(); clearSel(); closePop();
   const low = yHint == null ? true : yHint > H * .35;
   const t = makeTurn(dir, low ? H * .97 : H * .03);
   if (!t) return toast(dir === 'fwd' ? 'Hết sách rồi.' : 'Đây là trang đầu.');
@@ -1051,7 +1055,8 @@ function mouseText(cx, cy){
 }
 
 /* ---------------- zoom (PDF only) ---------------- */
-// Screen position = book position * zoom.z + (zoom.sx, zoom.sy). Page turning is off while zoomed.
+// Screen position = book position * zoom.z + (zoom.sx, zoom.sy). While zoomed, dragging pans instead of turning;
+// wheel / keys / buttons still turn and the zoom is kept (finishTurn).
 const ZMAX = 4, ZRES = 2.5;
 let zoom = { z:1, sx:0, sy:0 }, zoomAnim = null, hiResT = 0;
 function zoomable(){ return !!book && book.kind === 'pdf'; }
@@ -1099,10 +1104,24 @@ function dropHiRes(){
   [...tex.keys()].forEach(k => { const v = tex.get(k); if (v.res > 1 || v.want > 1){ gl.deleteTexture(v.t); tex.delete(k); } });
   dirty = true;
 }
+// Hi-res textures are large; once the page is turned while zoomed, keep only the visible ones.
+function trimHiRes(){
+  const keep = new Set(visiblePages().map(texKey));
+  [...tex.keys()].forEach(k => { const v = tex.get(k); if (!keep.has(k) && (v.res > 1 || v.want > 1)){ gl.deleteTexture(v.t); tex.delete(k); } });
+}
+// While zoomed the wheel pans; once the page edge is reached, the page-turn handler below takes over
+// (after a pause, see WHEEL_QUIET / WHEEL_REPEAT), so the pan doesn't run straight into a turn.
 canvas.addEventListener('wheel', e => {
   if (!zoomable()) return;
   if (e.ctrlKey){ e.preventDefault(); zoomAt(e.clientX, e.clientY, zoom.z * Math.exp(-e.deltaY * .01)); }
-  else if (zoom.z > 1){ e.preventDefault(); setZoom(zoom.z, zoom.sx - e.deltaX, zoom.sy - e.deltaY); scheduleHiRes(); }
+  else if (zoom.z > 1){
+    const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? vh : 1, sx = zoom.sx, sy = zoom.sy;
+    setZoom(zoom.z, sx - e.deltaX * unit, sy - e.deltaY * unit);
+    if (Math.abs(zoom.sx - sx) + Math.abs(zoom.sy - sy) > .5){
+      e.preventDefault(); scheduleHiRes();
+      wheelLast = wheelTurnAt = performance.now(); wheelLocked = true; wheelAcc = 0;
+    }
+  }
 }, { passive:false });
 
 /* ---------------- gestures ---------------- */
@@ -1775,7 +1794,6 @@ const WHEEL_STEP = 40, WHEEL_QUIET = 180, WHEEL_REPEAT = 520;
 let wheelAcc = 0, wheelLast = 0, wheelTurnAt = 0, wheelLocked = false;
 addEventListener('wheel', e => {
   if (e.defaultPrevented || e.ctrlKey || !book) return;
-  if (zoomable() && zoom.z > 1) return;
   if (e.target.closest && e.target.closest('.drawer,.settings,.note,.pop,input,textarea,select')) return;
   if ($('#drawer').classList.contains('on') || $('#note').classList.contains('on')) return;
   if (ptr || pinch) return;
