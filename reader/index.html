@@ -665,7 +665,13 @@ function pageCanvas(i){
 
 /* ---------------- PDF / EPUB ---------------- */
 const libs = {};
-function loadScript(src){ if (libs[src]) return libs[src]; return libs[src] = new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => { delete libs[src]; rej(new Error('Không tải được thư viện.')); }; document.head.appendChild(s); }); }
+// Subresource Integrity: the browser refuses a CDN file whose hash differs (hashes as published by cdnjs).
+const SRI = {
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js': 'sha512-q+4liFwdPC/bNdhUpZx6aXDx/h77yEQtn4I1slHydcbZK34nLaR3cAeYSJshoxIOq3mjEf7xJE8YWIUHMn+oCQ==',
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js': 'sha512-BbrZ76UNZq5BhH7LL7pn9A4TKQpQeNCHOo65/akfelcIBbcVvYWOFQKPXIrykE3qZxYjmDX573oa4Ywsc7rpTw==',
+  'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js': 'sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg=='
+};
+function loadScript(src){ if (libs[src]) return libs[src]; return libs[src] = new Promise((res, rej) => { const s = document.createElement('script'); if (SRI[src]){ s.integrity = SRI[src]; s.crossOrigin = 'anonymous'; } s.src = src; s.onload = res; s.onerror = () => { delete libs[src]; rej(new Error('Không tải được thư viện.')); }; document.head.appendChild(s); }); }
 const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
 async function ensurePdf(){ await loadScript(PDFJS + 'pdf.min.js'); await loadScript(PDFJS + 'pdf.worker.min.js'); const lib = window.pdfjsLib || window['pdfjs-dist/build/pdf']; lib.GlobalWorkerOptions.workerSrc = PDFJS + 'pdf.worker.min.js'; return lib; }
 async function ensureZip(){ await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'); return window.JSZip; }
