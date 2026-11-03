@@ -154,7 +154,7 @@ body.editing .cursor{display:none}
 .btn-edit:hover{border-color:var(--cobalt);color:var(--cobalt)}
 
 /* add menu + import from link */
-.addwrap{position:relative;justify-self:start}
+.addwrap{position:relative;justify-self:start;white-space:nowrap}
 .addmenu{position:fixed;left:0;top:0;z-index:85;display:grid;min-width:230px;background:var(--sheet);
   border:1px solid var(--rule);box-shadow:0 14px 30px -12px rgba(20,16,10,.35)}
 .addmenu[hidden]{display:none}
@@ -298,6 +298,76 @@ body.is-empty :is(.play,.caption,.arrow){visibility:hidden}
 .pg i{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:600 10px var(--sans);letter-spacing:.1em;color:var(--muted);font-style:normal}
 .rmsg{max-width:30em;margin:12vh auto;padding:0 20px;text-align:center;font:400 20px/1.5 var(--serif)}
 
+/* first-visit tour: a card of animated steps; a ring with a huge shadow dims the page and spotlights the button a step talks about */
+.tour{position:fixed;inset:0;z-index:97;display:grid;place-items:center;padding:16px;background:rgba(20,20,20,.5);
+  opacity:0;transition:opacity .35s var(--ease),background-color .35s var(--ease)}
+.tour[hidden]{display:none}
+.tour.on{opacity:1}
+.tour.spot{background:transparent}
+.t-ring{position:fixed;left:0;top:0;width:0;height:0;border-radius:4px;pointer-events:none;opacity:0;
+  box-shadow:0 0 0 2px var(--paper),0 0 0 4px var(--cobalt),0 0 0 9999px rgba(20,20,20,.5);
+  transition:left .45s var(--ease),top .45s var(--ease),width .45s var(--ease),height .45s var(--ease),opacity .3s}
+.tour.spot .t-ring{opacity:1;animation:tPulse 1.6s ease-in-out infinite}
+@keyframes tPulse{50%{box-shadow:0 0 0 2px var(--paper),0 0 0 7px var(--cobalt),0 0 0 9999px rgba(20,20,20,.5)}}
+.t-card{position:relative;width:min(440px,100%);background:var(--sheet);box-shadow:0 30px 60px -24px rgba(0,0,0,.55);
+  transform:translateY(18px);transition:transform .45s var(--ease)}
+.tour.on .t-card{transform:none}
+.t-scene{position:relative;height:150px;overflow:hidden;background:var(--paper);border-bottom:1px solid rgba(20,20,20,.12)}
+.t-scene>div{position:absolute;inset:0;opacity:0;transition:opacity .35s}
+.t-scene>div.on{opacity:1}
+.t-text{padding:20px 22px 6px;min-height:118px}
+.t-step{color:var(--cobalt)}
+.t-title{margin:8px 0 8px;font:400 26px/1.15 var(--serif);letter-spacing:-.01em}
+.t-body{margin:0;color:#3A3833;font-size:14.5px;line-height:1.55}
+.t-body b{font-weight:600;color:var(--ink)}
+.t-foot{display:flex;align-items:center;gap:8px;padding:14px 22px 18px;flex-wrap:wrap}
+.t-dots{display:flex;gap:6px;margin-right:auto}
+.t-dots i{width:6px;height:6px;border-radius:50%;background:rgba(20,20,20,.2);transition:background-color .3s,transform .3s}
+.t-dots i.on{background:var(--cobalt);transform:scale(1.3)}
+.t-foot .box{height:30px;padding:0 12px}
+.t-foot .btn-read{flex:none;height:30px;padding:0 16px}
+.t-skip{color:var(--muted)}
+.t-never{display:flex;align-items:center;gap:8px;width:100%;margin-top:12px;padding-top:12px;border-top:1px solid rgba(20,20,20,.12);color:var(--muted)}
+.t-never input{width:15px;height:15px;margin:0;accent-color:var(--cobalt)}
+.helpbtn{width:21px;padding:0;margin-left:8px}
+
+/* scene 1: books drop onto the plank */
+.sc-plank{position:absolute;left:50%;bottom:30px;width:220px;height:6px;margin-left:-110px;background:var(--ink)}
+.sc-bk{position:absolute;bottom:36px;width:22px;border-radius:1px 1px 0 0;animation:tDrop 4.2s var(--ease) infinite}
+.sc-bk::after{content:"";position:absolute;left:4px;right:4px;top:14px;height:3px;background:rgba(255,255,255,.55)}
+@keyframes tDrop{0%{transform:translateY(-170px)}18%,82%{transform:none;opacity:1}95%,100%{transform:none;opacity:0}}
+/* scene 2: a file falls in, the + button pulses */
+.sc-file{position:absolute;left:50%;top:18px;width:46px;height:58px;margin-left:-23px;background:#fff;border:1.5px solid var(--ink);
+  display:grid;place-items:end center;padding-bottom:8px;box-sizing:border-box;font:700 10px var(--sans);letter-spacing:.06em;
+  animation:tFile 3.4s var(--ease) infinite}
+.sc-file::before{content:"";position:absolute;right:-1.5px;top:-1.5px;border:7px solid;border-color:var(--paper) var(--paper) var(--ink) var(--ink)}
+@keyframes tFile{0%{transform:translate(-80px,-90px) rotate(-14deg);opacity:0}15%{opacity:1}45%,70%{transform:translateY(40px);opacity:1}85%,100%{transform:translateY(40px) scale(.6);opacity:0}}
+.sc-tray{position:absolute;left:50%;bottom:22px;width:150px;height:30px;margin-left:-75px;border:1.5px dashed var(--cobalt);
+  display:grid;place-items:center;color:var(--cobalt)}
+/* scene 3: spines slide past, a finger taps the middle one */
+.sc-row{position:absolute;left:50%;top:26px;margin-left:-183px;height:96px;display:flex;gap:6px;animation:tSlide 4.8s var(--ease) infinite}
+.sc-row i{width:24px;height:96px;flex:none}
+.sc-row i.cov{width:66px}
+@keyframes tSlide{0%,12%{transform:translateX(120px)}40%,100%{transform:none}}
+.sc-tap{position:absolute;left:50%;top:70px;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:rgba(31,63,176,.35);
+  border:2px solid var(--cobalt);opacity:0;animation:tTap 4.8s ease-out infinite}
+@keyframes tTap{0%,52%{opacity:0;transform:scale(1.6)}60%{opacity:1;transform:scale(1)}66%{transform:scale(.8)}80%,100%{opacity:0;transform:scale(1)}}
+/* scene 4: a 3D row turns into a grid and back */
+.sc-lay{position:absolute;left:50%;top:50%;width:180px;height:110px;margin:-55px 0 0 -90px}
+.sc-lay i{position:absolute;width:44px;height:50px;transform:translate(var(--bx),var(--by));animation:tLay 5s var(--ease) infinite}
+@keyframes tLay{0%,30%{transform:translate(var(--ax),var(--ay)) scaleX(.42)}50%,80%{transform:translate(var(--bx),var(--by))}100%{transform:translate(var(--ax),var(--ay)) scaleX(.42)}}
+/* scene 5: a page curls over */
+.sc-book{position:absolute;left:50%;top:22px;width:200px;height:106px;margin-left:-100px;perspective:600px}
+.sc-book::before,.sc-book::after,.sc-pg{content:"";position:absolute;top:0;width:100px;height:106px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.sc-book::before{left:0}.sc-book::after{right:0}
+.sc-pg{right:0;z-index:2;transform-origin:left center;animation:tFlip 3.2s cubic-bezier(.6,0,.3,1) infinite;
+  background:linear-gradient(90deg,#fff 70%,#ECE8E0)}
+.sc-lines{position:absolute;inset:14px 12px;z-index:1;background:repeating-linear-gradient(transparent 0 8px,rgba(20,20,20,.18) 8px 10px)}
+.sc-pg .sc-lines{z-index:3}
+.sc-book>.sc-lines{inset:14px 112px 14px 12px}
+@keyframes tFlip{0%,25%{transform:rotateY(0)}75%,100%{transform:rotateY(-180deg)}}
+@media (prefers-reduced-motion:reduce){.t-scene *{animation:none!important}}
+
 @media (max-width:767px){
   :root{--H:min(60vw,40svh)}
   .top{height:64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
@@ -305,6 +375,7 @@ body.is-empty :is(.play,.caption,.arrow){visibility:hidden}
   .lbl{font-size:9px}
   .top-r .cnt{display:none}
   .top-r{gap:6px}
+  .helpbtn{margin-left:6px}
   .lay{width:28px;padding:0}.lay .t{display:none}
   .wall{top:calc(64px + env(safe-area-inset-top,0px))}
   body.grid-on.has-tabs .wall{top:calc(100px + env(safe-area-inset-top,0px))}
@@ -351,7 +422,7 @@ body.is-empty :is(.play,.caption,.arrow){visibility:hidden}
 <div class="grain" aria-hidden="true"></div>
 
 <header class="top">
-  <div class="addwrap"><button class="box lbl" id="addBtn" type="button" aria-haspopup="true" aria-expanded="false">+ Thêm sách</button>
+  <div class="addwrap"><button class="box lbl" id="addBtn" type="button" aria-haspopup="true" aria-expanded="false">+ Thêm sách</button><button class="box lbl helpbtn" id="helpBtn" type="button" aria-label="Hướng dẫn sử dụng" title="Hướng dẫn">?</button>
     <div class="addmenu" id="addMenu" hidden>
       <button class="lbl" type="button" data-a="file">Từ máy<small>Chọn file PDF hoặc EPUB</small></button>
       <button class="lbl" type="button" data-a="link">Từ link<small>Google Drive, Dropbox, GitHub, link .epub / .pdf</small></button>
@@ -394,6 +465,26 @@ body.is-empty :is(.play,.caption,.arrow){visibility:hidden}
 <div class="cursor" id="cursor" aria-hidden="true"><i class="ring"></i><i class="dot"></i><b class="clabel">MỞ<br>SÁCH</b></div>
 <div class="drop" id="drop"><div class="frame"></div><p class="lbl"><span class="big">Thả để đặt lên kệ</span>PDF hoặc EPUB</p></div>
 <div class="toast lbl" id="toast" role="status"></div>
+<div class="tour" id="tour" role="dialog" aria-modal="true" aria-labelledby="tTitle" hidden>
+  <div class="t-ring" id="tRing"></div>
+  <div class="t-card">
+    <div class="t-scene" aria-hidden="true">
+      <div><i class="sc-bk" style="left:calc(50% - 98px + 0px);height:74px;background:#1F3FB0;animation-delay:0.00s"></i><i class="sc-bk" style="left:calc(50% - 98px + 28px);height:88px;background:#C8452B;animation-delay:0.12s"></i><i class="sc-bk" style="left:calc(50% - 98px + 56px);height:66px;background:#D49A2A;animation-delay:0.24s"></i><i class="sc-bk" style="left:calc(50% - 98px + 84px);height:92px;background:#2E6A5E;animation-delay:0.36s"></i><i class="sc-bk" style="left:calc(50% - 98px + 112px);height:80px;background:#7A2333;animation-delay:0.48s"></i><i class="sc-bk" style="left:calc(50% - 98px + 140px);height:70px;background:#161514;animation-delay:0.60s"></i><i class="sc-bk" style="left:calc(50% - 98px + 168px);height:86px;background:#D49A2A;animation-delay:0.72s"></i><i class="sc-plank"></i></div>
+      <div><span class="sc-file">PDF</span><span class="sc-tray lbl">Kệ của bạn</span></div>
+      <div><div class="sc-row"><i style="background:#1F3FB0"></i><i style="background:#C8452B"></i><i style="background:#D49A2A"></i><i style="background:#2E6A5E"></i><i style="background:#7A2333"></i><i class="cov" style="background:#161514"></i><i style="background:#D49A2A"></i><i style="background:#1F3FB0"></i><i style="background:#C8452B"></i></div><i class="sc-tap"></i></div>
+      <div><div class="sc-lay"><i style="background:#1F3FB0;--ax:22px;--ay:58px;--bx:6px;--by:0px"></i><i style="background:#C8452B;--ax:48px;--ay:58px;--bx:68px;--by:0px"></i><i style="background:#D49A2A;--ax:74px;--ay:58px;--bx:130px;--by:0px"></i><i style="background:#2E6A5E;--ax:100px;--ay:58px;--bx:6px;--by:58px"></i><i style="background:#7A2333;--ax:126px;--ay:58px;--bx:68px;--by:58px"></i><i style="background:#161514;--ax:152px;--ay:58px;--bx:130px;--by:58px"></i></div></div>
+      <div><div class="sc-book"><i class="sc-lines"></i><i class="sc-pg"><i class="sc-lines"></i></i></div></div>
+    </div>
+    <div class="t-text"><p class="lbl t-step" id="tStep"></p><p class="t-title" id="tTitle"></p><p class="t-body" id="tBody"></p></div>
+    <div class="t-foot">
+      <div class="t-dots" id="tDots"></div>
+      <button class="lbl t-skip box" id="tSkip" type="button">Bỏ qua</button>
+      <button class="box lbl" id="tPrev" type="button">←</button>
+      <button class="lbl btn-read" id="tNext" type="button">Tiếp →</button>
+      <label class="lbl t-never"><input type="checkbox" id="tNever">Không hiển thị lại</label>
+    </div>
+  </div>
+</div>
 
 <div class="editor" id="editor" role="dialog" aria-modal="true" aria-labelledby="edHead" hidden>
   <div class="ed-panel">
@@ -1956,6 +2047,91 @@ rBody.addEventListener('click', e => {
   else if (i >= 0) showChapter(i, 0, frag);
 });
 
+/* ---------- first-visit tour ---------- */
+// Shown once per tab until "Không hiển thị lại" is ticked (localStorage tsn-tour); the ? button or key opens it again.
+const tour = $('#tour'), tRing = $('#tRing');
+let tourOpen = false, tourStep = 0, tourT = 0;
+const TOUCH = () => matchMedia('(pointer:coarse)').matches;
+const TOUR = [
+  { t:'Chào mừng đến Tủ Sách Nhỏ', b:() => 'Một kệ sách cho file <b>PDF</b> và <b>EPUB</b> của bạn. Sách được lưu ngay trong trình duyệt này, không tải lên đâu cả.' },
+  { t:'Đặt sách lên kệ', to:['#addBtn'], b:() => 'Bấm <b>+ Thêm sách</b> để chọn file trong máy, hoặc dán link Google Drive, Dropbox, GitHub.' + (TOUCH() ? '' : ' Bạn cũng có thể kéo thả file thẳng vào trang.') },
+  { t:'Lướt kệ, mở sách', b:() => gridMode
+      ? (TOUCH() ? '<b>Chạm</b>' : '<b>Bấm</b>') + ' vào bìa để xem chi tiết rồi chọn <b>Đọc sách</b>. Bìa ở tầng <b>Đang đọc</b> mở thẳng trang bạn đọc dở; ' + (TOUCH() ? 'nhấn giữ' : 'chuột phải') + ' để xem chi tiết.'
+      : (TOUCH() ? '<b>Vuốt</b> ngang để lướt kệ, chạm' : '<b>Kéo</b>, lăn chuột hoặc dùng phím <b>← →</b> để lướt kệ. Bấm') + ' vào cuốn ở giữa để xem chi tiết rồi chọn <b>Đọc sách</b>.' },
+  { t:'Hai kiểu kệ, sách mẫu', to:['#layBtn', '#viewBtn'], b:() => 'Nút đầu đổi giữa <b>kệ 3D</b> và <b>kệ lưới</b>. Chưa có sách? Bấm <b>Sách mẫu</b> để đọc thử vài cuốn.' },
+  { t:'Lật trang như sách thật', b:() => TOUCH()
+      ? '<b>Chạm mép</b> hoặc <b>vuốt</b> để lật trang. Nhấn giữ chữ để tô sáng, ghi chú. Chạm giữa trang để ẩn / hiện thanh công cụ.'
+      : '<b>Kéo mép trang</b>, lăn chuột hoặc phím <b>← →</b> để lật. Kéo trên chữ để tô sáng, ghi chú; <b>F</b> toàn màn hình, <b>?</b> xem phím tắt.' }
+];
+$('#tDots').innerHTML = TOUR.map(() => '<i></i>').join('');
+function tourRing(){
+  const st = TOUR[tourStep], els = (st.to || []).map(s => $(s)).filter(e => e && e.offsetParent);
+  if (!els.length){ tour.classList.remove('spot'); return; }
+  const rs = els.map(e => e.getBoundingClientRect()), p = 6;
+  const l = Math.min(...rs.map(r => r.left)), t = Math.min(...rs.map(r => r.top)), r = Math.max(...rs.map(r => r.right)), b = Math.max(...rs.map(r => r.bottom));
+  Object.assign(tRing.style, { left:(l - p) + 'px', top:(t - p) + 'px', width:(r - l + 2*p) + 'px', height:(b - t + 2*p) + 'px' });
+  tour.classList.add('spot');
+}
+function tourGo(i){
+  tourStep = clamp(i, 0, TOUR.length - 1);
+  const st = TOUR[tourStep], last = tourStep === TOUR.length - 1;
+  $('#tStep').textContent = (tourStep + 1) + ' / ' + TOUR.length;
+  $('#tTitle').textContent = st.t;
+  $('#tBody').innerHTML = st.b();
+  // restart the step's animation from its first frame
+  tour.querySelectorAll('.t-scene>div').forEach((d, k) => {
+    d.classList.toggle('on', k === tourStep);
+    if (k === tourStep) d.querySelectorAll('*').forEach(e => { e.style.animationName = 'none'; void e.offsetWidth; e.style.animationName = ''; });
+  });
+  tour.querySelectorAll('#tDots i').forEach((d, k) => d.classList.toggle('on', k === tourStep));
+  $('#tPrev').style.visibility = tourStep ? '' : 'hidden';
+  $('#tNext').textContent = last ? 'Bắt đầu' : 'Tiếp →';
+  $('#tSkip').style.visibility = last ? 'hidden' : '';
+  tourRing();
+}
+function openTour(){
+  if (tourOpen) return;
+  if (!addMenu.hidden) toggleAddMenu(false);
+  tourOpen = true; clearTimeout(tourT);
+  $('#tNever').checked = !!store.get('tsn-tour');
+  tour.hidden = false; tourGo(0);
+  requestAnimationFrame(() => { tour.classList.add('on'); $('#tNext').focus({ preventScroll:true }); });
+}
+function closeTour(){
+  if (!tourOpen) return;
+  tourOpen = false;
+  if ($('#tNever').checked) store.set('tsn-tour', 1); else store.del('tsn-tour');
+  try { sessionStorage.setItem('tsn-tour', '1'); } catch(e){}
+  tour.classList.remove('on');
+  tourT = setTimeout(() => { tour.hidden = true; tour.classList.remove('spot'); }, 350);
+}
+$('#tNext').addEventListener('click', () => { if (tourStep === TOUR.length - 1) closeTour(); else tourGo(tourStep + 1); });
+$('#tPrev').addEventListener('click', () => tourGo(tourStep - 1));
+$('#tSkip').addEventListener('click', closeTour);
+$('#tNever').addEventListener('change', e => { if (e.target.checked) store.set('tsn-tour', 1); else store.del('tsn-tour'); });
+tour.addEventListener('click', e => { if (e.target === tour) closeTour(); });
+tour.addEventListener('wheel', e => e.stopPropagation(), { passive:true });
+$('#helpBtn').addEventListener('click', () => { if (!isOpen) openTour(); });
+addEventListener('resize', () => { if (tourOpen) tourRing(); });
+// Capture phase so the shelf's own keys (arrows, Enter, Esc) never see a key the tour used.
+addEventListener('keydown', e => {
+  if (!tourOpen){
+    if (e.key === '?' && !isOpen && !editorOpen && !lkOpen && !readerOpen && !/^(INPUT|TEXTAREA)$/.test((e.target || {}).tagName || '')){ e.preventDefault(); openTour(); }
+    return;
+  }
+  const onCtl = /^(BUTTON|INPUT)$/.test((document.activeElement || {}).tagName || '');
+  if (e.key === 'Escape') closeTour();
+  else if (e.key === 'ArrowRight') tourGo(tourStep + 1);
+  else if (e.key === 'ArrowLeft') tourGo(tourStep - 1);
+  else if (e.key === 'Enter' && !onCtl) $('#tNext').click();
+  else return;
+  e.preventDefault(); e.stopImmediatePropagation();
+}, true);
+function maybeTour(){
+  let seen = null; try { seen = sessionStorage.getItem('tsn-tour'); } catch(e){}
+  if (!store.get('tsn-tour') && !seen) tourT = setTimeout(() => { if (!isOpen && !editorOpen && !lkOpen && !readerOpen) openTour(); }, 700);
+}
+
 /* ---------- boot ---------- */
 // Google Fonts ships Vietnamese as its own unicode-range subset; fonts.load() only fetches subsets its sample text touches.
 const VI = 'Aa Ăă Ââ Đđ Êê Ôô Ơơ Ưư ạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ';
@@ -1970,6 +2146,7 @@ async function boot(){
   let v = null; try { v = sessionStorage.getItem('tsn-view'); } catch(e){}
   showView(v, want);
   requestAnimationFrame(t => { last = t; frame(t); });
+  maybeTour();
   seedDefaults();
 }
 
