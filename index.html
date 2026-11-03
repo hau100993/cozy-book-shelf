@@ -352,11 +352,26 @@ body.is-empty :is(.play,.caption,.arrow){visibility:hidden}
 .sc-tap{position:absolute;left:50%;top:70px;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:rgba(31,63,176,.35);
   border:2px solid var(--cobalt);opacity:0;animation:tTap 4.8s ease-out infinite}
 @keyframes tTap{0%,52%{opacity:0;transform:scale(1.6)}60%{opacity:1;transform:scale(1)}66%{transform:scale(.8)}80%,100%{opacity:0;transform:scale(1)}}
-/* scene 4: a 3D row turns into a grid and back */
+/* scene 4: editing a book - the cover swaps, fields fill in, a genre chip lands */
+.sc-ed{position:absolute;left:50%;top:22px;width:220px;height:106px;margin-left:-110px}
+.sc-cv{position:absolute;left:0;top:0;width:72px;height:106px;background:#1F3FB0;animation:tCv 4.8s steps(1) infinite}
+.sc-cv::before{content:"";position:absolute;left:10px;right:10px;top:16px;height:5px;background:rgba(255,255,255,.75);box-shadow:0 10px 0 rgba(255,255,255,.45)}
+@keyframes tCv{0%{background:#1F3FB0}33%{background:#C8452B}66%{background:#2E6A5E}}
+.sc-pen{position:absolute;left:58px;top:-8px;width:26px;height:26px;border-radius:50%;background:var(--ink);color:var(--paper);
+  display:grid;place-items:center;animation:tPen 1.6s ease-in-out infinite}
+@keyframes tPen{50%{transform:scale(1.15)}}
+.sc-fl{position:absolute;left:92px;right:0;height:20px;border-bottom:1.5px solid rgba(20,20,20,.35)}
+.sc-fl i{position:absolute;left:0;bottom:5px;height:6px;width:0;background:var(--ink);animation:tType 4.8s steps(8) infinite}
+.sc-fl i::after{content:"";position:absolute;right:-4px;top:-3px;width:1.5px;height:12px;background:var(--cobalt)}
+@keyframes tType{0%,8%{width:0}40%,92%{width:var(--w)}100%{width:0}}
+.sc-chip{position:absolute;left:92px;top:78px;height:22px;padding:0 9px;display:grid;place-items:center;border:1px solid var(--cobalt);
+  color:var(--cobalt);background:var(--sheet);animation:tChip 4.8s var(--ease) infinite}
+@keyframes tChip{0%,45%{opacity:0;transform:translateY(-8px)}55%,92%{opacity:1;transform:none}100%{opacity:0}}
+/* scene 5: a 3D row turns into a grid and back */
 .sc-lay{position:absolute;left:50%;top:50%;width:180px;height:110px;margin:-55px 0 0 -90px}
 .sc-lay i{position:absolute;width:44px;height:50px;transform:translate(var(--bx),var(--by));animation:tLay 5s var(--ease) infinite}
 @keyframes tLay{0%,30%{transform:translate(var(--ax),var(--ay)) scaleX(.42)}50%,80%{transform:translate(var(--bx),var(--by))}100%{transform:translate(var(--ax),var(--ay)) scaleX(.42)}}
-/* scene 5: a page curls over */
+/* scene 6: a page curls over */
 .sc-book{position:absolute;left:50%;top:22px;width:200px;height:106px;margin-left:-100px;perspective:600px}
 .sc-book::before,.sc-book::after,.sc-pg{content:"";position:absolute;top:0;width:100px;height:106px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.15)}
 .sc-book::before{left:0}.sc-book::after{right:0}
@@ -472,6 +487,7 @@ body.is-empty :is(.play,.caption,.arrow){visibility:hidden}
       <div><i class="sc-bk" style="left:calc(50% - 98px + 0px);height:74px;background:#1F3FB0;animation-delay:0.00s"></i><i class="sc-bk" style="left:calc(50% - 98px + 28px);height:88px;background:#C8452B;animation-delay:0.12s"></i><i class="sc-bk" style="left:calc(50% - 98px + 56px);height:66px;background:#D49A2A;animation-delay:0.24s"></i><i class="sc-bk" style="left:calc(50% - 98px + 84px);height:92px;background:#2E6A5E;animation-delay:0.36s"></i><i class="sc-bk" style="left:calc(50% - 98px + 112px);height:80px;background:#7A2333;animation-delay:0.48s"></i><i class="sc-bk" style="left:calc(50% - 98px + 140px);height:70px;background:#161514;animation-delay:0.60s"></i><i class="sc-bk" style="left:calc(50% - 98px + 168px);height:86px;background:#D49A2A;animation-delay:0.72s"></i><i class="sc-plank"></i></div>
       <div><span class="sc-file">PDF</span><span class="sc-tray lbl">Kệ của bạn</span></div>
       <div><div class="sc-row"><i style="background:#1F3FB0"></i><i style="background:#C8452B"></i><i style="background:#D49A2A"></i><i style="background:#2E6A5E"></i><i style="background:#7A2333"></i><i class="cov" style="background:#161514"></i><i style="background:#D49A2A"></i><i style="background:#1F3FB0"></i><i style="background:#C8452B"></i></div><i class="sc-tap"></i></div>
+      <div><div class="sc-ed"><i class="sc-cv"></i><span class="sc-pen"><svg width="12" height="12" viewBox="0 0 14 14"><path d="M9.5 1.5l3 3-8 8H1.5v-3z M8 3l3 3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></span><span class="sc-fl" style="top:2px"><i style="--w:112px"></i></span><span class="sc-fl" style="top:36px"><i style="--w:76px;animation-delay:.3s"></i></span><span class="sc-chip lbl">Tiểu thuyết</span></div></div>
       <div><div class="sc-lay"><i style="background:#1F3FB0;--ax:22px;--ay:58px;--bx:6px;--by:0px"></i><i style="background:#C8452B;--ax:48px;--ay:58px;--bx:68px;--by:0px"></i><i style="background:#D49A2A;--ax:74px;--ay:58px;--bx:130px;--by:0px"></i><i style="background:#2E6A5E;--ax:100px;--ay:58px;--bx:6px;--by:58px"></i><i style="background:#7A2333;--ax:126px;--ay:58px;--bx:68px;--by:58px"></i><i style="background:#161514;--ax:152px;--ay:58px;--bx:130px;--by:58px"></i></div></div>
       <div><div class="sc-book"><i class="sc-lines"></i><i class="sc-pg"><i class="sc-lines"></i></i></div></div>
     </div>
@@ -2058,6 +2074,7 @@ const TOUR = [
   { t:'Lướt kệ, mở sách', b:() => gridMode
       ? (TOUCH() ? '<b>Chạm</b>' : '<b>Bấm</b>') + ' vào bìa để xem chi tiết rồi chọn <b>Đọc sách</b>. Bìa ở tầng <b>Đang đọc</b> mở thẳng trang bạn đọc dở; ' + (TOUCH() ? 'nhấn giữ' : 'chuột phải') + ' để xem chi tiết.'
       : (TOUCH() ? '<b>Vuốt</b> ngang để lướt kệ, chạm' : '<b>Kéo</b>, lăn chuột hoặc dùng phím <b>← →</b> để lướt kệ. Bấm') + ' vào cuốn ở giữa để xem chi tiết rồi chọn <b>Đọc sách</b>.' },
+  { t:'Sửa thông tin sách', b:() => (TOUCH() ? 'Chạm' : 'Bấm') + ' một cuốn của bạn để mở chi tiết, rồi bấm <b>Sửa</b> (bút chì) để đổi <b>bìa</b> (tải ảnh, dán link, tìm trên mạng, chọn trang PDF), <b>tên</b>, <b>tác giả</b>, năm và <b>thể loại</b>. Thể loại thành tab lọc trên kệ.' },
   { t:'Hai kiểu kệ, sách mẫu', to:['#layBtn', '#viewBtn'], b:() => 'Nút đầu đổi giữa <b>kệ 3D</b> và <b>kệ lưới</b>. Chưa có sách? Bấm <b>Sách mẫu</b> để đọc thử vài cuốn.' },
   { t:'Lật trang như sách thật', b:() => TOUCH()
       ? '<b>Chạm mép</b> hoặc <b>vuốt</b> để lật trang. Nhấn giữ chữ để tô sáng, ghi chú. Chạm giữa trang để ẩn / hiện thanh công cụ.'
