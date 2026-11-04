@@ -57,6 +57,10 @@ body.fs .fs-ico .o{display:none}
 
 #bookShadow{position:fixed;z-index:1;background:var(--page);transition:background-color .4s var(--ease);
   box-shadow:0 1px 0 rgba(20,16,10,.06),0 24px 44px -22px rgba(20,16,10,.5)}
+/* full screen on a phone: the page runs edge to edge, the strips under the notch / gesture bar take the paper colour */
+body.edge{background:var(--page)}
+body.edge #bookShadow{box-shadow:none}
+#safeProbe{position:fixed;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
 #gl{position:fixed;left:0;top:0;z-index:2;touch-action:none}
 
 .pop{position:fixed;z-index:50;display:flex;align-items:center;gap:4px;padding:6px;background:var(--ink);color:var(--page);
@@ -195,6 +199,7 @@ kbd{display:inline-block;min-width:1.2em;text-align:center;font:600 11px/1 var(-
 </header>
 
 <div id="bookShadow"></div>
+<div id="safeProbe"></div>
 <canvas id="gl"></canvas>
 
 <footer class="foot">
@@ -525,7 +530,10 @@ function autoFs(){ return Math.round(clamp(W * 0.043, 15, 19)); }
 function paginate(){
   const fs = settings.fs || autoFs(), lh = fs * settings.lh;
   const mxr = { s:.07, m:.1, l:.14 }[settings.margin] || .1;
-  const mx = Math.round(W * mxr), mt = Math.round(H * .09), mb = Math.round(H * .085);
+  // Top / bottom margins (running head, page number) follow the type size, tighter on narrow pages,
+  // so a tall phone page gains lines instead of white space.
+  const vk = W < 520 ? .055 : .075;
+  const mx = Math.round(W * mxr), mt = Math.round(clamp(H * vk, fs * 2.4, fs * 4.2)), mb = Math.round(clamp(H * (vk - .005), fs * 2.2, fs * 3.8));
   const cw = W - 2*mx, maxY = H - mb;
   const fam = settings.font === 'sans' ? SANS : SERIF;
   const fBody = '400 ' + fs + 'px ' + fam;
@@ -548,7 +556,7 @@ function paginate(){
       const { lines, sw } = wrapWords(b.words, font, cw, cw);
       if (big){
         if (!empty()) newPage(k0);
-        y = mt + H * .08;
+        y = mt + Math.min(H, W * 1.5) * .08;
         if (b.kicker){ y += fs; pg.lines.push({ font:'600 ' + Math.round(fs*.62) + 'px ' + SANS, color:'accent', y, fs, words:[{ t:b.kicker.toUpperCase(), w:0, x:mx, key:null }], spacing: fs*.1, gap:0 }); y += fs * .9; }
       } else { y += lh * .5; if (y + lines.length * hs * 1.2 + lh * 2 > maxY) newPage(k0); }
       for (const l of lines){ y += hs * 1.12; addLine(font, 'ink', mx, y, l.ws, sw, bi, hs); }
@@ -924,14 +932,20 @@ function layout(restore){
   vw = innerWidth; vh = innerHeight; dpr = Math.min(2, devicePixelRatio || 1);
   canvas.width = Math.round(vw * dpr); canvas.height = Math.round(vh * dpr);
   canvas.style.width = vw + 'px'; canvas.style.height = vh + 'px';
-  // Full-screen mode: the bars float over the book, so the book uses the whole screen.
-  const top = fsMode ? 14 : $('.bar').offsetHeight + 12, bot = fsMode ? 14 : $('.foot').offsetHeight + 10;
-  const aspect = book.kind === 'pdf' ? book.ratio : 1.5;
-  const availW = vw - 2 * (vw < 640 ? 10 : fsMode ? 24 : 36), availH = vh - top - bot;
   // Portrait screens always show one page, even when "2 trang" is chosen.
   const portrait = vh > vw;
   // Full screen in landscape opens the book on two pages unless "1 trang" is chosen.
   spread = !portrait && (settings.layout === 'spread' || (settings.layout === 'auto' && (fsMode ? vw >= 700 : vw >= 900 && vw / vh > 1.15)));
+  // Full screen on a phone held upright: one page from edge to edge, clear of the notch and the gesture bar.
+  const edge = fsMode && portrait && vw < 640;
+  document.body.classList.toggle('edge', edge);
+  const sp = getComputedStyle($('#safeProbe'));
+  // Full-screen mode: the bars float over the book, so the book uses the whole screen.
+  const top = edge ? parseFloat(sp.paddingTop) || 0 : fsMode ? 14 : $('.bar').offsetHeight + 12;
+  const bot = edge ? parseFloat(sp.paddingBottom) || 0 : fsMode ? 14 : $('.foot').offsetHeight + 10;
+  const availW = vw - 2 * (edge ? 0 : vw < 640 ? 10 : fsMode ? 24 : 36), availH = vh - top - bot;
+  // Text pages are laid out again for any size, so on an upright screen they take its shape (within 1.5–2.4).
+  const aspect = book.kind === 'pdf' ? book.ratio : portrait && !spread ? clamp(availH / availW, 1.5, 2.4) : 1.5;
   const capT = fsMode ? 760 : 540, capP = fsMode ? 1400 : 900;
   if (spread) W = Math.floor(Math.min(availW / 2, availH / aspect, book.kind === 'pdf' ? capP : capT));
   else W = Math.floor(Math.min(availW, availH / aspect, book.kind === 'pdf' ? capP + 100 : capT + 60));
