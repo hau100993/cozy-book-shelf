@@ -1416,18 +1416,26 @@ function wallSections(){
     const items = all.filter(o => gridFilter === 'all' || groupOf(o.b) === gridFilter);
     return [{ label: (gridFilter === 'all' ? 'Sổ ghi chú' : GLABEL[gridFilter] || gridFilter) + ' · ' + items.length, items, drag: true }];
   }
-  let top = all.filter(o => o.p && o.p.pct > 0 && o.p.pct < 100).sort((a, b) => b.p.t - a.p.t).slice(0, 3), topLabel = 'Đang đọc', direct = true;
-  if (!top.length && N > 3 && sortCfg().mode === 'added'){ top = all.slice(0, 3); topLabel = 'Mới thêm'; direct = false; }
+  // Once the order is chosen (A–Z, author, or arranged by hand) the whole shelf follows it: no automatic top row,
+  // otherwise a book being read would sit in "Đang đọc" and never show where it was dragged to.
+  const arranged = sortCfg().mode !== 'added';
+  let top = [], topLabel = 'Đang đọc', direct = true;
+  if (!arranged){
+    top = all.filter(o => o.p && o.p.pct > 0 && o.p.pct < 100).sort((a, b) => b.p.t - a.p.t).slice(0, 3);
+    if (!top.length && N > 3){ top = all.slice(0, 3); topLabel = 'Mới thêm'; direct = false; }
+  }
   const rest = all.filter(o => !top.includes(o));
   const out = [];
-  if (top.length) out.push({ label: topLabel, items: top, direct });
+  if (top.length) out.push({ label: topLabel, items: top, direct, drag: true });
   out.push({ label: (top.length ? 'Thư viện · ' : 'Tất cả · ') + rest.length, items: rest, add: true, drag: true });
   return out;
 }
 function openFrom(bt, i){ if (isOpen) return; activeIdx = i; gridSrc = bt; openDetail(); }
-function wallBook(o, direct){
+function wallBook(o, direct, drag){
   const b = o.b, bt = document.createElement('button');
   bt.type = 'button'; bt.className = 'wbook' + (isGhost(b) ? ' ghost' : ''); bt.dataset.id = b.id;
+  if (drag) bt.dataset.drag = '1';
+  bt._open = () => openFrom(bt, o.i);   // the detail page (also what "hold, then let go without moving" opens)
   bt.setAttribute('aria-label', (direct ? 'Đọc tiếp: ' : '') + b.title + (b.noAuthor ? '' : ', ' + b.author));
   // A slight lean and height difference per book, fixed by its id (used when the level includes fx-lean).
   const lr = rng(hashStr(b.id));
@@ -1436,12 +1444,13 @@ function wallBook(o, direct){
   const im = new Image(); im.src = b.cover; im.alt = ''; im.decoding = 'async'; im.draggable = false; cv.appendChild(im);
   if (o.p && o.p.pct > 0){ const bar = document.createElement('span'); bar.className = 'wprog'; const f = document.createElement('i'); f.style.width = Math.min(100, o.p.pct) + '%'; bar.appendChild(f); cv.appendChild(bar); }
   // "Đang đọc" covers open the reader on tap; a long press (or right click) shows the detail page instead.
+  // On a cover that can be dragged, the long press belongs to dragging (see endDrag), so no timer here.
   let lp = 0, held = false;
-  if (direct){
+  if (direct && !drag){
     bt.addEventListener('pointerdown', () => { held = false; clearTimeout(lp); lp = setTimeout(() => { held = true; openFrom(bt, o.i); }, 480); });
     ['pointerup', 'pointerleave', 'pointercancel'].forEach(t => bt.addEventListener(t, () => clearTimeout(lp)));
   }
-  bt.addEventListener('contextmenu', e => { e.preventDefault(); if (direct && !held){ clearTimeout(lp); openFrom(bt, o.i); } });
+  bt.addEventListener('contextmenu', e => { e.preventDefault(); if (wd || bt.classList.contains('lifted')) return; if (direct && !held && (e.pointerType === 'mouse' || !drag || e.button === 2)){ clearTimeout(lp); openFrom(bt, o.i); } });
   bt.addEventListener('click', () => { if (held){ held = false; return; } if (isOpen) return; if (direct) readBook(b); else openFrom(bt, o.i); });
   return bt;
 }
@@ -1475,8 +1484,7 @@ function renderWall(focusId){
     let row = addRow(sec.label);
     sec.items.forEach((o, k) => {
       if (k && k % cols === 0){ fill(row); row = addRow(); }
-      const bt = wallBook(o, sec.direct);
-      if (sec.drag && sec.items.length > 1) bt.dataset.drag = '1';
+      const bt = wallBook(o, sec.direct, sec.drag && N > 1);
       row.appendChild(bt);
       if (o.b.id === focusId && !focusEl) focusEl = bt;
     });
@@ -1527,6 +1535,7 @@ addEventListener('pointermove', e => {
     else if (dist > 10){ clearTimeout(p.timer); wd = null; }   // the finger moved first: it's a scroll
     return;
   }
+  p.far = Math.max(p.far || 0, Math.hypot(p.x - p.x0, p.y - p.y0));
   dragTo(p);
 }, { passive: true });
 // Once a touch drag has started, the page must not scroll under the finger.
@@ -1588,6 +1597,8 @@ function endDrag(drop){
   const stop = ev => { ev.stopPropagation(); ev.preventDefault(); };
   addEventListener('click', stop, { capture: true, once: true }); setTimeout(() => removeEventListener('click', stop, { capture: true }), 0);
   if (drop && p.target && moveBook(p.bt.dataset.id, p.target.id, p.target.after)) sortedToast();
+  // Touch: held but never moved = the old long press, which shows the book's details.
+  else if (drop && !p.mouse && (p.far || 0) < 12 && p.bt._open) p.bt._open();
 }
 let sortToastShown = false;
 function sortedToast(){ toast(sortToastShown ? 'Đã đổi chỗ.' : 'Đã đổi chỗ. Thứ tự lưu trên máy này; đổi lại trong menu Hiển thị → Thứ tự sách.', sortToastShown ? 1200 : 4200); sortToastShown = true; }
