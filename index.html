@@ -182,6 +182,23 @@ body.grid-on :is(.shelf,.plank,.play,.caption,.arrow,.foot){display:none}
 .wadd{display:grid;place-content:center;gap:6px;aspect-ratio:2/3;border:1.5px dashed rgba(255,236,200,.6);color:rgba(255,240,215,.9);
   font:600 9.5px/1.3 var(--sans);letter-spacing:.1em;text-transform:uppercase;text-align:center;transition:background-color .3s var(--ease)}
 .wadd b{font:400 30px/1 var(--serif)}
+/* Reordering the wall: the lifted cover follows the pointer, a bar marks where it will land. */
+.wbook{-webkit-touch-callout:none}
+.wbook.lifted{opacity:.28}
+.wghost{position:fixed;left:0;top:0;z-index:95;pointer-events:none;will-change:transform;filter:drop-shadow(0 20px 24px rgba(20,8,0,.5))}
+.wghost .wcv{position:absolute;inset:0}
+.wmark{position:fixed;left:0;top:0;z-index:96;width:4px;border-radius:2px;background:var(--cobalt);pointer-events:none;display:none;
+  box-shadow:0 0 0 2px rgba(255,248,235,.75),0 0 16px rgba(31,63,176,.65)}
+body.wdragging,body.wdragging *{cursor:grabbing !important}
+body.wdragging .cursor{display:none}
+body.wdragging .wall{scroll-snap-type:none}
+.wm-s{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--rule)}
+.wm-s button{padding:9px 2px;font:400 13px/1.2 var(--serif);color:var(--ink);border-left:1px solid rgba(20,20,20,.12);text-align:center}
+.wm-s button:first-child{border-left:0}
+.wm-s button:hover{background:rgba(31,63,176,.07)}
+.wm-s button[aria-pressed="true"]{background:rgba(31,63,176,.1);color:var(--cobalt);box-shadow:inset 0 0 0 1px var(--cobalt)}
+.wm-s button:disabled{color:var(--muted);opacity:.55;cursor:default;background:none}
+.wm-hint{margin:-4px 0 0;font:400 13px/1.4 var(--serif);color:var(--muted)}
 @media (hover:hover){.wadd:hover{background:rgba(255,236,200,.08)}}
 .wprog{position:absolute;left:8%;right:8%;bottom:7px;height:3px;background:rgba(255,255,255,.6);box-shadow:0 0 0 1px rgba(0,0,0,.12)}
 .wprog i{display:block;height:100%;background:var(--cobalt)}
@@ -539,6 +556,11 @@ body.is-empty :is(.play,.caption,.arrow){visibility:hidden}
     <button class="lbl" type="button" data-lay="3d"><svg width="22" height="22" viewBox="0 0 12 12" aria-hidden="true"><path d="M.7 1.5h2.2v9.8H.7zM4.3 1.5h2.2v9.8H4.3zM8 2.6l2.1-.6 1.6 9.2-2.1.5z" fill="none" stroke="currentColor" stroke-width=".9"/></svg>Kệ 3D<small>Lướt từng cuốn</small></button>
     <button class="lbl" type="button" data-lay="grid"><svg width="22" height="22" viewBox="0 0 12 12" aria-hidden="true"><path d="M.7.7h4.3v4.3H.7zM7 .7h4.3v4.3H7zM.7 7h4.3v4.3H.7zM7 7h4.3v4.3H7z" fill="none" stroke="currentColor" stroke-width=".9"/></svg>Lưới<small>Thấy hết bìa</small></button>
   </div>
+  <span class="lbl">Thứ tự sách</span>
+  <div class="wm-s" id="wmSort" role="group" aria-label="Thứ tự sách">
+    <button type="button" data-sort="added">Mới thêm</button><button type="button" data-sort="title">Tên A–Z</button><button type="button" data-sort="author">Tác giả</button><button type="button" data-sort="custom">Tự xếp</button>
+  </div>
+  <p class="wm-hint" id="wmSortHint">Ở kiểu Lưới, kéo một cuốn sang chỗ khác để tự xếp.</p>
   <p class="wm-note">Loại gỗ và độ chân thực dùng cho kiểu <b>Lưới</b>.</p>
   <span class="lbl wm-g">Loại gỗ</span>
   <div class="wm-w wm-g" id="wmWood"></div>
@@ -1199,10 +1221,65 @@ function buildShelf(keepId){
   updateViewBtn();
   renderWall(keep);
 }
+/* ---------- book order: per view, saved on this device (localStorage `tsn-sort-<view>` = { mode, order }) ---------- */
+// mode: 'added' (newest first on the wall; the 3D shelf keeps its own order), 'title', 'author', or 'custom'
+// (order = book keys arranged by dragging; books not in it yet, i.e. added later, come first, newest first).
+// Switching to another mode keeps `order`, so "Tự xếp" can bring the arrangement back.
+const SORTS = ['added', 'title', 'author', 'custom'];
+const coll = new Intl.Collator('vi', { sensitivity:'base', numeric:true });
+function sortCfg(){ const c = store.get('tsn-sort-' + view); return c && SORTS.includes(c.mode) ? Object.assign({ order:[] }, c) : { mode:'added', order:[] }; }
+function baseBooks(){ return view === 'mine' ? mine.slice() : SAMPLES.slice(); }
+function sortBooks(list){
+  const c = sortCfg(), by = list.slice();
+  if (c.mode === 'title') return by.sort((a, b) => coll.compare(a.title, b.title));
+  if (c.mode === 'author') return by.sort((a, b) => (+!!a.noAuthor - +!!b.noAuthor) || coll.compare(a.noAuthor ? '' : a.author || '', b.noAuthor ? '' : b.author || '') || coll.compare(a.title, b.title));
+  const natural = view === 'mine' ? by.sort((a, b) => (b.added || 0) - (a.added || 0)) : by;   // samples keep their own order
+  if (c.mode !== 'custom') return natural;
+  const pos = new Map(c.order.map((k, i) => [k, i]));
+  return natural.filter(b => !pos.has(bookKey(b))).concat(natural.filter(b => pos.has(bookKey(b))).sort((a, b) => pos.get(bookKey(a)) - pos.get(bookKey(b))));
+}
+// The 3D shelf follows the chosen order too, except 'added', where it keeps oldest → newest as before.
+function viewBooks(){ const l = baseBooks(); return sortCfg().mode === 'added' ? l : sortBooks(l); }
+// Re-sort after the order changed: keeps the selected book, the genre filter and the wall's scroll position.
+function applySort(focusId){
+  const keep = focusId || (books[activeIdx] && books[activeIdx].id), st = wall.scrollTop;
+  books = viewBooks(); buildShelf(keep); wall.scrollTop = st;
+}
+function setSort(mode){
+  const c = sortCfg(); if (c.mode === mode) return;
+  if (mode === 'custom' && !c.order.length) return;
+  c.mode = mode; store.set('tsn-sort-' + view, c);
+  flipWall(() => applySort());
+}
+// Move one book next to another (before or after it), within the full list of this view.
+function moveBook(id, targetId, after){
+  const list = sortBooks(baseBooks()), keys = list.map(bookKey);
+  const b = list.find(x => x.id === id), t = list.find(x => x.id === targetId); if (!b || !t || b === t) return false;
+  const k = bookKey(b); keys.splice(keys.indexOf(k), 1);
+  keys.splice(keys.indexOf(bookKey(t)) + (after ? 1 : 0), 0, k);
+  store.set('tsn-sort-' + view, { mode:'custom', order: keys });
+  flipWall(() => applySort(), id);
+  return true;
+}
+// FLIP: covers that stay on the same shelf slide to their new place; the moved book and any that change shelf
+// fade in (shelves clip their content, so a cover can't visibly travel between them).
+function flipWall(change, movedId){
+  const before = new Map();
+  if (gridMode && !REDUCE) wallIn.querySelectorAll('.wbook[data-drag]').forEach(el => before.set(el.dataset.id, el.getBoundingClientRect()));
+  change();
+  if (!before.size) return;
+  wallIn.querySelectorAll('.wbook[data-drag]').forEach(el => {
+    const r0 = before.get(el.dataset.id), cv = el.querySelector('.wcv'); if (!r0 || !cv) return;
+    const r = el.getBoundingClientRect(), dx = r0.left - r.left, dy = r0.top - r.top;
+    if (el.dataset.id === movedId || Math.abs(dy) > 4) cv.animate([{ opacity:0, transform:'translateY(-10px) scale(.94)' }, { opacity:1, transform:'none' }], { duration:300, easing:'cubic-bezier(.2,.8,.2,1)' });
+    else if (Math.abs(dx) > 1) cv.animate([{ transform:'translateX(' + dx + 'px)' }, { transform:'none' }], { duration:320, easing:'cubic-bezier(.2,.8,.2,1)' });
+  });
+}
+
 function showView(v, keepId){
   view = v === 'samples' ? 'samples' : 'mine';
   try { sessionStorage.setItem('tsn-view', view); } catch(e){}
-  books = view === 'mine' ? mine.slice() : SAMPLES.slice();
+  books = viewBooks();
   const genres = view === 'mine' ? mineGenres() : [];
   buildTabs(view === 'mine' ? [{ id:'all', label:'Tất cả' }].concat(genres.map(g => ({ id:g, label:g }))) : GROUPS);
   tabsEl.classList.toggle('off', view === 'mine' && !genres.length);
@@ -1332,18 +1409,19 @@ function applyWood(){
 applyWood();
 function wallCols(){ return innerWidth < 768 ? 3 : clamp(Math.floor((Math.min(wall.clientWidth, 1180) - 40) / 150), 3, 8); }
 // Your shelf: a top row of the 3 books read most recently (or newest, before anything is read), then the rest, newest first; each book appears once.
+// Sections marked `drag` can be rearranged by dragging (the "Đang đọc" / "Mới thêm" row is automatic).
 function wallSections(){
-  const all = books.map((b, i) => ({ b, i, p: progOf(b) }));
+  const all = sortBooks(books).map(b => ({ b, i: books.indexOf(b), p: progOf(b) }));
   if (view !== 'mine' || gridFilter !== 'all'){
     const items = all.filter(o => gridFilter === 'all' || groupOf(o.b) === gridFilter);
-    return [{ label: (gridFilter === 'all' ? 'Sổ ghi chú' : GLABEL[gridFilter] || gridFilter) + ' · ' + items.length, items }];
+    return [{ label: (gridFilter === 'all' ? 'Sổ ghi chú' : GLABEL[gridFilter] || gridFilter) + ' · ' + items.length, items, drag: true }];
   }
   let top = all.filter(o => o.p && o.p.pct > 0 && o.p.pct < 100).sort((a, b) => b.p.t - a.p.t).slice(0, 3), topLabel = 'Đang đọc', direct = true;
-  if (!top.length && N > 3){ top = all.slice().sort((a, b) => b.b.added - a.b.added).slice(0, 3); topLabel = 'Mới thêm'; direct = false; }
-  const rest = all.filter(o => !top.includes(o)).sort((a, b) => b.b.added - a.b.added);
+  if (!top.length && N > 3 && sortCfg().mode === 'added'){ top = all.slice(0, 3); topLabel = 'Mới thêm'; direct = false; }
+  const rest = all.filter(o => !top.includes(o));
   const out = [];
   if (top.length) out.push({ label: topLabel, items: top, direct });
-  out.push({ label: (top.length ? 'Thư viện · ' : 'Tất cả · ') + rest.length, items: rest, add: true });
+  out.push({ label: (top.length ? 'Thư viện · ' : 'Tất cả · ') + rest.length, items: rest, add: true, drag: true });
   return out;
 }
 function openFrom(bt, i){ if (isOpen) return; activeIdx = i; gridSrc = bt; openDetail(); }
@@ -1398,6 +1476,7 @@ function renderWall(focusId){
     sec.items.forEach((o, k) => {
       if (k && k % cols === 0){ fill(row); row = addRow(); }
       const bt = wallBook(o, sec.direct);
+      if (sec.drag && sec.items.length > 1) bt.dataset.drag = '1';
       row.appendChild(bt);
       if (o.b.id === focusId && !focusEl) focusEl = bt;
     });
@@ -1425,6 +1504,108 @@ function setLayout(g){
   updateTabs();
 }
 
+/* ---------- wall: drag a cover to another place ---------- */
+// Mouse: press on a cover and move 6px. Touch / pen: hold still on a cover for 380ms, then drag (moving
+// earlier is a normal scroll). While dragging, the cover follows the pointer, a bar shows where it will land
+// (before or after the nearest cover of the same section), and the wall scrolls near its top / bottom edge.
+// Keyboard: Alt + ← → ↑ ↓ moves the focused cover. The new order is saved as "Tự xếp" (`moveBook`).
+const DRAG_HOLD = 380, DRAG_EDGE = 70;
+let wd = null;
+const wmark = document.createElement('i'); wmark.className = 'wmark'; document.body.appendChild(wmark);
+wallIn.addEventListener('pointerdown', e => {
+  if (e.button > 0 || isOpen || wd) return;
+  const bt = e.target.closest('.wbook[data-drag]'); if (!bt) return;
+  const p = wd = { id: e.pointerId, bt, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, mouse: e.pointerType === 'mouse', on: false };
+  if (!p.mouse) p.timer = setTimeout(() => { if (wd === p) startDrag(p); }, DRAG_HOLD);
+});
+addEventListener('pointermove', e => {
+  const p = wd; if (!p || p.id !== e.pointerId) return;
+  p.x = e.clientX; p.y = e.clientY;
+  if (!p.on){
+    const dist = Math.hypot(p.x - p.x0, p.y - p.y0);
+    if (p.mouse){ if (dist > 6) startDrag(p); }
+    else if (dist > 10){ clearTimeout(p.timer); wd = null; }   // the finger moved first: it's a scroll
+    return;
+  }
+  dragTo(p);
+}, { passive: true });
+// Once a touch drag has started, the page must not scroll under the finger.
+wall.addEventListener('touchmove', e => { if (wd && wd.on) e.preventDefault(); }, { passive: false });
+addEventListener('pointerup', e => { if (wd && wd.id === e.pointerId) endDrag(true); });
+addEventListener('pointercancel', e => { if (wd && wd.id === e.pointerId) endDrag(false); });
+addEventListener('keydown', e => { if (e.key === 'Escape' && wd && wd.on){ e.stopPropagation(); endDrag(false); } }, true);
+function startDrag(p){
+  if (!p.bt.isConnected){ wd = null; return; }
+  p.on = true; clearTimeout(p.timer);
+  const r = p.bt.getBoundingClientRect();
+  p.w = r.width; p.h = r.height; p.ox = p.x0 - r.left; p.oy = p.y0 - r.top;
+  p.ghost = document.createElement('div'); p.ghost.className = 'wghost';
+  p.ghost.style.width = r.width + 'px'; p.ghost.style.height = r.height + 'px';
+  p.ghost.appendChild(p.bt.querySelector('.wcv').cloneNode(true));
+  document.body.appendChild(p.ghost);
+  p.bt.classList.add('lifted'); document.body.classList.add('wdragging');
+  toggleWoodMenu(false); toggleAddMenu(false);
+  try { if (!p.mouse && navigator.vibrate) navigator.vibrate(12); } catch(err){}
+  dragTo(p);
+  p.raf = requestAnimationFrame(function tick(){ if (wd !== p || !p.on) return; autoScroll(p); p.raf = requestAnimationFrame(tick); });
+}
+function autoScroll(p){
+  const r = wall.getBoundingClientRect();
+  const v = p.y < r.top + DRAG_EDGE ? -(r.top + DRAG_EDGE - p.y) : p.y > r.bottom - DRAG_EDGE ? p.y - (r.bottom - DRAG_EDGE) : 0;
+  if (!v) return;
+  const before = wall.scrollTop;
+  wall.scrollTop += clamp(v * .35, -18, 18);
+  if (wall.scrollTop !== before) dragTo(p);
+}
+function dragTo(p){
+  p.ghost.style.transform = 'translate(' + (p.x - p.ox) + 'px,' + (p.y - p.oy) + 'px) rotate(-3deg) scale(1.06)';
+  // Nearest cover of the same section; landing before or after it depends on which half the pointer is over.
+  let best = null, bd = Infinity;
+  wallIn.querySelectorAll('.wbook[data-drag]').forEach(el => {
+    const r = el.getBoundingClientRect();
+    const dx = p.x < r.left ? r.left - p.x : p.x > r.right ? p.x - r.right : 0;
+    const dy = p.y < r.top ? r.top - p.y : p.y > r.bottom ? p.y - r.bottom : 0;
+    const d = dx + dy * 2.5; if (d < bd){ bd = d; best = { el, r }; }
+  });
+  p.target = null; wmark.style.display = 'none';
+  if (!best || bd > Math.max(p.w, 80)) return;
+  const after = p.x > best.r.left + best.r.width / 2;
+  // Dropping right beside itself changes nothing, so no bar.
+  const sibs = [...wallIn.querySelectorAll('.wbook[data-drag]')], i = sibs.indexOf(best.el), me = sibs.indexOf(p.bt);
+  if (best.el === p.bt || (after && i + 1 === me) || (!after && i - 1 === me)) return;
+  p.target = { id: best.el.dataset.id, after };
+  const x = after ? best.r.right + 6 : best.r.left - 10;
+  wmark.style.display = 'block'; wmark.style.height = best.r.height + 'px';
+  wmark.style.transform = 'translate(' + x + 'px,' + best.r.top + 'px)';
+}
+function endDrag(drop){
+  const p = wd; wd = null; if (!p) return;
+  clearTimeout(p.timer); if (!p.on) return;
+  cancelAnimationFrame(p.raf);
+  p.ghost.remove(); wmark.style.display = 'none';
+  p.bt.classList.remove('lifted'); document.body.classList.remove('wdragging');
+  // The click that ends a drag must not open the book.
+  const stop = ev => { ev.stopPropagation(); ev.preventDefault(); };
+  addEventListener('click', stop, { capture: true, once: true }); setTimeout(() => removeEventListener('click', stop, { capture: true }), 0);
+  if (drop && p.target && moveBook(p.bt.dataset.id, p.target.id, p.target.after)) sortedToast();
+}
+let sortToastShown = false;
+function sortedToast(){ toast(sortToastShown ? 'Đã đổi chỗ.' : 'Đã đổi chỗ. Thứ tự lưu trên máy này; đổi lại trong menu Hiển thị → Thứ tự sách.', sortToastShown ? 1200 : 4200); sortToastShown = true; }
+wallIn.addEventListener('keydown', e => {
+  if (!e.altKey || !/^Arrow/.test(e.key)) return;
+  const bt = e.target.closest('.wbook[data-drag]'); if (!bt) return;
+  const sibs = [...wallIn.querySelectorAll('.wbook[data-drag]')], i = sibs.indexOf(bt), cols = wallCols();
+  const j = i + ({ ArrowLeft: -1, ArrowRight: 1, ArrowUp: -cols, ArrowDown: cols })[e.key];
+  e.preventDefault();
+  if (j < 0 || j >= sibs.length) return;
+  const id = bt.dataset.id;
+  if (moveBook(id, sibs[j].dataset.id, j > i)){
+    const el = wallIn.querySelector('.wbook[data-drag][data-id="' + CSS.escape(id) + '"]');
+    if (el){ el.focus({ preventScroll: true }); el.scrollIntoView({ block: 'nearest' }); }
+    sortedToast();
+  }
+});
+
 /* ---------- display menu: shelf style + wood (wood only applies to the grid) ---------- */
 const woodMenu = $('#woodMenu'), dispBtn = $('#dispBtn');
 $('#wmWood').innerHTML = Object.entries(WOODS).map(([k, w]) =>
@@ -1434,6 +1615,13 @@ function syncWoodMenu(){
   woodMenu.querySelectorAll('[data-lay]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.lay === 'grid') === gridMode)));
   woodMenu.querySelectorAll('[data-wood]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.wood === woodCfg.wood)));
   woodMenu.querySelectorAll('[data-lv]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lv === woodCfg.lv)));
+  const sc = sortCfg();
+  woodMenu.querySelectorAll('[data-sort]').forEach(b => {
+    b.setAttribute('aria-pressed', String(b.dataset.sort === sc.mode));
+    if (b.dataset.sort === 'added') b.textContent = view === 'mine' ? 'Mới thêm' : 'Mặc định';
+    if (b.dataset.sort === 'custom'){ b.disabled = !sc.order.length; b.title = sc.order.length ? 'Thứ tự bạn đã kéo thả' : 'Kéo sách trên kệ Lưới để tự xếp'; }
+  });
+  $('#wmSortHint').textContent = gridMode ? 'Kéo một cuốn sang chỗ khác để tự xếp. Điện thoại: giữ ngón tay trên bìa một chút rồi kéo.' : 'Muốn tự xếp: chuyển sang kiểu Lưới rồi kéo sách.';
 }
 let woodAnchor = dispBtn;
 function toggleWoodMenu(open, anchor, focus){
@@ -1454,6 +1642,7 @@ woodMenu.addEventListener('click', e => {
     if ((b.dataset.lay === 'grid') !== gridMode){ setLayout(b.dataset.lay === 'grid'); woodRebuilt = performance.now(); toggleWoodMenu(true, null, false); }
     return;
   }
+  if (b.dataset.sort){ setSort(b.dataset.sort); woodRebuilt = performance.now(); syncWoodMenu(); return; }
   const lv = b.dataset.lv && b.dataset.lv !== woodCfg.lv;
   if (b.dataset.wood) woodCfg.wood = b.dataset.wood; else if (b.dataset.lv) woodCfg.lv = b.dataset.lv;
   store.set('tsn-wood', woodCfg); syncWoodMenu(); applyWood();
