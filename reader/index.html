@@ -50,6 +50,8 @@ body.immersive .foot{transform:translateY(calc(100% + 4px))}
 body.fs .bar{transform:translateY(calc(-100% - 4px));box-shadow:0 10px 30px -18px rgba(0,0,0,.45)}
 body.fs .foot{transform:translateY(calc(100% + 4px));box-shadow:0 -10px 30px -18px rgba(0,0,0,.45)}
 body.fs.show-top .bar,body.fs.show-bot .foot{transform:none}
+/* hidden bars / drawer must not cast their shadow onto a page that reaches the screen edge */
+body.fs:not(.show-top) .bar,body.fs:not(.show-bot) .foot,.drawer:not(.on),.note:not(.on){box-shadow:none}
 body.fs.idle,body.fs.idle #gl{cursor:none !important}
 .fs-ico .x{display:none}
 body.fs .fs-ico .x{display:block}
@@ -60,6 +62,7 @@ body.fs .fs-ico .o{display:none}
 /* full screen on a phone: the page runs edge to edge, the strips under the notch / gesture bar take the paper colour */
 body.edge{background:var(--page)}
 body.edge #bookShadow{box-shadow:none}
+body.edge.pdfbook,body.edge.pdfbook #bookShadow{background:#fff}
 #safeProbe{position:fixed;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
 #gl{position:fixed;left:0;top:0;z-index:2;touch-action:none}
 
@@ -251,9 +254,10 @@ kbd{display:inline-block;min-width:1.2em;text-align:center;font:600 11px/1 var(-
   <div class="row trow"><span class="lbl">Cỡ chữ</span>
     <div class="size"><button class="box" id="fsMinus" type="button" aria-label="Chữ nhỏ hơn" style="font:400 13px var(--serif)">A−</button><output id="fsVal"></output><button class="box" id="fsPlus" type="button" aria-label="Chữ lớn hơn" style="font:400 19px var(--serif)">A+</button></div></div>
   <div class="row trow"><span class="lbl">Giãn dòng</span><div class="seg" data-k="lh"><button type="button" data-v="1.4">Hẹp</button><button type="button" data-v="1.6">Vừa</button><button type="button" data-v="1.85">Rộng</button></div></div>
-  <div class="row trow"><span class="lbl">Lề trang</span><div class="seg" data-k="margin"><button type="button" data-v="s">Hẹp</button><button type="button" data-v="m">Vừa</button><button type="button" data-v="l">Rộng</button></div></div>
+  <div class="row trow"><span class="lbl">Lề trang</span><div class="seg" data-k="margin"><button type="button" data-v="s">Hẹp</button><button type="button" data-v="m">Vừa</button><button type="button" data-v="l">Rộng</button></div><span class="hint">Trên màn hình rộng, lề còn giữ dòng chữ không quá dài (Hẹp ~90, Vừa ~75, Rộng ~65 ký tự).</span></div>
   <div class="row trow"><span class="lbl">Kiểu chữ</span><div class="seg" data-k="font"><button type="button" data-v="serif" style="font-family:var(--serif);font-size:15px">Có chân</button><button type="button" data-v="sans">Không chân</button></div></div>
   <div class="row"><span class="lbl">Nền</span><div class="seg themes" data-k="theme"><button type="button" data-v="paper"><i style="background:#FBF8F1"></i>Giấy</button><button type="button" data-v="sepia"><i style="background:#F2E6CC"></i>Sepia</button><button type="button" data-v="dark"><i style="background:#1F1E1B"></i>Tối</button></div></div>
+  <div class="row trow"><span class="lbl">Hoạ tiết nền</span><div class="seg" data-k="deco"><button type="button" data-v="none">Không</button><button type="button" data-v="forest">Rừng thông</button><button type="button" data-v="hills">Đồi</button></div></div>
   <div class="row"><span class="lbl">Bố cục</span><div class="seg" data-k="layout"><button type="button" data-v="auto">Tự động</button><button type="button" data-v="single">1 trang</button><button type="button" data-v="spread">2 trang</button></div><span class="hint" id="layoutHint" hidden>Khi cầm dọc luôn hiện 1 trang. 2 trang hiện khi xoay ngang.</span></div>
   <div class="row"><button class="box lbl" id="keysBtn" type="button" style="justify-self:start">Phím tắt <kbd style="margin-left:4px">?</kbd></button></div>
 </div>
@@ -300,7 +304,7 @@ const THEMES = {
 };
 const HL = { yellow:'rgba(242,196,52,.42)', green:'rgba(110,185,100,.38)', pink:'rgba(236,112,145,.36)', blue:'rgba(80,135,230,.34)' };
 const HL_DARK = { yellow:'rgba(242,196,52,.30)', green:'rgba(110,185,100,.30)', pink:'rgba(236,112,145,.30)', blue:'rgba(80,135,230,.34)' };
-const settings = Object.assign({ fs:null, lh:1.6, margin:'m', font:'serif', theme:'paper', layout:'auto' }, store.get('lt-settings') || {});
+const settings = Object.assign({ fs:null, lh:1.6, margin:'m', font:'serif', theme:'paper', layout:'auto', deco:'none' }, store.get('lt-settings') || {});
 const TH = () => THEMES[settings.theme] || THEMES.paper;
 
 /* ---------------- sample book (original text) ---------------- */
@@ -336,6 +340,8 @@ const SAMPLE = { kind:'text', id:'sample', title:'Một trang giấy cong', auth
 const canvas = $('#gl'), shadowEl = $('#bookShadow');
 let gl, prog, U = {}, idxCount = 0;
 let book = null, pages = [], toc = [], nPages = 0, cur = 0, spread = false;
+let full = false;
+const FULL_HALF = 480;
 let vw = 0, vh = 0, dpr = 1, W = 300, H = 450, PX = 0, PY = 0, SPINE = 0;
 let data = { pos:null, hls:[], bms:[] };
 let sel = null, pop = null, turn = null, dirty = true;
@@ -526,14 +532,21 @@ function wrapWords(words, font, firstW, restW){
   if (curL.length) lines.push({ ws:curL, width:cw, avail, last:true });
   return { lines, sw };
 }
-function autoFs(){ return Math.round(clamp(W * 0.043, 15, 19)); }
+function autoFs(){ return Math.round(clamp(W * 0.043, 15, full && W >= 600 ? 20 : 19)); }
+// Longest line, in average characters, for each margin choice: a whole-screen page keeps a readable measure
+// and the paper around it simply gets wider margins.
+const MEASURE = { s:92, m:76, l:64 };
+const MEASURE_TXT = 'Khi đọc sách giấy, ta không chỉ đọc chữ. Ngón tay biết mình đang ở đâu trong cuốn sách nhờ độ dày của xấp giấy còn lại.';
 function paginate(){
   const fs = settings.fs || autoFs(), lh = fs * settings.lh;
   const mxr = { s:.07, m:.1, l:.14 }[settings.margin] || .1;
   // Top / bottom margins (running head, page number) follow the type size, tighter on narrow pages,
   // so a tall phone page gains lines instead of white space.
   const vk = W < 520 ? .055 : .075;
-  const mx = Math.round(W * mxr), mt = Math.round(clamp(H * vk, fs * 2.4, fs * 4.2)), mb = Math.round(clamp(H * (vk - .005), fs * 2.2, fs * 3.8));
+  const fam0 = settings.font === 'sans' ? SANS : SERIF;
+  meas.font = '400 ' + fs + 'px ' + fam0;
+  const chW = meas.measureText(MEASURE_TXT).width / MEASURE_TXT.length;   // average character of ordinary Vietnamese prose
+  const mx = Math.round(Math.max(W * mxr, (W - (MEASURE[settings.margin] || 76) * chW) / 2)), mt = Math.round(clamp(H * vk, fs * 2.4, fs * 4.2)), mb = Math.round(clamp(H * (vk - .005), fs * 2.2, fs * 3.8));
   const cw = W - 2*mx, maxY = H - mb;
   const fam = settings.font === 'sans' ? SANS : SERIF;
   const fBody = '400 ' + fs + 'px ' + fam;
@@ -581,7 +594,7 @@ function paginate(){
     after = false;
   });
   if (empty() && pages.length > 2) pages.pop();
-  pages.meta = { fs, mt, mb, mx, lh };
+  pages.meta = { fs, mt, mb, mx, lh, cw };
 }
 function pageOfKey(key){
   if (key == null || key < 0) return 0;
@@ -618,10 +631,51 @@ function drawRibbon(x, i){
 }
 function paperBase(x, i){
   const t = TH(); x.fillStyle = t.page; x.fillRect(0, 0, W, H);
+  if (settings.deco && settings.deco !== 'none' && book && book.kind !== 'pdf') drawDeco(x, i);
+  if (full && !spread) return;   // a single whole-screen page has no spine
   const sw = W * .07; const left = isLeft(i);
   const g = left ? x.createLinearGradient(W, 0, W - sw, 0) : x.createLinearGradient(0, 0, sw, 0);
   g.addColorStop(0, t.spine); g.addColorStop(1, 'rgba(0,0,0,0)');
   x.fillStyle = g; if (left) x.fillRect(W - sw, 0, sw, H); else x.fillRect(0, 0, sw, H);
+}
+// Optional faint picture along the foot of the page (like a printed endpaper). In two-page view it runs across
+// both pages as one picture; it is drawn from a fixed seed so every page shows the same strip.
+const DECO_INK = { paper:'150,128,78', sepia:'120,88,40', dark:'210,196,160' };
+function drawDeco(x, i){
+  const rgb = DECO_INK[settings.theme] || DECO_INK.paper, a = settings.theme === 'dark' ? .07 : .15;
+  const total = spread ? 2 * W : W, off = spread && !isLeft(i) ? W : 0;
+  const band = Math.min(H * .26, total * .2), base = H;
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  x.save(); x.translate(-off, 0);
+  const g = x.createLinearGradient(0, base - band, 0, base);
+  g.addColorStop(0, 'rgba(' + rgb + ',0)'); g.addColorStop(.45, 'rgba(' + rgb + ',' + a * .7 + ')'); g.addColorStop(1, 'rgba(' + rgb + ',' + a + ')');
+  x.fillStyle = g;
+  if (settings.deco === 'forest'){
+    // two rows of fir trees, the back row smaller and fainter
+    for (const row of [{ k:.6, y:-band * .2, al:.5 }, { k:1, y:0, al:1 }]){
+      x.globalAlpha = row.al; x.beginPath();
+      const step = band * .2 * row.k;
+      for (let px = -step * rnd(); px < total + step; px += step * (.7 + rnd() * .9)){
+        const h = band * row.k * (.45 + rnd() * .55), w = h * (.36 + rnd() * .1), by = base + row.y;
+        for (let k = 0; k < 3; k++){   // three stacked tiers, widest at the bottom
+          const tt = by - h + h * k * .26, tb = tt + h * .46, tw = w * (.55 + k * .22);
+          x.moveTo(px, tt); x.lineTo(px + tw / 2, tb); x.lineTo(px - tw / 2, tb); x.closePath();
+        }
+        x.moveTo(px - w * .05, by - h * .2); x.lineTo(px + w * .05, by - h * .2); x.lineTo(px + w * .05, by); x.lineTo(px - w * .05, by); x.closePath();
+      }
+      x.fill('nonzero');
+    }
+  } else {
+    // soft rolling hills, three layers
+    [[.95, .5, 3.1], [.7, .75, 2.3], [.45, 1, 1.6]].forEach(([hk, al, f], li) => {
+      x.globalAlpha = al; const ph = rnd() * 6, ph2 = rnd() * 6;
+      x.beginPath(); x.moveTo(0, base);
+      for (let px = 0; px <= total; px += 8){ const u = px / total * Math.PI * 2;
+        x.lineTo(px, base - band * hk * (.55 + .25 * Math.sin(u * f + ph) + .12 * Math.sin(u * f * 2.7 + ph2))); }
+      x.lineTo(total, base); x.closePath(); x.fill();
+    });
+  }
+  x.restore();
 }
 function pageCanvas(i){
   const c = document.createElement('canvas'); c.width = Math.round(W * dpr); c.height = Math.round(H * dpr);
@@ -673,8 +727,21 @@ function pageCanvas(i){
     for (const w of l.words) x.fillText(w.t, w.x, l.y);
   }
   for (const im of p.imgs){ try { x.drawImage(im.img, im.x, im.y, im.w, im.h); } catch(e){} }
-  x.fillStyle = t.muted; x.font = '600 ' + Math.round(m.fs*.55) + 'px ' + SANS; x.textAlign = 'center'; setSpacing(x, (m.fs*.1) + 'px');
   const ch = chapterOf(i);
+  if (full){
+    // Whole-screen page: running head in the outer top corner, "page / total" in the outer bottom corner.
+    const left = isLeft(i), ox = left ? m.mx : W - m.mx;
+    x.fillStyle = t.muted; x.textAlign = left || !spread ? 'left' : 'right';
+    x.font = '400 ' + Math.round(m.fs * .74) + 'px ' + SANS;
+    let hd = left ? book.title : (ch ? ch.label : book.title);
+    while (x.measureText(hd).width > m.cw * .8 && hd.length > 6) hd = hd.slice(0, -2).trimEnd() + '…';
+    x.fillText(hd, spread ? ox : m.mx, m.mt * .5);
+    x.textAlign = left ? 'left' : 'right'; x.font = '400 ' + Math.round(m.fs * .7) + 'px ' + SANS;
+    x.fillText(i + '/' + (nPages - 1), ox, H - m.mb * .4);
+    if (isBookmarked(i)) drawRibbon(x, i);
+    return c;
+  }
+  x.fillStyle = t.muted; x.font = '600 ' + Math.round(m.fs*.55) + 'px ' + SANS; x.textAlign = 'center'; setSpacing(x, (m.fs*.1) + 'px');
   let head = (isLeft(i) ? book.title : (ch ? ch.label : book.title)).toUpperCase();
   while (x.measureText(head).width > W * .7 && head.length > 6) head = head.slice(0, -2).trimEnd() + '…';
   x.fillText(head, W/2, m.mt * .55);
@@ -716,11 +783,11 @@ function renderPdfInto(i, v, res = 1){
       const vp = page.getViewport({ scale: sc });
       const c = document.createElement('canvas'); c.width = Math.round(w * dpr * res); c.height = Math.round(h * dpr * res);
       const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
-      x.save(); x.translate((c.width - vp.width)/2, (c.height - vp.height)/2);
+      x.save(); x.translate(pdfOx(i, c.width, vp.width), (c.height - vp.height)/2);
       await page.render({ canvasContext: x, viewport: vp }).promise; x.restore();
-      const sw = c.width * .06;
+      if (!(full && !spread)){ const sw = c.width * .06;
       const g = left ? x.createLinearGradient(c.width, 0, c.width - sw, 0) : x.createLinearGradient(0, 0, sw, 0);
-      g.addColorStop(0, 'rgba(70,50,25,.12)'); g.addColorStop(1, 'rgba(70,50,25,0)'); x.fillStyle = g; if (left) x.fillRect(c.width - sw, 0, sw, c.height); else x.fillRect(0, 0, sw, c.height);
+      g.addColorStop(0, 'rgba(70,50,25,.12)'); g.addColorStop(1, 'rgba(70,50,25,0)'); x.fillStyle = g; if (left) x.fillRect(c.width - sw, 0, sw, c.height); else x.fillRect(0, 0, sw, c.height); }
       if (book !== myBook || tex.get(k) !== v || W !== w || v.want !== res) return;
       v.base = c; v.res = res; composePdf(i, v);
     } catch(e){}
@@ -822,16 +889,18 @@ function loadPdfText(i){
   })();
   return rec.promise;
 }
+// Horizontal place of a fitted PDF page inside its (wider) sheet: centred, but against the spine in two-page view.
+function pdfOx(i, sheetW, pageW){ return !spread ? (sheetW - pageW) / 2 : isLeft(i) ? sheetW - pageW : 0; }
 function ptPage(i){
   const r = book && book.text && book.text[i]; if (!r || !r.ready) return null;
-  if (r.cw !== W || r.ch !== H){
-    const s = Math.min(W / r.w, H / r.h), ox = (W - r.w * s) / 2, oy = (H - r.h * s) / 2;
+  if (r.cw !== W || r.ch !== H || r.sp !== spread){
+    const s = Math.min(W / r.w, H / r.h), ox = pdfOx(i, W, r.w * s), oy = (H - r.h * s) / 2;
     let kMin = Infinity, kMax = -Infinity;
     const lines = r.lines.map(l => ({ y: oy + l.y * s, fs: l.fs * s, gap: l.fs * s * .3,
       words: l.words.map(w => { kMin = Math.min(kMin, w.key); kMax = Math.max(kMax, w.key); return { t: w.t, key: w.key, x: ox + w.x * s, w: w.w * s }; }) }));
     const fss = lines.map(l => l.fs).sort((a, b) => a - b);
     r.page = { pdf: true, scan: r.scan, lines, keyMin: kMin, keyMax: kMax, lh: (fss[fss.length >> 1] || 12) * 1.6 };
-    r.cw = W; r.ch = H;
+    r.cw = W; r.ch = H; r.sp = spread;
   }
   return r.page;
 }
@@ -934,22 +1003,27 @@ function layout(restore){
   canvas.style.width = vw + 'px'; canvas.style.height = vh + 'px';
   // Portrait screens always show one page, even when "2 trang" is chosen.
   const portrait = vh > vw;
-  // Full screen in landscape opens the book on two pages unless "1 trang" is chosen.
-  spread = !portrait && (settings.layout === 'spread' || (settings.layout === 'auto' && (fsMode ? vw >= 700 : vw >= 900 && vw / vh > 1.15)));
-  // Full screen on a phone held upright: one page from edge to edge, clear of the notch and the gesture bar.
-  const edge = fsMode && portrait && vw < 640;
-  document.body.classList.toggle('edge', edge);
+  // Full screen: two pages when held sideways and each half is still a comfortable page (≥ 480px), unless "1 trang" is chosen.
+  spread = !portrait && (settings.layout === 'spread' || (settings.layout === 'auto' && (fsMode ? vw / 2 >= FULL_HALF : vw >= 900 && vw / vh > 1.15)));
+  // Full screen on any device: the paper IS the screen (one page = whole screen, two pages = one half each),
+  // no frame, no shadow, clear only of the notch / gesture bar.
+  full = fsMode;
+  document.body.classList.toggle('edge', full); document.body.classList.toggle('pdfbook', book.kind === 'pdf');
   const sp = getComputedStyle($('#safeProbe'));
-  // Full-screen mode: the bars float over the book, so the book uses the whole screen.
-  const top = edge ? parseFloat(sp.paddingTop) || 0 : fsMode ? 14 : $('.bar').offsetHeight + 12;
-  const bot = edge ? parseFloat(sp.paddingBottom) || 0 : fsMode ? 14 : $('.foot').offsetHeight + 10;
-  const availW = vw - 2 * (edge ? 0 : vw < 640 ? 10 : fsMode ? 24 : 36), availH = vh - top - bot;
-  // Text pages are laid out again for any size, so on an upright screen they take its shape (within 1.5–2.4).
-  const aspect = book.kind === 'pdf' ? book.ratio : portrait && !spread ? clamp(availH / availW, 1.5, 2.4) : 1.5;
-  const capT = fsMode ? 760 : 540, capP = fsMode ? 1400 : 900;
-  if (spread) W = Math.floor(Math.min(availW / 2, availH / aspect, book.kind === 'pdf' ? capP : capT));
-  else W = Math.floor(Math.min(availW, availH / aspect, book.kind === 'pdf' ? capP + 100 : capT + 60));
-  H = Math.floor(W * aspect);
+  const top = full ? parseFloat(sp.paddingTop) || 0 : $('.bar').offsetHeight + 12;
+  const bot = full ? parseFloat(sp.paddingBottom) || 0 : $('.foot').offsetHeight + 10;
+  const availW = vw - 2 * (full ? 0 : vw < 640 ? 10 : 36), availH = vh - top - bot;
+  if (full){
+    // Text pages are laid out again for the screen's shape; a PDF page is fitted inside and the rest is blank paper.
+    W = spread ? Math.floor(vw / 2) : vw; H = Math.floor(availH);
+  } else {
+    // Text pages are laid out again for any size, so on an upright screen they take its shape (within 1.5–2.4).
+    const aspect = book.kind === 'pdf' ? book.ratio : portrait && !spread ? clamp(availH / availW, 1.5, 2.4) : 1.5;
+    const capT = 540, capP = 900;
+    if (spread) W = Math.floor(Math.min(availW / 2, availH / aspect, book.kind === 'pdf' ? capP : capT));
+    else W = Math.floor(Math.min(availW, availH / aspect, book.kind === 'pdf' ? capP + 100 : capT + 60));
+    H = Math.floor(W * aspect);
+  }
   const bookW = spread ? 2 * W : W;
   PX = Math.round((vw - bookW) / 2); PY = Math.round(top + (availH - H) / 2); SPINE = PX + W;
   Object.assign(shadowEl.style, { left: PX + 'px', top: PY + 'px', width: bookW + 'px', height: H + 'px' });
