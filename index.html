@@ -388,7 +388,12 @@ body.is-empty :is(.play,.caption,.arrow){visibility:hidden}
   align-content:safe center;justify-content:center;column-gap:clamp(40px,6vw,96px);padding:110px 48px 56px;overflow-y:auto}
 .detail .close{position:absolute;top:calc(31px + env(safe-area-inset-top,0px));left:max(32px,env(safe-area-inset-left,0px));z-index:2}
 .detail .dlogo{position:absolute;top:env(safe-area-inset-top,0px);left:0;right:0;height:84px;display:grid;place-items:center;pointer-events:none}
-.dm{overflow:hidden}
+.dm{overflow:hidden;overflow:clip}
+/* Tablets and PCs: "← Về kệ" sits right above the author and title, on the same left edge (not in the far corner). */
+@media (min-width:768px){
+  .detail{grid-template-rows:1fr auto auto auto auto 1fr;grid-template-areas:"poster ." "poster back" "poster head" "poster bar" "poster body" "poster ."}
+  .detail .close{position:static;grid-area:back;justify-self:start;margin-bottom:26px}
+}
 .dm>.in{display:block}
 .dhead{grid-area:head;display:grid;gap:12px}
 .dsub{color:var(--cobalt);font-weight:500;line-height:1.6}
@@ -2284,6 +2289,7 @@ function fillDetail(b){
   $('#dEdit').hidden = sample;
   $('#pImg').setAttribute('href', b.cover);
 }
+let revealT = 0;
 function openDetail(){
   if (isOpen || !N) return;
   T = Math.round(T); s = T;
@@ -2298,10 +2304,16 @@ function openDetail(){
     { clipPath: 'inset(' + cr.t + 'px ' + cr.r + 'px ' + cr.b + 'px ' + cr.l + 'px round 3px)', transform: 'rotate(-4.5deg)' },
     { clipPath: 'inset(0px 0px 0px 0px round 0px)', transform: 'rotate(0deg)' }
   ], { duration: dur, easing: SHEET_EASE, fill: 'both' });
-  detail.querySelectorAll('.dm > .in').forEach((el, i) => {
+  // Each line slides up into its row. Hidden rows do not count (they only delayed the buttons), every row starts
+  // unscrolled, and a safety timer finishes any slide that has not ended, so the buttons can never stay hidden.
+  const rows = [...detail.querySelectorAll('.dm > .in')].filter(el => !el.parentNode.hidden);
+  const slides = rows.map((el, i) => {
+    el.parentNode.scrollTop = 0;
     el.getAnimations().forEach(a => a.cancel());
-    el.animate([{ transform:'translateY(110%)' }, { transform:'translateY(0)' }], { duration: REDUCE ? 1 : 900, delay: REDUCE ? 0 : 620 + i*75, easing: EASE, fill:'both' });
+    return el.animate([{ transform:'translateY(110%)' }, { transform:'translateY(0)' }], { duration: REDUCE ? 1 : 900, delay: REDUCE ? 0 : 620 + i*75, easing: EASE, fill:'both' });
   });
+  clearTimeout(revealT);
+  revealT = setTimeout(() => { if (isOpen && !closing) slides.forEach(a => { if (a.playState !== 'finished') a.finish(); }); }, REDUCE ? 0 : 620 + rows.length * 75 + 1100);
   cancelAnimationFrame(inkRaf);
   const t0 = performance.now() + (REDUCE ? -5000 : 520);
   const ink = now => {
@@ -2310,7 +2322,9 @@ function openDetail(){
     if (el < 2400) inkRaf = requestAnimationFrame(ink);
   };
   inkRaf = requestAnimationFrame(ink);
-  setTimeout(() => { if (isOpen) $('#dRead').focus({ preventScroll:true }); }, REDUCE ? 0 : 900);
+  // Focus the read button once its row has slid in (focusing it while still below the row's edge could scroll it away).
+  const barSlide = slides[rows.indexOf($('#dRead').closest('.in'))];
+  (barSlide ? barSlide.finished : Promise.resolve()).then(() => { if (isOpen && !closing) $('#dRead').focus({ preventScroll:true }); }, () => {});
 }
 function closeDetail(){
   if (!isOpen || closing) return; closing = true;

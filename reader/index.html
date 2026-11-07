@@ -354,7 +354,7 @@ const canvas = $('#gl'), shadowEl = $('#bookShadow');
 let gl, prog, U = {}, idxCount = 0;
 let book = null, pages = [], toc = [], nPages = 0, cur = 0, spread = false;
 let full = false;
-const FULL_HALF = 480;
+const FULL_HALF = 420;
 // Below this height the bars float (hidden by default); "Tự động" opens two pages when each is at least MIN_PAGE wide.
 const SHORT_H = 640, MIN_PAGE = 260;
 let floatHinted = false;
@@ -1050,7 +1050,7 @@ function layout(restore){
   const short = !fsMode && vh < SHORT_H, wasFloat = document.body.classList.contains('float');
   document.body.classList.toggle('float', fsMode || short);
   if (wasFloat && !(fsMode || short)) document.body.classList.remove('show-top', 'show-bot', 'idle');
-  if (short && !wasFloat && !floatHinted){ floatHinted = true; setTimeout(() => toast(lastPtrType === 'touch' ? 'Chạm giữa trang để hiện menu' : 'Rê chuột lên mép trên để hiện menu', 3200), 600); }
+  if ((fsMode || short) && !wasFloat && !floatHinted){ floatHinted = true; setTimeout(() => toast(lastPtrType === 'touch' ? 'Chạm giữa trang để hiện menu' : 'Rê chuột lên mép trên để hiện menu', 3200), 600); }
   document.body.classList.toggle('edge', full); document.body.classList.toggle('pdfbook', book.kind === 'pdf');
   const sp = getComputedStyle($('#safeProbe')), safeT = parseFloat(sp.paddingTop) || 0, safeB = parseFloat(sp.paddingBottom) || 0;
   const top = full ? safeT : short ? safeT + 12 : $('.bar').offsetHeight + 12;
@@ -2049,7 +2049,10 @@ addEventListener('wheel', e => {
 // Mouse: moving near the top edge shows the menu bar, near the bottom shows the progress bar;
 // they hide again once the mouse moves away (but stay while a panel opened from them is open).
 // Touch: a tap in the middle of the page shows or hides both bars.
-let fsMode = false, fsNative = false, edgeT = 0, idleT = 0;
+// A book opens in this full-screen layout by default (without the browser's own full screen, which needs a tap):
+// ⛶, F or Esc leave it; ⛶ again enters it with the browser's full screen too.
+let fsMode = true, fsNative = false, edgeT = 0, idleT = 0;
+document.body.classList.add('fs'); $('#fsBtn').setAttribute('aria-label', 'Thoát toàn màn hình');
 // The hint shown on entering depends on what was used last: touch, or mouse/keyboard.
 let lastPtrType = matchMedia('(pointer: fine)').matches ? 'mouse' : 'touch';
 addEventListener('pointerdown', e => { lastPtrType = e.pointerType === 'touch' ? 'touch' : 'mouse'; }, true);
@@ -2064,7 +2067,7 @@ function toggleChrome(){
 function chromeHeld(){ return setEl.classList.contains('on') || $('#drawer').classList.contains('on') || $('#note').classList.contains('on') || !!pop; }
 function enterFs(){
   if (fsMode) return;
-  fsMode = true; document.body.classList.remove('immersive', 'show-top', 'show-bot'); document.body.classList.add('fs', 'float');
+  fsMode = true; floatHinted = true; document.body.classList.remove('immersive', 'show-top', 'show-bot'); document.body.classList.add('fs', 'float');
   $('#fsBtn').setAttribute('aria-label', 'Thoát toàn màn hình');
   closeSettings();
   const el = document.documentElement, req = el.requestFullscreen || el.webkitRequestFullscreen;
