@@ -46,6 +46,15 @@ button:focus-visible,label:focus-within,textarea:focus-visible,.item:focus-visib
   display:flex;align-items:center;gap:14px;transition:transform .45s var(--ease),background-color .4s var(--ease)}
 .foot .prog{color:var(--muted);font-variant-numeric:tabular-nums;flex:none;max-width:56vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #seek{flex:1;min-width:0;accent-color:var(--accent)}
+/* Touch screens: a thumb-sized knob (24px) and a 40px-tall touch strip; the read part is filled (--pct, set in updateUI). */
+@media (pointer:coarse){
+  #seek{-webkit-appearance:none;appearance:none;height:40px;margin:0;background:transparent;touch-action:none}
+  #seek::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(90deg,var(--accent) var(--pct,0%),var(--soft) var(--pct,0%))}
+  #seek::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;margin-top:-10px;border-radius:50%;background:var(--accent);border:3px solid var(--page);box-shadow:0 1px 4px rgba(0,0,0,.25)}
+  #seek::-moz-range-track{height:4px;border-radius:2px;background:var(--soft)}
+  #seek::-moz-range-progress{height:4px;border-radius:2px;background:var(--accent)}
+  #seek::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--accent);border:3px solid var(--page)}
+}
 body.immersive .bar{transform:translateY(calc(-100% - 4px))}
 body.immersive .foot{transform:translateY(calc(100% + 4px))}
 /* Floating bars (body.float = full screen, or a short screen such as a tablet held sideways): the bars float over the
@@ -268,6 +277,7 @@ kbd{display:inline-block;min-width:1.2em;text-align:center;font:600 11px/1 var(-
   <div class="row trow"><span class="lbl">Kiểu chữ</span><div class="seg" data-k="font"><button type="button" data-v="serif" style="font-family:var(--serif);font-size:15px">Có chân</button><button type="button" data-v="sans">Không chân</button></div></div>
   <div class="row"><span class="lbl">Nền</span><div class="seg themes" data-k="theme"><button type="button" data-v="paper"><i style="background:#FBF8F1"></i>Giấy</button><button type="button" data-v="sepia"><i style="background:#F2E6CC"></i>Sepia</button><button type="button" data-v="dark"><i style="background:#1F1E1B"></i>Tối</button></div></div>
   <div class="row trow"><span class="lbl">Hoạ tiết nền</span><div class="seg" data-k="deco"><button type="button" data-v="none">Không</button><button type="button" data-v="forest">Rừng thông</button><button type="button" data-v="hills">Đồi</button></div></div>
+  <div class="row"><span class="lbl">Chạm để lật</span><div class="seg" data-k="tap"><button type="button" data-v="sides">Hai bên</button><button type="button" data-v="one">Một tay</button></div><span class="hint">Một tay: chạm bên nào cũng sang trang sau (giữa trang vẫn là menu). Vuốt sang phải để lùi trang.</span></div>
   <div class="row"><span class="lbl">Bố cục</span><div class="seg" data-k="layout"><button type="button" data-v="auto">Tự động</button><button type="button" data-v="single">1 trang</button><button type="button" data-v="spread">2 trang</button></div><span class="hint" id="layoutHint" hidden>Khi cầm dọc luôn hiện 1 trang. 2 trang hiện khi xoay ngang.</span></div>
   <div class="row"><button class="box lbl" id="keysBtn" type="button" style="justify-self:start">Phím tắt <kbd style="margin-left:4px">?</kbd></button></div>
 </div>
@@ -314,7 +324,7 @@ const THEMES = {
   dark:  { spine:'rgba(0,0,0,.4)', scheme:'dark' }
 };
 const themeCache = {};
-const settings = Object.assign({ fs:null, lh:1.6, margin:'m', font:'serif', theme:'paper', layout:'auto', deco:'none' }, store.get('lt-settings') || {});
+const settings = Object.assign({ fs:null, lh:1.6, margin:'m', font:'serif', theme:'paper', layout:'auto', deco:'none', tap:'sides' }, store.get('lt-settings') || {});
 function TH(){
   const id = THEMES[settings.theme] ? settings.theme : 'paper', el = document.documentElement;
   if (el.dataset.theme !== id) el.dataset.theme = id;
@@ -1422,7 +1432,7 @@ canvas.addEventListener('pointerdown', e => {
     ptr = { id:e.pointerId, state:'pan', ptype:e.pointerType, x0:e.clientX, y0:e.clientY, t0:now, sx0:zoom.sx, sy0:zoom.sy, moved:0, vx:0, lx:e.clientX, lt:now,
       atL: clampZoom(zoom.z, zoom.sx + 1, zoom.sy).sx < zoom.sx + .5, atR: clampZoom(zoom.z, zoom.sx - 1, zoom.sy).sx > zoom.sx - .5 };
     // Touch: holding still on a zoomed page starts a selection too.
-    if (!mouse){ const p = ptr; p.timer = setTimeout(() => onLong(p), 460); }
+    if (!mouse){ const p = ptr; p.timer = setTimeout(() => onLong(p), LONG_MS); }
     try { canvas.setPointerCapture(e.pointerId); } catch(err){}
     return;
   }
@@ -1431,11 +1441,15 @@ canvas.addEventListener('pointerdown', e => {
   flushTurn();
   const now = performance.now();
   ptr = { id:e.pointerId, ptype:e.pointerType, x0:e.clientX, y0:e.clientY, t0:now, state:'pending', vx:0, lx:e.clientX, lt:now };
-  const p = ptr; p.timer = setTimeout(() => onLong(p), 460);
+  const p = ptr; p.timer = setTimeout(() => onLong(p), LONG_MS);
   try { canvas.setPointerCapture(e.pointerId); } catch(err){}
 });
+// Touch: holding still this long starts a selection. A thumb often rests a moment before swiping, so it is a bit longer
+// than the usual 0.5 s, and a finger that has drifted more than a few pixels is a swipe, not a hold.
+const LONG_MS = 550, SWIPE_MIN = 10;
 function onLong(p){
   if (!p || ptr !== p || !(p.state === 'pending' || (p.state === 'pan' && p.moved < 8))) return;
+  if (p.state === 'pending' && p.ptype !== 'mouse' && Math.hypot((p.cx ?? p.x0) - p.x0, (p.cy ?? p.y0) - p.y0) > 6) return;
   const hp = pointToPage(p.x0, p.y0); if (!hp){ p.state = 'none'; return; }
   if (book.kind === 'pdf'){
     const tp = ptPage(hp.i);
@@ -1446,10 +1460,12 @@ function onLong(p){
   p.state = 'select'; sel = { page: hp.i, a: w.key, b: w.key }; invalidate(hp.i);
   try { if (navigator.vibrate) navigator.vibrate(12); } catch(e){}
 }
-function beginDrag(p){
+function beginDrag(p, want){
   let dir, origin, flip;
-  if (!spread){ dir = p.x0 - PX > W * .5 ? 'fwd' : 'back'; origin = PX; flip = 1; }
-  else { dir = p.x0 >= SPINE ? 'fwd' : 'back'; origin = SPINE; flip = dir === 'fwd' ? 1 : -1; }
+  // Touch passes the swipe's direction (left = next, right = previous), wherever the finger started, so one thumb can
+  // turn both ways; the mouse keeps "grab the side of the page you want to turn".
+  if (!spread){ dir = want || (p.x0 - PX > W * .5 ? 'fwd' : 'back'); origin = PX; flip = 1; }
+  else { dir = want || (p.x0 >= SPINE ? 'fwd' : 'back'); origin = SPINE; flip = dir === 'fwd' ? 1 : -1; }
   const ly0 = p.y0 - PY;
   const t = makeTurn(dir, ly0);
   if (!t){ p.state = 'none'; toast(dir === 'fwd' ? 'Hết sách rồi.' : 'Đây là trang đầu.'); return; }
@@ -1485,7 +1501,16 @@ canvas.addEventListener('pointermove', e => {
   }
   const now = performance.now(), dt = Math.max(1, now - p.lt);
   p.vx = p.vx * .6 + ((e.clientX - p.lx) / dt) * .4; p.lx = e.clientX; p.lt = now;
-  if (p.state === 'pending' && Math.hypot(e.clientX - p.x0, e.clientY - p.y0) > 8){ clearTimeout(p.timer); beginDrag(p); }
+  if (p.state === 'pending'){
+    p.cx = e.clientX; p.cy = e.clientY;
+    const dx = e.clientX - p.x0, dy = e.clientY - p.y0;
+    if (p.ptype === 'mouse'){ if (Math.hypot(dx, dy) > 8){ clearTimeout(p.timer); beginDrag(p); } }
+    else if (Math.hypot(dx, dy) > SWIPE_MIN){
+      clearTimeout(p.timer);
+      // Mostly sideways = a page turn in that direction; mostly up / down does nothing (no accidental turns while scrolling a thumb).
+      if (Math.abs(dx) >= Math.abs(dy) * .7) beginDrag(p, dx < 0 ? 'fwd' : 'back'); else p.state = 'none';
+    }
+  }
   if (p.state === 'mtext' && Math.hypot(e.clientX - p.x0, e.clientY - p.y0) > 4){ p.state = 'select'; sel = { page: p.page, a: p.anchor, b: p.anchor }; invalidate(p.page); }
   if (p.state === 'turn' && turn){
     const lx = p.flip * (e.clientX - p.origin), ly = e.clientY - PY;
@@ -1531,7 +1556,8 @@ function endPtr(e){
       if (w){ const h = data.hls.find(h => w.key >= h.a && w.key <= h.b); if (h){ openPop({ kind:'hl', hl:h, page:hp.i }); return; } }
     }
     const bookW = spread ? 2 * W : W, rx = (p.x0 - PX) / bookW;
-    const single = () => { if (rx > .36 && rx < .64) toggleChrome(); else tapTurn(rx >= .5 ? 'fwd' : 'back', p.y0 - PY); };
+    // "Một tay" (Aa → Chạm để lật): a tap on either side goes forward; going back is a swipe to the right.
+    const single = () => { if (rx > .36 && rx < .64) toggleChrome(); else tapTurn(settings.tap === 'one' || rx >= .5 ? 'fwd' : 'back', p.y0 - PY); };
     // Touch on a PDF waits for a possible double-tap zoom; a mouse click acts at once (double-click selects a word).
     if (zoomable() && p.ptype !== 'mouse') handleTap(p.x0, p.y0, single); else single();
     return;
@@ -1870,7 +1896,8 @@ setEl.querySelectorAll('.seg').forEach(seg => seg.addEventListener('click', e =>
   const b = e.target.closest('button'); if (!b || b.disabled) return;
   const k = seg.dataset.k; settings[k] = k === 'lh' ? +b.dataset.v : b.dataset.v; saveSettings();
   if (k === 'theme') applyTheme();
-  layout('key'); syncSettings();
+  if (k !== 'tap') layout('key');
+  syncSettings();
 }));
 function bumpFs(d){ if (book.kind === 'pdf') return; settings.fs = clamp((settings.fs || autoFs()) + d, 12, 30); saveSettings(); layout('key'); syncSettings(); }
 $('#fsMinus').addEventListener('click', () => bumpFs(-1));
@@ -1900,7 +1927,7 @@ function updateUI(){
     label += ' · ' + (mins <= 1 ? 'sắp hết chương' : 'hết chương sau ~' + mins + ' phút');
   }
   $('#prog').textContent = label;
-  $('#seek').value = cur;
+  $('#seek').value = cur; $('#seek').style.setProperty('--pct', (nPages > 1 ? cur / (nPages - 1) * 100 : 0) + '%');
   const bm = vis.some(isBookmarked);
   $('#bmIcon').setAttribute('fill', bm ? 'currentColor' : 'none');
   $('#bmBtn').setAttribute('aria-pressed', bm ? 'true' : 'false');
@@ -1962,6 +1989,7 @@ const KEYS_MOUSE = [
   [['Nhấp đúp'], 'Chọn một từ'],
   [['Shift + nhấp'], 'Mở rộng vùng đang chọn'],
   [['Kéo từ mép trang'], 'Lật trang như sách giấy'],
+  [['Vuốt trái / phải'], 'Cảm ứng: trang sau / trang trước, vuốt ở đâu trên trang cũng được'],
   [['Nhấp mép trái / phải'], 'Trang trước / trang sau'],
   [['Nhấp giữa trang'], 'Ẩn / hiện thanh công cụ'],
   [['Ctrl + lăn'], 'Phóng to / thu nhỏ PDF'],
@@ -2144,6 +2172,19 @@ addEventListener('pointermove', e => {
 }, { passive: true });
 document.addEventListener('mouseleave', () => { if (floating() && !chromeHeld()){ document.body.classList.remove('show-top', 'show-bot'); } });
 
+// Touch devices: Android's back gesture (a swipe from the screen's side edge) is easy to trigger by accident while turning
+// pages. A back first closes an open panel; otherwise the first one only asks, a second one within 2.5 s goes back.
+if (matchMedia('(pointer:coarse)').matches && history.pushState){
+  let armed = 0;
+  const trap = () => { try { history.pushState({ tsnTrap: 1 }, ''); } catch(e){} };
+  trap();
+  addEventListener('popstate', () => {
+    const open = $('#drawer').classList.contains('on') || setEl.classList.contains('on') || $('#note').classList.contains('on') || helpOpen() || !!pop;
+    if (open){ closeDrawer(); closeSettings(); closeNote(); closeHelp(); closePop(); clearSel(); trap(); return; }
+    if (performance.now() - armed < 2500){ history.back(); return; }
+    armed = performance.now(); trap(); toast('Vuốt “Quay lại” lần nữa để về kệ', 2500);
+  });
+}
 let rt = 0; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => layout('key'), 140); });
 let toastT = 0;
 function toast(m, ms){ const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), ms || 2400); }
