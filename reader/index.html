@@ -65,7 +65,7 @@ body.fs .fs-ico .o{display:none}
 /* full screen on a phone: the page runs edge to edge, the strips under the notch / gesture bar take the paper colour */
 body.edge{background:var(--page)}
 body.edge #bookShadow{box-shadow:none}
-body.edge.pdfbook,body.edge.pdfbook #bookShadow{background:#fff}
+html[data-theme="paper"] body.edge.pdfbook,html[data-theme="paper"] body.edge.pdfbook #bookShadow{background:#fff}
 #safeProbe{position:fixed;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
 #gl{position:fixed;left:0;top:0;z-index:2;touch-action:none}
 
@@ -823,6 +823,7 @@ function renderPdfInto(i, v, res = 1){
       const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
       x.save(); x.translate(pdfOx(i, c.width, vp.width), (c.height - vp.height)/2);
       await page.render({ canvasContext: x, viewport: vp }).promise; x.restore();
+      tintPdf(x, c);
       if (!(full && !spread)){ const sw = c.width * .06;
       const g = left ? x.createLinearGradient(c.width, 0, c.width - sw, 0) : x.createLinearGradient(0, 0, sw, 0);
       g.addColorStop(0, 'rgba(70,50,25,.12)'); g.addColorStop(1, 'rgba(70,50,25,0)'); x.fillStyle = g; if (left) x.fillRect(c.width - sw, 0, sw, c.height); else x.fillRect(0, 0, sw, c.height); }
@@ -830,6 +831,22 @@ function renderPdfInto(i, v, res = 1){
       v.base = c; v.res = res; composePdf(i, v);
     } catch(e){}
   });
+}
+// PDF pages follow the reading theme: pdf.js paints black on white, then the page is recoloured in place.
+// Paper: unchanged (white). Sepia: white → sepia paper, black → sepia ink. Dark: brightness inverted (white → dark
+// paper, black → light ink) with the original hues put back, so photos and coloured figures keep their colours.
+function tintPdf(x, c){
+  const th = settings.theme; if (th !== 'sepia' && th !== 'dark') return;
+  const t = TH(), w = c.width, h = c.height;
+  x.save();
+  if (th === 'dark'){
+    const orig = document.createElement('canvas'); orig.width = w; orig.height = h; orig.getContext('2d').drawImage(c, 0, 0);
+    x.globalCompositeOperation = 'difference'; x.fillStyle = '#fff'; x.fillRect(0, 0, w, h);
+    x.globalCompositeOperation = 'hue'; x.drawImage(orig, 0, 0);
+  }
+  x.globalCompositeOperation = 'multiply'; x.fillStyle = th === 'dark' ? t.ink : t.page; x.fillRect(0, 0, w, h);
+  x.globalCompositeOperation = 'lighten'; x.fillStyle = th === 'dark' ? t.page : t.ink; x.fillRect(0, 0, w, h);
+  x.restore();
 }
 // A PDF page texture = the pdf.js rendering (v.base, kept while the page is on screen)
 // + highlights, the current selection, note dots and the bookmark ribbon painted on a copy.
@@ -842,7 +859,7 @@ function composePdf(i, v){
   x.save(); x.scale(base.width / W, base.height / H);
   const p = ptPage(i);
   if (p && p.lines.length){
-    x.globalCompositeOperation = 'multiply';   // keeps the printed text dark under the colour
+    x.globalCompositeOperation = settings.theme === 'dark' ? 'screen' : 'multiply';   // keeps the text readable under the colour
     for (const h of data.hls){
       if (h.b < p.keyMin || h.a > p.keyMax) continue;
       x.fillStyle = HL_PDF[h.color] || HL_PDF.yellow;
