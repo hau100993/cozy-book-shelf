@@ -1,0 +1,36 @@
+<!-- @dsCard height=300 -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Cover</title>
+<style>
+  html,body{margin:0;height:100%}
+  body{background:var(--paper);overflow:hidden}
+  .cv{position:relative;width:960px;height:300px}
+  svg{position:absolute;left:0;top:0}
+  .cobalt{fill:var(--cobalt)} .verm{fill:var(--verm)} .ochre{fill:var(--cover-ochre)} .teal{fill:var(--cover-teal)} .ink{fill:var(--ink)}
+  .sp{rx:var(--radius-face)}
+  .plank{stroke:var(--rule);stroke-width:1} .soft{stroke:var(--soft);stroke-width:1}
+  .txt{position:absolute;left:48px;bottom:36px;max-width:440px}
+  .name{margin:0;font:400 104px/.95 var(--font-serif);letter-spacing:-.02em;color:var(--ink)}
+  .tag{margin:16px 0 0;font:500 13.5px/1.4 var(--font-sans);color:var(--muted)}
+</style></head>
+<body>
+<div class="cv">
+<svg width="960" height="300" viewBox="0 0 960 300" aria-hidden="true">
+  <!-- blocks: cobalt 64×228, verm 32×170, cover-ochre 48×196, cover-teal 40×150 standing; ink 176×48 + verm 140×24 lying (widths = space-* multiples) -->
+  <!-- arrangement: book spines of unequal height standing on one shelf plank, a short stack lying at the right; the cobalt spine bleeds near the top -->
+  <!-- pattern: editorial hairlines — the plank is the `rule` hairline, a `soft` rule under it; chosen because the system draws with 1px ink lines, not shadows -->
+  <!-- scales: radius-face 2px on every spine; gaps space-gutter 16px; plank at y=248 -->
+  <rect class="cobalt sp" x="540" y="20" width="64" height="228"/>
+  <rect class="verm sp" x="604" y="78" width="32" height="170"/>
+  <rect class="ochre sp" x="636" y="52" width="48" height="196"/>
+  <rect class="teal sp" x="700" y="98" width="40" height="150"/>
+  <rect class="ink sp" x="760" y="200" width="176" height="48"/>
+  <rect class="verm sp" x="776" y="176" width="140" height="24"/>
+  <line class="plank" x1="480" y1="248.5" x2="960" y2="248.5"/>
+  <line class="soft" x1="480" y1="262.5" x2="960" y2="262.5"/>
+</svg>
+<div class="txt"><p class="name">Tủ Sách<br>Nhỏ</p><p class="tag">Kệ sách và trình đọc PDF / EPUB trong trình duyệt.</p></div>
+</div>
+</body>
+</html>

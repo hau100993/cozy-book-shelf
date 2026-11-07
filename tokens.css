@@ -1,0 +1,98 @@
+/* Tủ Sách Nhỏ — generated from tokens.json */
+/* Do not edit: change design-system/tokens.json, then run  node design-system/build.mjs */
+:root,[data-theme="paper"]{
+  --paper:#edebe6;
+  --sheet:#f4f2ed;
+  --page:#fbf8f1;
+  --field:#fbfaf7;
+  --ink:#141414;
+  --muted:#6d6a63;
+  --cobalt:#1f3fb0;
+  --cobalt-deep:#16308a;
+  --on-cobalt:#ffffff;
+  --verm:#c8452b;
+  --rule:rgba(20,20,20,.9);
+  --soft:rgba(20,20,20,.12);
+  --hover:rgba(20,20,20,.06);
+  --tint:rgba(31,63,176,.07);
+  --scrim:rgba(20,16,10,.38);
+  --sync-on:#2e6a5e;
+  --cover-ink:#161514;
+  --cover-cream:#efe6d2;
+  --cover-ochre:#d49a2a;
+  --cover-teal:#2e6a5e;
+  --cover-wine:#7a2333;
+  --wood:#a06a37;
+  --wood-oak-l:rgb(210,164,108);
+  --wood-oak-d:rgb(140,92,50);
+  --wood-walnut-l:rgb(126,86,56);
+  --wood-walnut-d:rgb(56,33,19);
+  --wood-pine-l:rgb(232,196,142);
+  --wood-pine-d:rgb(190,132,74);
+  --wood-cherry-l:rgb(182,106,68);
+  --wood-cherry-d:rgb(106,50,28);
+  --hl-yellow:rgba(242,196,52,.42);
+  --hl-green:rgba(110,185,100,.38);
+  --hl-pink:rgba(236,112,145,.36);
+  --hl-blue:rgba(80,135,230,.34);
+  --shadow-menu:0 14px 30px -12px rgba(20,16,10,.35);
+  --shadow-card:0 30px 60px -24px rgba(0,0,0,.55);
+  --shadow-cover:0 30px 60px -28px rgba(20,16,10,.55);
+  --shadow-book:3px 4px 7px rgba(30,12,2,.5), 0 0 0 1px rgba(30,12,2,.18);
+  --shadow-panel:-24px 0 48px rgba(20,16,10,.18);
+  --shadow-capsule:0 10px 28px -12px rgba(20,12,4,.5), inset 0 1px 0 rgba(255,255,255,.7);
+}
+[data-theme="sepia"]{
+  --paper:#e2d5bb;
+  --sheet:#efe3c9;
+  --page:#f4e9d2;
+  --field:var(--page);
+  --ink:#3a2e20;
+  --muted:#86735a;
+  --cobalt:#8a3b1e;
+  --cobalt-deep:var(--cobalt);
+  --on-cobalt:var(--page);
+  --rule:rgba(58,46,32,.85);
+  --soft:rgba(58,46,32,.15);
+  --hover:rgba(58,46,32,.06);
+  --tint:rgba(138,59,30,.07);
+}
+[data-theme="dark"]{
+  --paper:#121211;
+  --sheet:#262522;
+  --page:#1f1e1b;
+  --field:var(--page);
+  --ink:#d9d3c6;
+  --muted:#8f897e;
+  --cobalt:#93a9f2;
+  --cobalt-deep:var(--cobalt);
+  --on-cobalt:var(--page);
+  --verm:#b4513a;
+  --rule:rgba(217,211,198,.6);
+  --soft:rgba(217,211,198,.14);
+  --hover:rgba(217,211,198,.06);
+  --tint:rgba(147,169,242,.1);
+  --hl-yellow:rgba(242,196,52,.3);
+  --hl-green:rgba(110,185,100,.3);
+  --hl-pink:rgba(236,112,145,.3);
+}
+:root{
+  --space-chip:6px;
+  --space-gap:8px;
+  --space-pad:14px;
+  --space-gutter:16px;
+  --space-block:20px;
+  --space-edge:32px;
+  --ctl:36px;
+  --tab:32px;
+  --btn-lg:46px;
+  --dock:58px;
+  --bar:84px;
+  --radius-none:0;
+  --radius-face:2px;
+  --radius-ring:4px;
+  --radius-wheel:15px;
+  --radius-capsule:20px;
+  --font-serif:"Newsreader", Georgia, "Times New Roman", serif;
+  --font-sans:"Inter Tight", system-ui, -apple-system, "Segoe UI", sans-serif;
+}

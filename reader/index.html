@@ -7,14 +7,16 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../tokens.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap">
 <style>
 /* Layout: label bar on top, the book (1 or 2 WebGL pages) centred, progress strip below. Reading themes are the app's own (paper / sepia / dark), set by JS on the tokens below. */
 :root{
-  --bg:#EDEBE6; --page:#FBF8F1; --ink:#1C1A17; --muted:#7A766D; --accent:#1F3FB0; --line:rgba(20,20,20,.88); --soft:rgba(20,20,20,.12); --sheet:#F7F4EE;
+  /* Colours come from ../tokens.css (design-system/tokens.json); the reading theme is <html data-theme="paper|sepia|dark">. */
+  --bg:var(--paper); --accent:var(--cobalt); --line:var(--rule);
   --ease:cubic-bezier(.2,.8,.2,1);
-  --serif:"Newsreader",Georgia,"Times New Roman",serif;
-  --sans:"Inter Tight",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --serif:var(--font-serif);
+  --sans:var(--font-sans);
   color-scheme:light;
 }
 html,body{height:100%}
@@ -297,15 +299,25 @@ async function fingerprint(file){
   catch(e){ return 'n' + hashStr(file.name + file.size); }
 }
 
+// Reading themes: colours come from ../tokens.css ([data-theme="paper|sepia|dark"]); only the gutter shading and colour-scheme live here.
 const THEMES = {
-  paper: { bg:'#EDEBE6', page:'#FBF8F1', ink:'#1C1A17', muted:'#7A766D', accent:'#1F3FB0', line:'rgba(20,20,20,.88)', soft:'rgba(20,20,20,.12)', sheet:'#F7F4EE', spine:'rgba(70,50,25,.13)', scheme:'light' },
-  sepia: { bg:'#E2D5BB', page:'#F4E9D2', ink:'#3A2E20', muted:'#86735A', accent:'#8A3B1E', line:'rgba(58,46,32,.85)', soft:'rgba(58,46,32,.15)', sheet:'#EFE3C9', spine:'rgba(90,60,25,.16)', scheme:'light' },
-  dark:  { bg:'#121211', page:'#1F1E1B', ink:'#D9D3C6', muted:'#8F897E', accent:'#93A9F2', line:'rgba(217,211,198,.6)', soft:'rgba(217,211,198,.14)', sheet:'#262522', spine:'rgba(0,0,0,.4)', scheme:'dark' }
+  paper: { spine:'rgba(70,50,25,.13)', scheme:'light' },
+  sepia: { spine:'rgba(90,60,25,.16)', scheme:'light' },
+  dark:  { spine:'rgba(0,0,0,.4)', scheme:'dark' }
 };
-const HL = { yellow:'rgba(242,196,52,.42)', green:'rgba(110,185,100,.38)', pink:'rgba(236,112,145,.36)', blue:'rgba(80,135,230,.34)' };
-const HL_DARK = { yellow:'rgba(242,196,52,.30)', green:'rgba(110,185,100,.30)', pink:'rgba(236,112,145,.30)', blue:'rgba(80,135,230,.34)' };
+const themeCache = {};
 const settings = Object.assign({ fs:null, lh:1.6, margin:'m', font:'serif', theme:'paper', layout:'auto', deco:'none' }, store.get('lt-settings') || {});
-const TH = () => THEMES[settings.theme] || THEMES.paper;
+function TH(){
+  const id = THEMES[settings.theme] ? settings.theme : 'paper', el = document.documentElement;
+  if (el.dataset.theme !== id) el.dataset.theme = id;
+  if (!themeCache[id]){
+    const cs = getComputedStyle(el), v = n => cs.getPropertyValue('--' + n).trim();
+    themeCache[id] = Object.assign({ bg:v('paper'), page:v('page'), ink:v('ink'), muted:v('muted'), accent:v('cobalt'), line:v('rule'),
+      soft:v('soft'), sheet:v('sheet'), verm:v('verm'),
+      hl:{ yellow:v('hl-yellow'), green:v('hl-green'), pink:v('hl-pink'), blue:v('hl-blue') } }, THEMES[id]);
+  }
+  return themeCache[id];
+}
 
 /* ---------------- sample book (original text) ---------------- */
 const SAMPLE = { kind:'text', id:'sample', title:'Một trang giấy cong', author:'Ghi chép cho Tủ Sách Nhỏ', blocks:[
@@ -626,7 +638,7 @@ function bmHits(i){
 function isBookmarked(i){ return !isBlank(i) && bmHits(i).length > 0; }
 function drawRibbon(x, i){
   const rx = isLeft(i) ? 26 : W - 44;
-  x.fillStyle = settings.theme === 'dark' ? '#B4513A' : '#C8452B';
+  x.fillStyle = TH().verm;
   x.beginPath(); x.moveTo(rx, 0); x.lineTo(rx + 18, 0); x.lineTo(rx + 18, 46); x.lineTo(rx + 9, 38); x.lineTo(rx, 46); x.closePath(); x.fill();
 }
 function paperBase(x, i){
@@ -700,7 +712,7 @@ function pageCanvas(i){
     x.fillText((nPages - 1) + ' trang · khoảng ' + Math.max(1, Math.round(book.totalWords / 230)) + ' phút đọc', W/2, H * .86);
     return c;
   }
-  const hlc = settings.theme === 'dark' ? HL_DARK : HL;
+  const hlc = TH().hl;
   for (const h of data.hls){
     if (h.b < p.keyMin || h.a > p.keyMax) continue;
     x.fillStyle = hlc[h.color] || hlc.yellow;
@@ -1037,8 +1049,7 @@ function layout(restore){
   updateUI(); syncSettings();
 }
 function applyTheme(){
-  const t = TH(), r = document.documentElement.style;
-  ['bg','page','ink','muted','accent','line','soft','sheet'].forEach(k => r.setProperty('--' + k, t[k]));
+  const t = TH(), r = document.documentElement.style;  // TH() also sets <html data-theme>, which switches the token values
   r.setProperty('color-scheme', t.scheme);
   const n = parseInt(t.page.slice(1), 16);
   if (gl){ gl.uniform3f(U.uPaper, (n >> 16)/255, ((n >> 8) & 255)/255, (n & 255)/255); gl.uniform1f(U.uDark, settings.theme === 'dark' ? 1 : 0); }
@@ -1753,7 +1764,7 @@ function renderList(){
     });
   } else {
     if (!data.hls.length){ list.innerHTML = '<p class="empty">Chưa có đoạn tô sáng nào. Kéo chuột trên chữ, hoặc nhấn giữ một chữ rồi kéo, để chọn đoạn văn.' + (book.kind === 'pdf' ? ' PDF dạng ảnh scan không có chữ để chọn.' : '') + '</p>'; return; }
-    const hlc = settings.theme === 'dark' ? HL_DARK : HL;
+    const hlc = TH().hl;
     data.hls.forEach(h => {
       const i = pageOfKey(h.a);
       const el = mk('', '<span class="tt"><span class="q" style="background:' + hlc[h.color] + '">' + esc(h.text) + '</span></span><span class="lbl pg">' + pageLabel(i) + '</span>' + (h.note ? '<span class="nt">' + esc(h.note) + '</span>' : '') + '<span class="acts lbl"><button type="button" data-a="note">' + (h.note ? 'Sửa ghi chú' : '+ Ghi chú') + '</button><button type="button" data-a="rm">Xoá</button></span>');

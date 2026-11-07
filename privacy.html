@@ -6,14 +6,14 @@
 <title>Quyền riêng tư · Tủ Sách Nhỏ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap">
 <style>
 /* Privacy policy: both languages live in the DOM (readable without JS); the toggle only hides one. */
 :root{
-  --paper:#EDEBE6; --sheet:#F4F2ED; --ink:#141414; --muted:#6D6A63;
-  --cobalt:#1F3FB0; --rule:rgba(20,20,20,.9);
-  --serif:"Newsreader",Georgia,"Times New Roman",serif;
-  --sans:"Inter Tight",system-ui,-apple-system,"Segoe UI",sans-serif;
+  /* Colours and font stacks come from tokens.css (design-system/tokens.json). */
+  --serif:var(--font-serif);
+  --sans:var(--font-sans);
   color-scheme:light;
 }
 body{margin:0;background:var(--paper);color:var(--ink);font:400 18px/1.6 var(--serif);-webkit-font-smoothing:antialiased;
