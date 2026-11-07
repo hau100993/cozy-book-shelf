@@ -184,6 +184,13 @@ kbd{display:inline-block;min-width:1.2em;text-align:center;font:600 11px/1 var(-
   .foot .prog{max-width:50vw}
 }
 @media (prefers-reduced-motion:reduce){ *{transition:none !important} }
+/* "Desktop site" on a phone: a note at the top saying how to get the phone layout (see #dmode). Sized for a page shown
+   at ~980px and scaled down, so it stays readable on the phone. */
+.dmode{position:fixed;left:0;right:0;top:0;z-index:120;display:flex;align-items:center;gap:16px;padding:18px 22px;background:var(--ink);color:var(--paper);
+  font:500 26px/1.4 var(--font-sans);box-shadow:0 6px 18px rgba(0,0,0,.3)}
+.dmode[hidden]{display:none}
+.dmode span{flex:1}
+.dmode button{flex:none;width:64px;height:64px;font-size:30px;color:var(--paper);background:none;border:2px solid currentColor;cursor:pointer}
 </style>
 </head>
 <body>
@@ -2246,6 +2253,21 @@ function noBook(text){
   return null;
 }
 boot();
+})();
+</script>
+<div class="dmode" id="dmode" role="status" hidden><span>Trang đang hiện bản cho máy tính nên chữ rất nhỏ. Mở menu <b>⋮</b> của trình duyệt và bỏ chọn <b>“Trang web cho máy tính”</b> (Desktop site) để có giao diện điện thoại.</span><button type="button" aria-label="Ẩn lời nhắc">✕</button></div>
+<script>
+/* A phone showing the "desktop site" (Chrome ⋮ → Desktop site): the browser pretends to be ~980px wide and ignores the
+   viewport tag, so the phone layout cannot apply. Detect it (touch screen, page much wider than the screen) and say how
+   to turn it off. Hidden for the rest of the tab once dismissed. */
+(function(){
+  try {
+    var el = document.getElementById('dmode');
+    var desk = matchMedia('(pointer:coarse)').matches && screen.width > 0 && innerWidth > screen.width * 1.3 && Math.min(screen.width, screen.height) < 600;
+    if (!desk || sessionStorage.getItem('tsn-dmode')) return;
+    el.hidden = false;
+    el.querySelector('button').onclick = function(){ el.hidden = true; try { sessionStorage.setItem('tsn-dmode', '1'); } catch(e){} };
+  } catch(e){}
 })();
 </script>
 </body>
