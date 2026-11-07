@@ -81,11 +81,19 @@ const idb = {
   async tx(mode, fn){
     const db = await this.open(); if (!db) return null;
     return new Promise(res => {
-      try { const q = fn(db.transaction('books', mode).objectStore('books')); q.onsuccess = () => res(q.result); q.onerror = () => res(null); }
+    // A write resolves only when its transaction has COMMITTED (not when the request succeeds): the shelf may leave
+    // for the reader right after saving a book file, and an uncommitted write is lost when the page goes away.
+      try {
+        const t = db.transaction('books', mode), q = fn(t.objectStore('books')); let out = null;
+        q.onsuccess = () => { out = q.result; if (mode === 'readonly') res(out); };
+        q.onerror = () => res(null);
+        if (mode !== 'readonly'){ t.oncomplete = () => res(out === null ? true : out); t.onabort = t.onerror = () => res(null); }
+      }
       catch(e){ res(null); }
     });
   },
   all(){ return this.tx('readonly', os => os.getAll()).then(r => r || []); },
+  get(id){ return this.tx('readonly', os => os.get(id)); },
   put(r){ return this.tx('readwrite', os => os.put(r)); },
   del(id){ return this.tx('readwrite', os => os.delete(id)); }
 };
@@ -243,7 +251,10 @@ async function applyMeta(fp, remote){
     const rec = toMeta(remote); rec.id = 'u' + uid(); rec.file = null;
     await idb.put(rec); st.pushed[name] = rm; return true;
   }
-  if (rm > lm){ const keep = { id: local.id, file: local.file }; await idb.put(Object.assign(local, toMeta(remote), keep)); st.pushed[name] = rm; return true; }
+  if (rm > lm){
+    const now = (await idb.get(local.id)) || local;   // fresh copy: a file may have been attached while the network calls ran
+    await idb.put(Object.assign(now, toMeta(remote), { id: local.id, file: now.file })); st.pushed[name] = rm; return true;
+  }
   if (rm === lm) st.pushed[name] = rm;
   return false;
 }

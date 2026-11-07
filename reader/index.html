@@ -1380,6 +1380,9 @@ function startPinch(){
   lockUntilUp = true;
 }
 canvas.addEventListener('contextmenu', e => e.preventDefault());
+// The tap that closed the Aa panel is not also a page tap (see the panel's pointerdown handler).
+let swallowTap = 0;
+canvas.addEventListener('click', e => { if (performance.now() - swallowTap < 800) e.stopImmediatePropagation(); }, true);
 canvas.addEventListener('pointerdown', e => {
   if (e.button > 0) return;
   touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -1841,7 +1844,7 @@ const setEl = $('#settings');
 function openSettings(){ syncSettings(); setEl.classList.add('on'); closePop(); clearSel(); }
 function closeSettings(){ setEl.classList.remove('on'); }
 $('#setBtn').addEventListener('click', () => { setEl.classList.contains('on') ? closeSettings() : openSettings(); });
-document.addEventListener('pointerdown', e => { if (setEl.classList.contains('on') && !setEl.contains(e.target) && !$('#setBtn').contains(e.target)) closeSettings(); }, true);
+document.addEventListener('pointerdown', e => { if (setEl.classList.contains('on') && !setEl.contains(e.target) && !$('#setBtn').contains(e.target)){ closeSettings(); if (e.target === canvas){ e.stopPropagation(); swallowTap = performance.now(); } } }, true);
 function syncSettings(){
   if (!book) return;
   const pdf = book.kind === 'pdf';
@@ -2180,7 +2183,9 @@ async function boot(){
   }
   applyTheme();
   try { await Promise.race([Promise.all([document.fonts.load('400 18px "Newsreader"', VI), document.fonts.load('italic 400 18px "Newsreader"', VI), document.fonts.load('600 12px "Inter Tight"', VI), document.fonts.load('400 16px "Inter Tight"', VI)]), wait(2500)]); } catch(e){}
-  if (!(await openFromShelf())) setBook(SAMPLE);
+  const opened = await openFromShelf();
+  if (opened === null) return;   // a book was asked for and could not be opened: the message says why
+  if (!opened) setBook(SAMPLE);
   requestAnimationFrame(loop);
   TSNSync.init({ full:false });
 }
@@ -2207,7 +2212,9 @@ async function openFromShelf(){
   try { id = new URLSearchParams(location.search).get('book'); } catch(e){}
   if (!id) return false;
   $('#backBtn').hidden = false;
-  const rec = await shelfRecord(id);
+  // The shelf saves a downloaded file just before coming here; give a slow device a moment before giving up.
+  let rec = await shelfRecord(id);
+  for (let k = 0; k < 6 && rec && !rec.file && rec.kind !== 'sample'; k++){ await new Promise(r => setTimeout(r, 400)); rec = await shelfRecord(id); }
   if (rec && rec.file){
     toast('Đang mở “' + rec.title + '”…', 60000);
     try {
@@ -2217,7 +2224,7 @@ async function openFromShelf(){
       b.key = rec.fp || await fingerprint(rec.file);
       setBook(b); toast('Đã mở “' + b.title + '”.');
       return true;
-    } catch(e){ toast('Không mở được sách này. File có thể bị hỏng hoặc có DRM.', 4200); return false; }
+    } catch(e){ toast('', 1); return noBook('Không mở được “' + rec.title + '”. File có thể bị hỏng hoặc có DRM.'); }
   }
   const h = store.get('tsn-handoff');
   if (h && h.id === id && Array.isArray(h.text)){
@@ -2227,8 +2234,16 @@ async function openFromShelf(){
     setBook({ kind:'text', id:'s-' + h.id, key:'s-' + h.id, title:h.title, author:h.author + (h.year ? ' · ' + h.year : ''), blocks });
     return true;
   }
-  toast('Không tìm thấy sách này trong trình duyệt.', 4200);
-  return false;
+  return noBook(rec ? '“' + rec.title + '” chưa có file trên máy này. Về kệ, mở sách rồi bấm “Tải về và đọc” (hoặc chọn file).' : 'Không tìm thấy sách này trong trình duyệt.');
+}
+// Never fall back to the demo book for a book that was asked for: say what happened and offer the way back.
+function noBook(text){
+  const m = $('#msg'); m.textContent = '';
+  const box = document.createElement('div'), p = document.createElement('p'), a = document.createElement('a');
+  p.style.margin = '0 0 18px'; p.textContent = text;
+  a.href = '../'; a.className = 'box lbl'; a.textContent = '← Về kệ'; a.style.textDecoration = 'none';
+  box.append(p, a); m.appendChild(box); m.classList.add('on');
+  return null;
 }
 boot();
 })();

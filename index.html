@@ -1122,7 +1122,14 @@ const DB = {
   tx(mode, fn){
     return new Promise(res => {
       if (!this.db) return res(null);
-      try { const os = this.db.transaction('books', mode).objectStore('books'); const q = fn(os); q.onsuccess = () => res(q.result); q.onerror = () => res(null); }
+    // A write resolves only when its transaction has COMMITTED (not when the request succeeds): the shelf may leave
+    // for the reader right after saving a book file, and an uncommitted write is lost when the page goes away.
+      try {
+        const t = this.db.transaction('books', mode), q = fn(t.objectStore('books')); let out = null;
+        q.onsuccess = () => { out = q.result; if (mode === 'readonly') res(out); };
+        q.onerror = () => res(null);
+        if (mode !== 'readonly'){ t.oncomplete = () => res(out === null ? true : out); t.onabort = t.onerror = () => res(null); }
+      }
       catch(e){ res(null); }
     });
   },
@@ -1843,11 +1850,12 @@ function wcUp(e){
 }
 wcap.addEventListener('pointerup', wcUp);
 wcap.addEventListener('pointercancel', wcUp);
-// A tap outside closes the menu. On phones that tap does nothing else (it would otherwise open the book under it).
+// A tap outside closes the display menu (the phone capsule and the bar on larger screens). That tap does nothing
+// else (it would otherwise open the book under it); buttons in the top bar / dock still work.
 addEventListener('click', e => {
-  if (!phoneSheet() || !menuOpen() || e.target.closest('#woodMenu, #wmCap')) return;
-  if (phoneSheet() && !e.target.closest('#dispBtn')){ e.stopPropagation(); e.preventDefault(); }
-  if (!e.target.closest('#dispBtn')) toggleWoodMenu(false);
+  if (!menuOpen() || e.target.closest('#woodMenu, #wmCap, #dispBtn')) return;
+  toggleWoodMenu(false);
+  if (!e.target.closest('.top, .dock')){ e.stopPropagation(); e.preventDefault(); }
 }, true);
 // Phones resize the page when the address bar slides in or out while scrolling: only a width change closes the capsule.
 // The bar stays open when a tablet turns (it re-wraps by itself), and closes when the screen crosses the phone width.
@@ -2057,7 +2065,10 @@ async function addOne(f, extra){
 async function attachFile(b, f){
   const rec = (await DB.get(b.id)) || b;
   Object.assign(rec, { file: f, fileName: rec.fileName || f.name, size: f.size });
-  await DB.put(rec); b.file = f;
+  // Saved for sure before the reader opens it (it reads the file back from this database).
+  const saved = (await DB.put(rec)) != null && !!(await DB.get(b.id) || {}).file;
+  if (!saved) throw new Error('Không lưu được sách vào trình duyệt (bộ nhớ của trình duyệt có thể đã đầy).');
+  b.file = f;
   if (view === 'mine' && !isOpen) buildShelf(b.id);
   TSNSync.dirty();
   return b;
@@ -2107,7 +2118,13 @@ addMenu.addEventListener('click', e => {
   toggleAddMenu(false);
   if (a.dataset.a === 'file') $('#fileIn').click(); else if (a.dataset.a === 'help') openTour(); else openLinkDlg();
 });
-addEventListener('click', e => { if (!addMenu.hidden && !e.target.closest('.addmenu')) toggleAddMenu(false); });
+// A tap outside the add menu only closes it (it does not also open the book under it). Buttons in the top bar / dock
+// still do their job, and tapping the button that opened the menu toggles it as before.
+addEventListener('click', e => {
+  if (addMenu.hidden || e.target.closest('.addmenu') || (addAnchor && addAnchor.contains(e.target))) return;
+  toggleAddMenu(false);
+  if (!e.target.closest('.top, .dock, #addBtn, #eAdd, .wadd')){ e.stopPropagation(); e.preventDefault(); }
+}, true);
 
 /* ---------- import from a link ---------- */
 // Turns share links into direct downloads. Google Drive's usercontent host sends CORS headers (the old uc?export=download does not).
@@ -2724,6 +2741,7 @@ function openSyncDlg(){
   syncDlg.hidden = false; syOpen = true; document.body.classList.add('editing'); syncUI();
 }
 function closeSyncDlg(){ if (!syOpen) return; syncDlg.hidden = true; syOpen = false; document.body.classList.remove('editing'); }
+syncDlg.addEventListener('click', e => { if (e.target === syncDlg) closeSyncDlg(); });
 function syncUI(){
   const S = TSNSync, s = S.status, el = $('#syState');
   $('#syncBtn').className = 'box lbl helpbtn sybtn' + (S.enabled ? ' ' + (s.s === 'ok' ? 'on' : s.s) : '');
