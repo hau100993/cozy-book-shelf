@@ -548,7 +548,12 @@ function wrapWords(words, font, firstW, restW){
   if (curL.length) lines.push({ ws:curL, width:cw, avail, last:true });
   return { lines, sw };
 }
-function autoFs(){ return Math.round(clamp(W * 0.043, 15, full && W >= 600 ? 20 : 19)); }
+function autoFs(){
+  // One whole-screen page on a screen held sideways (a PC monitor, "1 trang"): the type grows with the screen, so the
+  // column (still ~76 characters a line) spans about half the width instead of a narrow strip; capped by height.
+  if (full && !spread && vw > vh) return Math.round(clamp(Math.min(W * .6 / 31, vh * .03), 15, 32));
+  return Math.round(clamp(W * 0.043, 15, full && W >= 600 ? 20 : 19));
+}
 // Longest line, in average characters, for each margin choice: a whole-screen page keeps a readable measure
 // and the paper around it simply gets wider margins.
 const MEASURE = { s:92, m:76, l:64 };
