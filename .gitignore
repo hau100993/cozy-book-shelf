@@ -147,3 +147,6 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# Đội thử nghiệm ảo: kết quả từng lần chạy
+qa/runs/

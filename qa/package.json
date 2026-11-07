@@ -1,0 +1,13 @@
+{
+  "name": "tu-sach-nho-qa",
+  "private": true,
+  "description": "Đội thử nghiệm ảo: nhân vật AI dùng thử Tủ Sách Nhỏ trong trình duyệt thật (xem qa/README.md).",
+  "scripts": {
+    "fixtures": "node make-fixtures.cjs"
+  },
+  "devDependencies": {
+    "axe-core": "4.10.2",
+    "jszip": "3.10.1",
+    "pdfjs-dist": "3.11.174"
+  }
+}
