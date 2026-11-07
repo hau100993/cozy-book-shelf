@@ -5,7 +5,7 @@
 (() => {
 'use strict';
 // OAuth Client ID (loại Web) từ Google Cloud Console; để trống thì đồng bộ tắt, sao lưu .zip vẫn chạy.
-const CLIENT_ID = '';
+const CLIENT_ID = '610241815749-2hj7942a4vac4lo6q2cv11lkutenht7n.apps.googleusercontent.com';
 const POLICY_V = '1.0';
 const SC_DATA = 'https://www.googleapis.com/auth/drive.appdata', SC_FILE = 'https://www.googleapis.com/auth/drive.file';
 const API = 'https://www.googleapis.com/drive/v3/files', UP = 'https://www.googleapis.com/upload/drive/v3/files';
