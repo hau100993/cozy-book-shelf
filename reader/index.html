@@ -48,13 +48,14 @@ button:focus-visible,label:focus-within,textarea:focus-visible,.item:focus-visib
 #seek{flex:1;min-width:0;accent-color:var(--accent)}
 body.immersive .bar{transform:translateY(calc(-100% - 4px))}
 body.immersive .foot{transform:translateY(calc(100% + 4px))}
-/* Full-screen reading: bars float over the book, hidden until the mouse nears an edge (or a tap in the middle on touch). */
-body.fs .bar{transform:translateY(calc(-100% - 4px));box-shadow:0 10px 30px -18px rgba(0,0,0,.45)}
-body.fs .foot{transform:translateY(calc(100% + 4px));box-shadow:0 -10px 30px -18px rgba(0,0,0,.45)}
-body.fs.show-top .bar,body.fs.show-bot .foot{transform:none}
+/* Floating bars (body.float = full screen, or a short screen such as a tablet held sideways): the bars float over the
+   book, hidden until the mouse nears an edge (or a tap in the middle on touch), so the page gets the whole height. */
+body.float .bar{transform:translateY(calc(-100% - 4px));box-shadow:0 10px 30px -18px rgba(0,0,0,.45)}
+body.float .foot{transform:translateY(calc(100% + 4px));box-shadow:0 -10px 30px -18px rgba(0,0,0,.45)}
+body.float.show-top .bar,body.float.show-bot .foot{transform:none}
 /* hidden bars / drawer must not cast their shadow onto a page that reaches the screen edge */
-body.fs:not(.show-top) .bar,body.fs:not(.show-bot) .foot,.drawer:not(.on),.note:not(.on){box-shadow:none}
-body.fs.idle,body.fs.idle #gl{cursor:none !important}
+body.float:not(.show-top) .bar,body.float:not(.show-bot) .foot,.drawer:not(.on),.note:not(.on){box-shadow:none}
+body.float.idle,body.float.idle #gl{cursor:none !important}
 .fs-ico .x{display:none}
 body.fs .fs-ico .x{display:block}
 body.fs .fs-ico .o{display:none}
@@ -100,8 +101,8 @@ body.edge.pdfbook,body.edge.pdfbook #bookShadow{background:#fff}
 .sbar button{height:36px;min-width:36px;padding:0 10px;color:var(--page)}
 .sbar button:hover{background:color-mix(in srgb,var(--page) 14%,transparent)}
 .sbar .q{min-width:0;max-width:52vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums}
-body.fs .sbar{bottom:calc(16px + env(safe-area-inset-bottom,0px))}
-body.fs.show-bot .sbar{bottom:calc(66px + env(safe-area-inset-bottom,0px))}
+body.float .sbar{bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+body.float.show-bot .sbar{bottom:calc(66px + env(safe-area-inset-bottom,0px))}
 body.searching .toast{bottom:calc(112px + env(safe-area-inset-bottom,0px))}
 .item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;text-align:left;padding:12px 22px;border-bottom:1px solid var(--soft);cursor:pointer}
 .item:hover{background:color-mix(in srgb,var(--ink) 6%,transparent)}
@@ -254,7 +255,7 @@ kbd{display:inline-block;min-width:1.2em;text-align:center;font:600 11px/1 var(-
     <div class="size"><button class="box" id="zMinus" type="button" aria-label="Thu nhỏ">−</button><output id="zVal">100%</output><button class="box" id="zPlus" type="button" aria-label="Phóng to">+</button></div>
     <span class="hint">Điện thoại: chạm hai lần để phóng to, chụm hai ngón để thu phóng. Máy tính: Ctrl + lăn chuột, hoặc Ctrl + / Ctrl −. Khi đang phóng to, kéo hoặc dùng phím mũi tên để xem phần khác.</span></div>
   <div class="row trow"><span class="lbl">Cỡ chữ</span>
-    <div class="size"><button class="box" id="fsMinus" type="button" aria-label="Chữ nhỏ hơn" style="font:400 13px var(--serif)">A−</button><output id="fsVal"></output><button class="box" id="fsPlus" type="button" aria-label="Chữ lớn hơn" style="font:400 19px var(--serif)">A+</button></div></div>
+    <div class="size"><button class="box" id="fsMinus" type="button" aria-label="Chữ nhỏ hơn" style="font:400 13px var(--serif)">A−</button><output id="fsVal"></output><button class="box" id="fsPlus" type="button" aria-label="Chữ lớn hơn" style="font:400 19px var(--serif)">A+</button></div><span class="hint" id="fsHint" hidden></span></div>
   <div class="row trow"><span class="lbl">Giãn dòng</span><div class="seg" data-k="lh"><button type="button" data-v="1.4">Hẹp</button><button type="button" data-v="1.6">Vừa</button><button type="button" data-v="1.85">Rộng</button></div></div>
   <div class="row trow"><span class="lbl">Lề trang</span><div class="seg" data-k="margin"><button type="button" data-v="s">Hẹp</button><button type="button" data-v="m">Vừa</button><button type="button" data-v="l">Rộng</button></div><span class="hint">Trên màn hình rộng, lề còn giữ dòng chữ không quá dài (Hẹp ~90, Vừa ~75, Rộng ~65 ký tự).</span></div>
   <div class="row trow"><span class="lbl">Kiểu chữ</span><div class="seg" data-k="font"><button type="button" data-v="serif" style="font-family:var(--serif);font-size:15px">Có chân</button><button type="button" data-v="sans">Không chân</button></div></div>
@@ -354,6 +355,9 @@ let gl, prog, U = {}, idxCount = 0;
 let book = null, pages = [], toc = [], nPages = 0, cur = 0, spread = false;
 let full = false;
 const FULL_HALF = 480;
+// Below this height the bars float (hidden by default); "Tự động" opens two pages when each is at least MIN_PAGE wide.
+const SHORT_H = 640, MIN_PAGE = 260;
+let floatHinted = false;
 let vw = 0, vh = 0, dpr = 1, W = 300, H = 450, PX = 0, PY = 0, SPINE = 0;
 let data = { pos:null, hls:[], bms:[] };
 let sel = null, pop = null, turn = null, dirty = true;
@@ -560,6 +564,8 @@ function paginate(){
   const chW = meas.measureText(MEASURE_TXT).width / MEASURE_TXT.length;   // average character of ordinary Vietnamese prose
   const mx = Math.round(Math.max(W * mxr, (W - (MEASURE[settings.margin] || 76) * chW) / 2)), mt = Math.round(clamp(H * vk, fs * 2.4, fs * 4.2)), mb = Math.round(clamp(H * (vk - .005), fs * 2.2, fs * 3.8));
   const cw = W - 2*mx, maxY = H - mb;
+  // Short lines (under ~40 characters) are set ragged-right: justifying them opens wide gaps between words.
+  const lineChars = Math.round(cw / chW), ragged = lineChars < 40;
   const fam = settings.font === 'sans' ? SANS : SERIF;
   const fBody = '400 ' + fs + 'px ' + fam;
   const P = (startKey) => ({ lines:[], imgs:[], keyMin:Infinity, keyMax:-Infinity, startKey });
@@ -600,13 +606,13 @@ function paginate(){
       if (y + lh > maxY + fs * .2) newPage(k0 + l.ws[0].idx);
       y += lh;
       let gap = sw;
-      if (!l.last && l.ws.length > 1){ const sum = l.ws.reduce((a, w) => a + w.w, 0); const g2 = (l.avail - sum) / (l.ws.length - 1); if (g2 < sw * 2.6) gap = g2; }
+      if (!ragged && !l.last && l.ws.length > 1){ const sum = l.ws.reduce((a, w) => a + w.w, 0); const g2 = (l.avail - sum) / (l.ws.length - 1); if (g2 < sw * 2.6) gap = g2; }
       addLine(fBody, 'ink', mx + (k === 0 ? ind : 0), y - lh * .27, l.ws, gap, bi, fs);
     });
     after = false;
   });
   if (empty() && pages.length > 2) pages.pop();
-  pages.meta = { fs, mt, mb, mx, lh, cw };
+  pages.meta = { fs, mt, mb, mx, lh, cw, lineChars };
 }
 function pageOfKey(key){
   if (key == null || key < 0) return 0;
@@ -689,6 +695,13 @@ function drawDeco(x, i){
   }
   x.restore();
 }
+// A soft patch of paper colour behind the page number, so the optional picture at the foot does not cross it.
+function clearDeco(x, cx, cy, r){
+  if (!settings.deco || settings.deco === 'none' || !book || book.kind === 'pdf') return;
+  const g = x.createRadialGradient(cx, cy, 0, cx, cy, r), pc = TH().page;
+  g.addColorStop(0, pc); g.addColorStop(.6, pc); g.addColorStop(1, pc + '00');
+  x.save(); x.fillStyle = g; x.beginPath(); x.ellipse(cx, cy, r, r * .75, 0, 0, Math.PI * 2); x.fill(); x.restore();
+}
 function pageCanvas(i){
   const c = document.createElement('canvas'); c.width = Math.round(W * dpr); c.height = Math.round(H * dpr);
   const x = c.getContext('2d'); x.scale(dpr, dpr); paperBase(x, i);
@@ -749,15 +762,23 @@ function pageCanvas(i){
     while (x.measureText(hd).width > m.cw * .8 && hd.length > 6) hd = hd.slice(0, -2).trimEnd() + '…';
     x.fillText(hd, spread ? ox : m.mx, m.mt * .5);
     x.textAlign = left ? 'left' : 'right'; x.font = '400 ' + Math.round(m.fs * .7) + 'px ' + SANS;
-    x.fillText(i + '/' + (nPages - 1), ox, H - m.mb * .4);
+    const pn = i + '/' + (nPages - 1), pw = x.measureText(pn).width;
+    clearDeco(x, left ? ox + pw / 2 : ox - pw / 2, H - m.mb * .4 - m.fs * .25, pw / 2 + m.fs);
+    x.fillStyle = t.muted; x.fillText(pn, ox, H - m.mb * .4);
     if (isBookmarked(i)) drawRibbon(x, i);
     return c;
   }
   x.fillStyle = t.muted; x.font = '600 ' + Math.round(m.fs*.55) + 'px ' + SANS; x.textAlign = 'center'; setSpacing(x, (m.fs*.1) + 'px');
-  let head = (isLeft(i) ? book.title : (ch ? ch.label : book.title)).toUpperCase();
-  while (x.measureText(head).width > W * .7 && head.length > 6) head = head.slice(0, -2).trimEnd() + '…';
-  x.fillText(head, W/2, m.mt * .55);
-  setSpacing(x, '0px'); x.font = '400 ' + Math.round(m.fs*.78) + 'px ' + SERIF; x.fillText(String(i), W/2, H - m.mb * .42);
+  // Running head only while the bars are hidden by default (short screens): otherwise the top bar already shows
+  // the book and the chapter, and a third, cut-off copy on the page only adds noise.
+  if (floating()){
+    let head = (isLeft(i) ? book.title : (ch ? ch.label : book.title)).toUpperCase();
+    while (x.measureText(head).width > W * .7 && head.length > 6) head = head.slice(0, -2).trimEnd() + '…';
+    x.fillText(head, W/2, m.mt * .55);
+  }
+  setSpacing(x, '0px'); x.font = '400 ' + Math.round(m.fs*.78) + 'px ' + SERIF;
+  clearDeco(x, W/2, H - m.mb * .42 - m.fs * .28, x.measureText(String(i)).width / 2 + m.fs);
+  x.fillStyle = t.muted; x.fillText(String(i), W/2, H - m.mb * .42);
   if (isBookmarked(i)) drawRibbon(x, i);
   return c;
 }
@@ -1008,6 +1029,12 @@ function currentKey(){
   return p.title ? -1 : (isFinite(p.keyMin) ? p.keyMin : p.startKey);
 }
 function normCur(){ cur = clamp(cur, 0, Math.max(0, nPages - 1)); if (spread){ const L = leftOf(cur); cur = L >= 0 ? L : 0; } }
+// Your chosen type size is kept; when it leaves very short lines on this screen the Aa panel says so.
+function updateFsHint(){
+  const h = $('#fsHint'), m = pages.meta, on = !!(book && book.kind !== 'pdf' && settings.fs && m && m.lineChars < 35);
+  h.hidden = !on;
+  if (on) h.textContent = 'Mỗi dòng chỉ còn khoảng ' + m.lineChars + ' ký tự. Chữ nhỏ hơn, hoặc xoay ngang, sẽ dễ đọc hơn.';
+}
 function layout(restore){
   const key = restore === 'key' ? currentKey() : null, oldCur = cur;
   vw = innerWidth; vh = innerHeight; dpr = Math.min(2, devicePixelRatio || 1);
@@ -1015,28 +1042,40 @@ function layout(restore){
   canvas.style.width = vw + 'px'; canvas.style.height = vh + 'px';
   // Portrait screens always show one page, even when "2 trang" is chosen.
   const portrait = vh > vw;
-  // Full screen: two pages when held sideways and each half is still a comfortable page (≥ 480px), unless "1 trang" is chosen.
-  spread = !portrait && (settings.layout === 'spread' || (settings.layout === 'auto' && (fsMode ? vw / 2 >= FULL_HALF : vw >= 900 && vw / vh > 1.15)));
   // Full screen on any device: the paper IS the screen (one page = whole screen, two pages = one half each),
   // no frame, no shadow, clear only of the notch / gesture bar.
   full = fsMode;
+  // Short screens (a tablet or phone held sideways): the bars float over the book and stay hidden until a tap in the
+  // middle (or the mouse near an edge), as in full screen, so the page gets the whole height.
+  const short = !fsMode && vh < SHORT_H, wasFloat = document.body.classList.contains('float');
+  document.body.classList.toggle('float', fsMode || short);
+  if (wasFloat && !(fsMode || short)) document.body.classList.remove('show-top', 'show-bot', 'idle');
+  if (short && !wasFloat && !floatHinted){ floatHinted = true; setTimeout(() => toast(lastPtrType === 'touch' ? 'Chạm giữa trang để hiện menu' : 'Rê chuột lên mép trên để hiện menu', 3200), 600); }
   document.body.classList.toggle('edge', full); document.body.classList.toggle('pdfbook', book.kind === 'pdf');
-  const sp = getComputedStyle($('#safeProbe'));
-  const top = full ? parseFloat(sp.paddingTop) || 0 : $('.bar').offsetHeight + 12;
-  const bot = full ? parseFloat(sp.paddingBottom) || 0 : $('.foot').offsetHeight + 10;
+  const sp = getComputedStyle($('#safeProbe')), safeT = parseFloat(sp.paddingTop) || 0, safeB = parseFloat(sp.paddingBottom) || 0;
+  const top = full ? safeT : short ? safeT + 12 : $('.bar').offsetHeight + 12;
+  const bot = full ? safeB : short ? safeB + 12 : $('.foot').offsetHeight + 10;
   const availW = vw - 2 * (full ? 0 : vw < 640 ? 10 : 36), availH = vh - top - bot;
   if (full){
+    // Full screen: two pages when held sideways and each half is still a comfortable page (≥ 480px), unless "1 trang" is chosen.
+    spread = !portrait && (settings.layout === 'spread' || (settings.layout === 'auto' && vw / 2 >= FULL_HALF));
     // Text pages are laid out again for the screen's shape; a PDF page is fitted inside and the rest is blank paper.
     W = spread ? Math.floor(vw / 2) : vw; H = Math.floor(availH);
   } else {
-    // Text pages are laid out again for any size, so on an upright screen they take its shape (within 1.5–2.4).
-    const aspect = book.kind === 'pdf' ? book.ratio : portrait && !spread ? clamp(availH / availW, 1.5, 2.4) : 1.5;
+    // Text pages are laid out again for any size, so on an upright screen they take its shape (within 1.5–2.4);
+    // on a short screen they may be a little wider (down to 1.3) instead of narrow strips.
     const capT = 540, capP = 900;
-    if (spread) W = Math.floor(Math.min(availW / 2, availH / aspect, book.kind === 'pdf' ? capP : capT));
-    else W = Math.floor(Math.min(availW, availH / aspect, book.kind === 'pdf' ? capP + 100 : capT + 60));
-    H = Math.floor(W * aspect);
+    const fit = two => {
+      const pw = two ? availW / 2 : availW;
+      const aspect = book.kind === 'pdf' ? book.ratio : portrait && !two ? clamp(availH / availW, 1.5, 2.4) : clamp(availH / pw, short ? 1.3 : 1.5, 1.5);
+      return { w: Math.floor(Math.min(pw, availH / aspect, book.kind === 'pdf' ? (two ? capP : capP + 100) : (two ? capT : capT + 60))), aspect };
+    };
+    // "Tự động": two pages whenever the screen is wider than tall and each page still gets MIN_PAGE px.
+    spread = !portrait && (settings.layout === 'spread' || (settings.layout === 'auto' && vw / vh > 1.15 && fit(true).w >= MIN_PAGE));
+    const f = fit(spread); W = f.w; H = Math.floor(W * f.aspect);
   }
   const bookW = spread ? 2 * W : W;
+  setTimeout(updateFsHint);
   PX = Math.round((vw - bookW) / 2); PY = Math.round(top + (availH - H) / 2); SPINE = PX + W;
   Object.assign(shadowEl.style, { left: PX + 'px', top: PY + 'px', width: bookW + 'px', height: H + 'px' });
   if (book.kind === 'pdf'){ nPages = book.n; toc = book.outline || []; pages = []; }
@@ -1222,7 +1261,7 @@ const ZMAX = 4, ZRES = 2.5;
 let zoom = { z:1, sx:0, sy:0 }, zoomAnim = null, hiResT = 0;
 function zoomable(){ return !!book && book.kind === 'pdf'; }
 function zoomArea(){
-  const imm = fsMode || document.body.classList.contains('immersive');
+  const imm = floating() || document.body.classList.contains('immersive');
   return { t: imm ? 0 : $('.bar').getBoundingClientRect().bottom, b: imm ? vh : $('.foot').getBoundingClientRect().top };
 }
 function clampZoom(z, sx, sy){
@@ -1529,7 +1568,7 @@ function openPop(o){
   if (rs.length){ top = sy(Math.min(...rs.map(r => r.y))); bottom = sy(Math.max(...rs.map(r => r.y + r.h))); const x0 = Math.min(...rs.map(r => r.x)), x1 = Math.max(...rs.map(r => r.x + r.w)); cx = pageToScreenX(i, (x0 + x1) / 2) * zoom.z + zoom.sx; }
   popEl.style.left = '0px'; popEl.style.top = '0px'; popEl.classList.add('on');
   const pw = popEl.offsetWidth, ph = popEl.offsetHeight;
-  const minTop = 8 + ((fsMode ? !document.body.classList.contains('show-top') : document.body.classList.contains('immersive')) ? 0 : $('.bar').offsetHeight);
+  const minTop = 8 + ((floating() ? !document.body.classList.contains('show-top') : document.body.classList.contains('immersive')) ? 0 : $('.bar').offsetHeight);
   let y = top - ph - 12, below = false;
   if (y < minTop){ y = bottom + 14; below = true; }
   popEl.style.transformOrigin = below ? '50% 0' : '50% 100%';
@@ -2016,15 +2055,16 @@ let lastPtrType = matchMedia('(pointer: fine)').matches ? 'mouse' : 'touch';
 addEventListener('pointerdown', e => { lastPtrType = e.pointerType === 'touch' ? 'touch' : 'mouse'; }, true);
 addEventListener('keydown', () => { lastPtrType = 'mouse'; }, true);
 const EDGE_TOP = 72, EDGE_BOT = 64, HIDE_DELAY = 450;
+function floating(){ return document.body.classList.contains('float'); }
 function toggleChrome(){
-  if (!fsMode){ document.body.classList.toggle('immersive'); return; }
+  if (!floating()){ document.body.classList.toggle('immersive'); return; }
   const on = !document.body.classList.contains('show-top');
   document.body.classList.toggle('show-top', on); document.body.classList.toggle('show-bot', on);
 }
 function chromeHeld(){ return setEl.classList.contains('on') || $('#drawer').classList.contains('on') || $('#note').classList.contains('on') || !!pop; }
 function enterFs(){
   if (fsMode) return;
-  fsMode = true; document.body.classList.remove('immersive', 'show-top', 'show-bot'); document.body.classList.add('fs');
+  fsMode = true; document.body.classList.remove('immersive', 'show-top', 'show-bot'); document.body.classList.add('fs', 'float');
   $('#fsBtn').setAttribute('aria-label', 'Thoát toàn màn hình');
   closeSettings();
   const el = document.documentElement, req = el.requestFullscreen || el.webkitRequestFullscreen;
@@ -2036,7 +2076,7 @@ function enterFs(){
 }
 function exitFs(){
   if (!fsMode) return;
-  fsMode = false; document.body.classList.remove('fs', 'show-top', 'show-bot', 'idle');
+  fsMode = false; document.body.classList.remove('fs', 'float', 'show-top', 'show-bot', 'idle');
   $('#fsBtn').setAttribute('aria-label', 'Toàn màn hình');
   if (fsNative && document.fullscreenElement){ try { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch(e){} }
   fsNative = false;
@@ -2049,10 +2089,10 @@ $('#fsBtn').addEventListener('click', toggleFs);
   if (!document.fullscreenElement && !document.webkitFullscreenElement && fsMode && fsNative){ fsNative = false; exitFs(); }
 }));
 addEventListener('pointermove', e => {
-  if (!fsMode || e.pointerType !== 'mouse') return;
+  if (!floating() || e.pointerType !== 'mouse') return;
   const b = document.body;
   b.classList.remove('idle'); clearTimeout(idleT);
-  idleT = setTimeout(() => { if (fsMode && !b.classList.contains('show-top') && !b.classList.contains('show-bot') && !ptr) b.classList.add('idle'); }, 2200);
+  idleT = setTimeout(() => { if (floating() && !b.classList.contains('show-top') && !b.classList.contains('show-bot') && !ptr) b.classList.add('idle'); }, 2200);
   const nearTop = e.clientY < EDGE_TOP || (b.classList.contains('show-top') && e.clientY < $('.bar').offsetHeight + 24);
   const nearBot = e.clientY > vh - EDGE_BOT || (b.classList.contains('show-bot') && e.clientY > vh - $('.foot').offsetHeight - 24);
   const overUI = e.target.closest && e.target.closest('.bar,.foot,.settings,.pop');
@@ -2061,13 +2101,13 @@ addEventListener('pointermove', e => {
   clearTimeout(edgeT);
   if ((!nearTop || !nearBot) && !overUI && !ptr){
     edgeT = setTimeout(() => {
-      if (!fsMode || chromeHeld()) return;
+      if (!floating() || chromeHeld()) return;
       if (!nearTop) b.classList.remove('show-top');
       if (!nearBot) b.classList.remove('show-bot');
     }, HIDE_DELAY);
   }
 }, { passive: true });
-document.addEventListener('mouseleave', () => { if (fsMode && !chromeHeld()){ document.body.classList.remove('show-top', 'show-bot'); } });
+document.addEventListener('mouseleave', () => { if (floating() && !chromeHeld()){ document.body.classList.remove('show-top', 'show-bot'); } });
 
 let rt = 0; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => layout('key'), 140); });
 let toastT = 0;
