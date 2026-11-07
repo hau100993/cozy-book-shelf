@@ -2196,11 +2196,11 @@ function openLinkDlg(text){
   toggleAddMenu(false);
   if (typeof text === 'string') $('#lkIn').value = text.trim();
   if (!lkAbort) lkList.textContent = '';
-  linkDlg.hidden = false; lkOpen = true; document.body.classList.add('editing');
+  linkDlg.hidden = false; lkOpen = true; document.body.classList.add('editing'); layerOpen('link');
   if (matchMedia('(pointer:fine)').matches) setTimeout(() => $('#lkIn').focus(), 30);
 }
 function closeLinkDlg(){
-  if (!lkOpen) return;
+  if (!lkOpen) return; layerClosed('link');
   if (lkAbort) lkAbort.abort();
   linkDlg.hidden = true; lkOpen = false; document.body.classList.remove('editing');
 }
@@ -2314,10 +2314,28 @@ function fillDetail(b){
   $('#pImg').setAttribute('href', b.cover);
 }
 let revealT = 0;
+// "Back" (Android's back gesture, the browser's back button) closes the open sheet or dialog instead of leaving the
+// shelf: each one adds a history entry when it opens; closing it any other way takes that entry off again.
+const layers = []; let popSkip = 0, inPop = false;
+function layerOpen(name){ layers.push(name); try { history.pushState({ tsnLayer: name }, ''); } catch(e){} }
+function layerClosed(name){
+  const i = layers.lastIndexOf(name); if (i < 0) return;
+  layers.splice(i, 1);
+  if (!inPop && i === layers.length){ popSkip++; try { history.back(); } catch(e){ popSkip--; } }
+}
+const LAYER_CLOSE = { detail: () => closeDetail(), editor: () => closeEditor(), sync: () => closeSyncDlg(), link: () => { if (!lkAbort) closeLinkDlg(); else layerOpen('link'); }, tour: () => closeTour() };
+addEventListener('popstate', () => {
+  if (popSkip){ popSkip--; return; }
+  const name = layers[layers.length - 1]; if (!name) return;
+  inPop = true; try { LAYER_CLOSE[name](); } finally { inPop = false; }
+  if (layers[layers.length - 1] === name) layers.pop();   // already closing (e.g. the detail sheet mid-animation)
+});
+// Coming back from the reader through the page cache: start from the shelf, with no layer left open.
+addEventListener('pageshow', e => { if (!e.persisted) return; layers.length = 0; popSkip = 0; if (isOpen && !closing) closeDetail(); });
 function openDetail(){
   if (isOpen || !N) return;
   T = Math.round(T); s = T;
-  const b = books[activeIdx]; isOpen = true; closing = false;
+  const b = books[activeIdx]; isOpen = true; closing = false; layerOpen('detail');
   fillDetail(b);
   blobs.forEach(c => c.setAttribute('r', 0));
   const cr = coverRect();
@@ -2351,7 +2369,7 @@ function openDetail(){
   (barSlide ? barSlide.finished : Promise.resolve()).then(() => { if (isOpen && !closing) $('#dRead').focus({ preventScroll:true }); }, () => {});
 }
 function closeDetail(){
-  if (!isOpen || closing) return; closing = true;
+  if (!isOpen || closing) return; closing = true; layerClosed('detail');
   const cr = coverRect();
   detail.style.transformOrigin = cr.cx + 'px ' + cr.cy + 'px';
   detail.getAnimations().forEach(a => a.cancel());
@@ -2372,7 +2390,8 @@ function readBook(b){
   if (isGhost(b)) return fetchGhost(b);
   store.set('tsn-last', b.id);
   if (b.kind === 'sample') store.set('tsn-handoff', { id:b.id, title:b.title, vi:b.vi, author:b.author, year:b.year, gid:b.gid, text:b.text });
-  location.href = 'reader/?book=' + encodeURIComponent(b.id);
+  const url = 'reader/?book=' + encodeURIComponent(b.id);
+  if (layers.length) location.replace(url); else location.href = url;
 }
 // A book whose file isn't on this device: download it from Drive, or ask for the file (its fingerprint must match).
 let ghostBusy = false;
@@ -2436,11 +2455,11 @@ async function openEditor(){
   $('#edPdfBtn').hidden = b.kind !== 'pdf' || !rec.file;
   $('#edSrc [data-src="orig"]').hidden = $('#edReset').hidden = !rec.file;
   edPane.textContent = ''; edChips(); edPreview();
-  editor.hidden = false; editorOpen = true; document.body.classList.add('editing');
+  editor.hidden = false; editorOpen = true; document.body.classList.add('editing'); layerOpen('editor');
   $('.ed-body').scrollTop = 0;
 }
 function closeEditor(){
-  if (!editorOpen) return;
+  if (!editorOpen) return; layerClosed('editor');
   editor.hidden = true; editorOpen = false; document.body.classList.remove('editing');
   if (ed && ed.pdf) try { ed.pdf.destroy(); } catch(e){}
   ed = null;
@@ -2671,13 +2690,13 @@ function tourGo(i){
 function openTour(){
   if (tourOpen) return;
   if (!addMenu.hidden) toggleAddMenu(false);
-  tourOpen = true; clearTimeout(tourT);
+  tourOpen = true; clearTimeout(tourT); layerOpen('tour');
   $('#tNever').checked = !!store.get('tsn-tour');
   tour.hidden = false; tourGo(0);
   requestAnimationFrame(() => { tour.classList.add('on'); $('#tNext').focus({ preventScroll:true }); });
 }
 function closeTour(){
-  if (!tourOpen) return;
+  if (!tourOpen) return; layerClosed('tour');
   tourOpen = false;
   if ($('#tNever').checked) store.set('tsn-tour', 1); else store.del('tsn-tour');
   try { sessionStorage.setItem('tsn-tour', '1'); } catch(e){}
@@ -2745,9 +2764,9 @@ let syOpen = false;
 function openSyncDlg(){
   if (isOpen || editorOpen || lkOpen) return;
   toggleAddMenu(false); TSNSync.prepare();
-  syncDlg.hidden = false; syOpen = true; document.body.classList.add('editing'); syncUI();
+  syncDlg.hidden = false; syOpen = true; document.body.classList.add('editing'); syncUI(); layerOpen('sync');
 }
-function closeSyncDlg(){ if (!syOpen) return; syncDlg.hidden = true; syOpen = false; document.body.classList.remove('editing'); }
+function closeSyncDlg(){ if (!syOpen) return; layerClosed('sync'); syncDlg.hidden = true; syOpen = false; document.body.classList.remove('editing'); }
 syncDlg.addEventListener('click', e => { if (e.target === syncDlg) closeSyncDlg(); });
 function syncUI(){
   const S = TSNSync, s = S.status, el = $('#syState');
