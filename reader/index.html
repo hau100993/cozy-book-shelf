@@ -717,6 +717,19 @@ function drawDeco(x, i){
   }
   x.restore();
 }
+// Running head that fits: whole words, trailing punctuation dropped before the ellipsis ("Niềm vui, Nỗi đau…").
+function fitHead(x, text, maxW){
+  text = String(text || '').trim();
+  if (x.measureText(text).width <= maxW) return text;
+  const words = text.split(/\s+/);
+  while (words.length > 1){
+    words.pop();
+    const t = words.join(' ').replace(/[\s,;:.\-–—·(]+$/, '') + '…';
+    if (x.measureText(t).width <= maxW) return t;
+  }
+  let t = text; while (t.length > 4 && x.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+  return t + '…';
+}
 // A soft patch of paper colour behind the page number, so the optional picture at the foot does not cross it.
 function clearDeco(x, cx, cy, r){
   if (!settings.deco || settings.deco === 'none' || !book || book.kind === 'pdf') return;
@@ -780,9 +793,9 @@ function pageCanvas(i){
     const left = isLeft(i), ox = left ? m.mx : W - m.mx;
     x.fillStyle = t.muted; x.textAlign = left || !spread ? 'left' : 'right';
     x.font = '400 ' + Math.round(m.fs * .74) + 'px ' + SANS;
-    let hd = left ? book.title : (ch ? ch.label : book.title);
-    while (x.measureText(hd).width > m.cw * .8 && hd.length > 6) hd = hd.slice(0, -2).trimEnd() + '…';
-    x.fillText(hd, spread ? ox : m.mx, m.mt * .5);
+    // Not on the page where the chapter opens (its title is right below, large); elsewhere the full column width,
+    // shortened at a word, not mid-word.
+    if (!(ch && ch.page === i)) x.fillText(fitHead(x, left ? book.title : (ch ? ch.label : book.title), spread ? m.cw * .9 : m.cw), spread ? ox : m.mx, m.mt * .5);
     x.textAlign = left ? 'left' : 'right'; x.font = '400 ' + Math.round(m.fs * .7) + 'px ' + SANS;
     const pn = i + '/' + (nPages - 1), pw = x.measureText(pn).width;
     clearDeco(x, left ? ox + pw / 2 : ox - pw / 2, H - m.mb * .4 - m.fs * .25, pw / 2 + m.fs);
@@ -793,11 +806,7 @@ function pageCanvas(i){
   x.fillStyle = t.muted; x.font = '600 ' + Math.round(m.fs*.55) + 'px ' + SANS; x.textAlign = 'center'; setSpacing(x, (m.fs*.1) + 'px');
   // Running head only while the bars are hidden by default (short screens): otherwise the top bar already shows
   // the book and the chapter, and a third, cut-off copy on the page only adds noise.
-  if (floating()){
-    let head = (isLeft(i) ? book.title : (ch ? ch.label : book.title)).toUpperCase();
-    while (x.measureText(head).width > W * .7 && head.length > 6) head = head.slice(0, -2).trimEnd() + '…';
-    x.fillText(head, W/2, m.mt * .55);
-  }
+  if (floating() && !(ch && ch.page === i)) x.fillText(fitHead(x, (isLeft(i) ? book.title : (ch ? ch.label : book.title)).toUpperCase(), Math.min(W * .8, m.cw)), W/2, m.mt * .55);
   setSpacing(x, '0px'); x.font = '400 ' + Math.round(m.fs*.78) + 'px ' + SERIF;
   clearDeco(x, W/2, H - m.mb * .42 - m.fs * .28, x.measureText(String(i)).width / 2 + m.fs);
   x.fillStyle = t.muted; x.fillText(String(i), W/2, H - m.mb * .42);
