@@ -48,7 +48,7 @@ const LIBS = {
 };
 async function newPage(){
   page = await ctx.newPage();
-  page.on('pageerror', e => { errors.push({ kind:'pageerror', msg: e.message, url: page.url() }); });
+  page.on('pageerror', e => { errors.push({ kind:'pageerror', msg: e.message, url: page.url(), at: String(e.stack || '').split('\n').slice(1, 4).map(l => l.trim().replace(/https?:\/\/[^/]+/, '')).join(' ← ') }); });
   // "Failed to load resource" console lines carry no URL; failed loads are recorded from responses instead.
   page.on('console', m => { if (m.type() === 'error' && !/^Failed to load resource/.test(m.text()) && !/accounts\.google/.test(m.text())) errors.push({ kind:'console', msg: m.text(), url: page.url() }); });
   // books/books.json is optional (the repo ships no default books); Google is blocked on purpose.
